@@ -1,2 +1,8 @@
 /.github
 /.vscode
+
+# Instruction and guide documents
+/README.md
+/APP_COMPLETION_AND_TEST_CHECKLIST.md
+/SENTINEL_IMPLEMENTATION_PLAN.md
+/Gulp/README.md
