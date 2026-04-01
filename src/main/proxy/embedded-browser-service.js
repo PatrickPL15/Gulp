@@ -4,3 +4,6 @@ TODO(Sentinel): Embedded browser integration
 - Bind browser proxy and certificate settings automatically.
 - Expose session controls to renderer workspace.
 */
+
+
+module.exports = {};

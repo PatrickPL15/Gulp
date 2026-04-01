@@ -4,3 +4,6 @@ TODO(Sentinel): Rules engine
 - Implement replace/append/remove actions for request and response.
 - Add rule ordering, enable/disable, import/export support.
 */
+
+
+module.exports = {};

@@ -4,3 +4,6 @@ TODO(Sentinel): Target mapping and scope
 - Implement scope filters by domain/IP/CIDR.
 - Enforce scope in scanner/intruder/automation modules.
 */
+
+
+module.exports = {};

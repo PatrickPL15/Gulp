@@ -4,3 +4,6 @@ TODO(Sentinel): Scanner engine
 - Implement active checks for SQLi, XSS, SSRF modules.
 - Add custom check scripting interface (BChecks-style).
 */
+
+
+module.exports = {};

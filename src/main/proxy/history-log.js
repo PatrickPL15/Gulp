@@ -4,3 +4,6 @@ TODO(Sentinel): History logging
 - Add indexed search/filter support.
 - Implement bounded retention and project export/import hooks.
 */
+
+
+module.exports = {};

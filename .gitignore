@@ -2,6 +2,14 @@
 /.vscode
 /node_modules
 /dist
+/coverage
+
+# Test files
+**/__tests__/
+**/*.test.js
+**/*.test.jsx
+**/*.spec.js
+**/*.spec.jsx
 
 # Instruction and guide documents
 /README.md

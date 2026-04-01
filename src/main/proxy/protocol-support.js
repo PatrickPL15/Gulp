@@ -4,3 +4,6 @@ TODO(Sentinel): Protocol support
 - Normalize message model for shared tooling.
 - Add protocol-specific decoding and replay hooks.
 */
+
+
+module.exports = {};

@@ -4,3 +4,6 @@ TODO(Sentinel): Extension host (BApp-style)
 - Load/unload signed third-party modules.
 - Expose safe extension IPC channels and permissions.
 */
+
+
+module.exports = {};

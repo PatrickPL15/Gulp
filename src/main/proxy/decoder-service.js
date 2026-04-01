@@ -4,3 +4,6 @@ TODO(Sentinel): Decoder transformations
 - Implement nested recursive decode pipeline.
 - Add transformation history and replay support.
 */
+
+
+module.exports = {};

@@ -4,3 +4,11 @@ TODO(Sentinel): Intercept engine
 - Support manual interception queues and per-host toggles.
 - Emit events for renderer intercept UI.
 */
+
+module.exports = {
+  pause: () => { /* TODO */ },
+  forward: () => { /* TODO */ },
+  drop: () => { /* TODO */ },
+  edit: () => { /* TODO */ },
+  isEnabled: false
+};

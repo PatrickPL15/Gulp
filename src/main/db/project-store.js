@@ -4,3 +4,6 @@ TODO(Sentinel): Project persistence store
 - Persist traffic history, rules, scope, and module state.
 - Add crash-safe writes and recovery integrity checks.
 */
+
+
+module.exports = {};
