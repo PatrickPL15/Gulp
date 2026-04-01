@@ -116,20 +116,28 @@ Deliver the Sentinel Web Security Suite in milestone order with a stable, testab
 ## Milestone 5: Target Mapping + Scope Enforcement (4-6 days)
 ### Goals
 - Constrain automation to explicit target boundaries and improve navigation.
+- Support importing external scope/project configuration sources.
 
 ### Main deliverables
 - Site map tree generation from observed traffic.
 - Scope definition by host/domain/IP/CIDR.
 - Global scope enforcement for scanner/intruder/rules automation.
+- Import pipeline for Burp Suite Project Configuration files into Sentinel scope/project settings.
+- CSV ingestion pipeline for external program exports (for example HackerOne scope/config CSVs).
+- Field mapping and validation layer for imported include/exclude rules, endpoints, and metadata.
 
 ### Relevant files
 - `src/main/proxy/target-mapper.js`
+- `src/main/db/project-store.js`
 - `src/renderer/js/components/sentinel/TargetMapPanel.jsx`
+- `src/renderer/js/components/sentinel/DashboardShell.jsx`
 - `src/main/index.js`
 
 ### Exit criteria
 - Site tree is generated and navigable.
 - Out-of-scope items are visibly excluded from automation.
+- Imported Burp/CSV configuration can be previewed, validated, and applied without manual JSON edits.
+- Imported scope rules persist across restart and are enforced by automation modules.
 
 ## Milestone 6: Decoder + Embedded Browser Workflow (4-6 days)
 ### Goals
@@ -176,21 +184,26 @@ Deliver the Sentinel Web Security Suite in milestone order with a stable, testab
 ## Milestone 8: Extension Host + Final Hardening (6-9 days)
 ### Goals
 - Finalize ecosystem extensibility and production resilience.
+- Enable operator workflow automation with custom scripts.
 
 ### Main deliverables
 - Third-party extension API contract and lifecycle controls.
 - Extension loading/unloading and permission model.
+- Custom script automation runtime with trigger hooks (for example intercept events, scanner findings, and scope transitions).
+- Script execution safety controls (sandboxing, permissions, timeouts, and structured audit logs).
 - Performance tuning for high-concurrency proxy throughput.
 - Security hardening pass for preload IPC and renderer boundaries.
 
 ### Relevant files
 - `src/main/proxy/extension-host.js`
 - `src/renderer/js/components/sentinel/ExtensionsPanel.jsx`
+- `src/renderer/js/components/sentinel/DashboardShell.jsx`
 - `src/main/preload.js`
 - `src/main/index.js`
 
 ### Exit criteria
 - Extension sandbox boundaries are documented and enforced.
+- Custom automation scripts can be created, validated, and executed on configured triggers with traceable logs.
 - Load tests meet acceptable throughput/latency goals.
 - Final security checklist and regression suite pass.
 
@@ -208,6 +221,7 @@ Deliver the Sentinel Web Security Suite in milestone order with a stable, testab
 ### Data model governance
 - Stable event schema for traffic, findings, attacks, and scope state.
 - Versioned project file schema with migration handling.
+- Import schema mapping for Burp project config and CSV-based scope definitions.
 
 ## Effort Summary
 - Milestone 0: 1-2 days

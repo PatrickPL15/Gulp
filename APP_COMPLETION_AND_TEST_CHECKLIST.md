@@ -59,7 +59,7 @@ Use this checklist to finish implementation and validate the Electron + Gulp + R
 3. Ensure React mount node exists (`<div id="root"></div>`).
 4. Keep markup compatible with browser-only renderer context.
 
-### src/renderer/js/app.jsx
+### src/renderer/js/main.jsx
 1. Do not use Node.js APIs directly in renderer code.
 2. Mount React via `react-dom/client` into the root element.
 3. Wrap the app with `ChakraProvider`.
@@ -162,12 +162,16 @@ Use this checklist to finish implementation and validate the Electron + Gulp + R
 3. Add custom check scripting interface (BChecks).
 4. Add out-of-band interaction server integration for blind issues.
 5. Add sequencer/entropy analysis for token randomness.
+6. Add automation action engine for user-defined custom scripts (triggered by events, scope rules, or module workflows).
 
 ### Utility and Integration
 1. Add decoder transformations (Base64, URL, HTML, Hex, GZIP).
 2. Add nested decoding support.
 3. Add extension API host for third-party modules/tabs.
 4. Add embedded hardened Chromium integration bound to proxy.
+5. Add import pipeline for Burp Suite Project Configuration files into Sentinel project settings.
+6. Add CSV ingestion for external program scope/config sources (for example HackerOne exports) into target map and scope rules.
+7. Add validation and mapping rules for imported Burp/CSV fields (scope, include/exclude rules, endpoints, metadata).
 
 ### Technical Constraints and Security
 1. Implement CA generation and trust-install workflow for HTTPS MITM.
@@ -182,8 +186,13 @@ Use this checklist to finish implementation and validate the Electron + Gulp + R
 3. `src/main/proxy/*.js`: core proxy, protocol adapters, rules, repeater, intruder, map/scope, scanner, OOB, decoder.
 4. `src/main/db/project-store.js`: project persistence and history indexing.
 5. `src/main/certs/ca-manager.js`: CA generation, storage, and trust-install helpers.
+6. `src/main/db/project-store.js`: add import persistence hooks for Burp project configuration and CSV-derived scope entries.
+7. `src/main/proxy/target-mapper.js`: add import adapters and normalization for Burp scope objects and HackerOne-style CSV rows.
+8. `src/main/proxy/extension-host.js`: add custom script automation runtime (sandboxed execution, trigger hooks, and audit logging).
 
 ### Renderer Modules
 1. `src/renderer/js/components/sentinel/*.jsx`: feature panels and shell tabs for Proxy/History/Repeater/Intruder/Scanner/etc.
 2. `src/renderer/js/components/App.jsx`: promote to application shell with module navigation.
-3. `src/renderer/js/app.jsx`: app provider wiring and top-level router/shell mount.
+3. `src/renderer/js/main.jsx`: app provider wiring and top-level router/shell mount.
+4. `src/renderer/js/components/sentinel/*.jsx`: add import UI flow (file picker, column mapping, dry-run preview, and conflict resolution) for Burp config and CSV scope import.
+5. `src/renderer/js/components/sentinel/*.jsx`: add automation script management UI (create/edit/test scripts, assign triggers, and view execution logs).

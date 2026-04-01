@@ -22,7 +22,7 @@ These will accumulate real logic during Sentinel implementation (Milestone 0+).
 ### Partial Coverage (Integration-Heavy)
 - `src/main/preload.js`: 100% branch/function, 0% statements
   - *(contextBridge exposure is patternized; unit tests validate structure)*
-- `src/renderer/js/app.jsx` & `src/main/index.js`: Not measured
+- `src/renderer/js/main.jsx` & `src/main/index.js`: Not measured
   - *(Electron/React bootstrap code requires integration tests)*
 
 ## Test Metrics

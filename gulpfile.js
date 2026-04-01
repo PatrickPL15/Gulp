@@ -7,7 +7,7 @@ const paths = {
   html: 'src/renderer/index.html',
   scss: 'src/renderer/scss/**/*.scss',
   js: 'src/renderer/js/**/*.{js,jsx}',
-  jsEntry: 'src/renderer/js/app.jsx',
+  jsEntry: 'src/renderer/js/main.jsx',
   main: 'src/main/**/*',
   dist: 'dist'
 };

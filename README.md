@@ -1,47 +1,95 @@
 # Gulp (Electron + Gulp + React + Chakra UI)
 
-A desktop app scaffold using Electron for runtime, React for renderer UI components, Chakra UI for component styling, and Gulp for build/watch tasks.
+Desktop security-workbench foundation built with Electron (main process), React + Chakra UI (renderer), and Gulp (build/watch pipeline).
+
+## Current Status
+- Electron + renderer scaffold is running from built output (`dist/main/index.js`).
+- Chakra UI integration is in place with theme config in `src/renderer/js/theme.js`.
+- Vitest test setup exists (`test`, `test:ui`, `test:coverage` scripts).
+- Sentinel feature set is scaffolded with TODO-oriented service and UI module files.
+- Sentinel roadmap and checklist are tracked in:
+   - `APP_COMPLETION_AND_TEST_CHECKLIST.md`
+   - `SENTINEL_IMPLEMENTATION_PLAN.md`
 
 ## Tech Stack
 - Electron `^41.1.0`
-- Gulp `^5.0.1`
-- React + React DOM
-- Chakra UI (latest)
+- React `^19.1.0` + React DOM
+- Chakra UI `^3.34.0`
 - Emotion (`@emotion/react`, `@emotion/styled`)
 - Framer Motion
-- esbuild (via `gulp-esbuild`) for JSX bundling
+- Gulp `^5.0.1`
+- esbuild (`gulp-esbuild`) for renderer bundling
 - Sass (`gulp-sass` + `sass`)
-- JavaScript (CommonJS) + JSX for renderer components
+- Vitest + Testing Library
+- JavaScript (CommonJS + JSX)
 
-## Project Structure
+## Current Project Structure
 
 ```text
 .
 ├─ gulpfile.js
 ├─ package.json
+├─ README.md
+├─ APP_COMPLETION_AND_TEST_CHECKLIST.md
+├─ SENTINEL_IMPLEMENTATION_PLAN.md
+├─ TEST_COVERAGE.md
+├─ vitest.config.js
+├─ vitest.setup.js
 ├─ src/
 │  ├─ main/
 │  │  ├─ index.js
-│  │  └─ preload.js
+│  │  ├─ preload.js
+│  │  ├─ certs/
+│  │  │  └─ ca-manager.js                  (TODO scaffold)
+│  │  ├─ db/
+│  │  │  └─ project-store.js               (TODO scaffold)
+│  │  ├─ proxy/
+│  │  │  ├─ intercept-engine.js            (TODO scaffold)
+│  │  │  ├─ history-log.js                 (TODO scaffold)
+│  │  │  ├─ protocol-support.js            (TODO scaffold)
+│  │  │  ├─ rules-engine.js                (TODO scaffold)
+│  │  │  ├─ repeater-service.js            (TODO scaffold)
+│  │  │  ├─ intruder-engine.js             (TODO scaffold)
+│  │  │  ├─ target-mapper.js               (TODO scaffold)
+│  │  │  ├─ scanner-engine.js              (TODO scaffold)
+│  │  │  ├─ oob-service.js                 (TODO scaffold)
+│  │  │  ├─ sequencer-service.js           (TODO scaffold)
+│  │  │  ├─ decoder-service.js             (TODO scaffold)
+│  │  │  ├─ extension-host.js              (TODO scaffold)
+│  │  │  └─ embedded-browser-service.js    (TODO scaffold)
+│  │  └─ __tests__/
 │  └─ renderer/
 │     ├─ index.html
-│     ├─ js/
-│     │  ├─ app.jsx
-│     │  ├─ theme.js
-│     │  └─ components/
-│     │     └─ App.jsx
-│     └─ scss/
-│        └─ style.scss
+│     ├─ scss/
+│     │  └─ style.scss
+│     └─ js/
+│        ├─ main.jsx
+│        ├─ theme.js
+│        ├─ __tests__/
+│        └─ components/
+│           ├─ App.jsx
+│           ├─ __tests__/
+│           └─ sentinel/
+│              ├─ DashboardShell.jsx       (TODO scaffold)
+│              ├─ ProxyPanel.jsx           (TODO scaffold)
+│              ├─ HistoryPanel.jsx         (TODO scaffold)
+│              ├─ RepeaterPanel.jsx        (TODO scaffold)
+│              ├─ IntruderPanel.jsx        (TODO scaffold)
+│              ├─ TargetMapPanel.jsx       (TODO scaffold)
+│              ├─ ScannerPanel.jsx         (TODO scaffold)
+│              ├─ OobPanel.jsx             (TODO scaffold)
+│              ├─ SequencerPanel.jsx       (TODO scaffold)
+│              ├─ DecoderPanel.jsx         (TODO scaffold)
+│              ├─ ExtensionsPanel.jsx      (TODO scaffold)
+│              ├─ EmbeddedBrowserPanel.jsx (TODO scaffold)
+│              └─ __tests__/
 └─ dist/ (generated)
 ```
 
 ## Source of Truth
-- Edit source files in `src/` and build logic in `gulpfile.js`.
-- `dist/` is generated output and should not be hand-edited for normal development.
-
-## Prerequisites
-- Node.js 20+ (LTS recommended)
-- npm
+- Edit only `src/` and `gulpfile.js`.
+- Do not hand-edit `dist/` except temporary debugging.
+- Rebuild after source changes before runtime validation.
 
 ## Install
 
@@ -49,87 +97,65 @@ A desktop app scaffold using Electron for runtime, React for renderer UI compone
 npm install
 ```
 
-## Build
+## Build and Run
 
 ```bash
 npx gulp clean
 npx gulp build
-```
-
-Build output is generated into:
-- `dist/main/`
-- `dist/renderer/`
-
-## Run
-
-```bash
 npm run start
 ```
 
-This launches Electron using the built app entry (`dist/main/index.js`).
-
-## Development Workflow
-1. Start watch mode in one terminal:
+For watch workflow:
 
 ```bash
 npm run dev
 ```
 
-2. Start Electron in another terminal:
-
-```bash
-npm run start
-```
-
-3. Edit files under `src/`.
-4. Watch mode rebuilds output into `dist/` including the React bundle at `dist/renderer/js/app.js`.
-
 ## Scripts
-- `npm run dev` -> starts Gulp watch tasks
-- `npm run start` -> launches Electron
-- `npm test` -> currently placeholder
+- `npm run dev` -> Gulp watch pipeline
+- `npm run start` -> Electron runtime
+- `npm test` -> Vitest
+- `npm run test:ui` -> Vitest UI
+- `npm run test:coverage` -> Coverage run
 
-## React + Chakra Renderer Notes
-- React is mounted from `src/renderer/js/app.jsx` into `<div id="root"></div>` in `src/renderer/index.html`.
-- UI components live under `src/renderer/js/components/`.
-- Root provider is `ChakraProvider` in `src/renderer/js/app.jsx`.
-- Chakra theme/system config is centralized in `src/renderer/js/theme.js`.
-- Use Chakra primitives (`Container`, `VStack`, `Heading`, `Text`, etc.) for renderer UI composition.
-- Gulp bundles JSX and module imports into `dist/renderer/js/app.js`.
+## Testing Snapshot
+- Test framework is Vitest with jsdom and Testing Library.
+- Coverage/report strategy is documented in `TEST_COVERAGE.md`.
 
-## Security Notes (Electron)
-- Keep renderer code free of direct Node.js usage.
-- Use `preload.js` for any privileged API bridge.
-- When updating `BrowserWindow` options, explicitly review:
-  - `contextIsolation`
-  - `nodeIntegration`
-  - `sandbox`
+## TODO Scope (Sentinel)
+The following capability groups are planned and tracked in checklist/plan docs:
 
-## Testing and Validation
+1. Core proxy pipeline (intercept, edit, forward, rules, history).
+2. Manual tools (Repeater + response viewers).
+3. Intruder automation (payload engines + result analytics).
+4. Scope and target mapping.
+5. Advanced scanner/OOB/sequencer workflows.
+6. Decoder and embedded browser integration.
+7. Extension host and hardening.
+8. Burp Suite project configuration import.
+9. CSV ingestion for external scope/config exports (for example HackerOne).
+10. Custom-script action automation (triggered workflows with sandbox/audit controls).
 
-### Quick Smoke Test
-1. Run `npx gulp build`.
-2. Verify generated files exist:
-   - `dist/main/index.js`
-   - `dist/main/preload.js`
-   - `dist/renderer/index.html`
-   - `dist/renderer/css/style.css`
-   - `dist/renderer/js/app.js`
-3. Run `npm run start`.
-4. Confirm app window opens without runtime errors.
+## Planned Changes (Roadmap Highlights)
+- Milestone 0-1: contract baseline, persistence, CA lifecycle, service bootstrap.
+- Milestone 2-5: proxy core, repeater, intruder, target map/scope, import pipelines.
+- Milestone 6-8: decoder/browser workflows, scanner/OOB/sequencer, extension host.
+- Final hardening: preload IPC boundaries, performance, regression/security pass.
 
-### Manual Checks
-- Renderer content appears correctly.
-- React component tree mounts and updates correctly.
-- Chakra styles and layout tokens render as expected.
-- No missing asset errors.
-- Renderer JavaScript runs without console errors.
-- App close behavior works on Windows.
+See detailed sequencing and exit criteria in:
+- `SENTINEL_IMPLEMENTATION_PLAN.md`
+
+## Security Notes
+- Keep renderer free of direct Node.js imports.
+- Expose privileged operations through `preload.js` only.
+- Keep BrowserWindow security options explicit:
+   - `contextIsolation: true`
+   - `nodeIntegration: false`
+   - `sandbox: true`
 
 ## Troubleshooting
 
 ### App fails to start
-- Rebuild from clean state:
 
 ```bash
 npx gulp clean
@@ -139,14 +165,7 @@ npm run start
 
 ### UI changes not visible
 - Confirm watch/build is running.
-- Verify output in `dist/renderer/` updated.
+- Verify new artifacts in `dist/renderer/`.
 
 ### Main process changes not reflected
 - Confirm `src/main/**` was copied to `dist/main/` by build/watch.
-
-## Contributing
-1. Make changes in `src/` or `gulpfile.js`.
-2. Rebuild and validate startup.
-3. Keep dependency placement correct:
-   - runtime packages -> `dependencies`
-   - build/dev tools -> `devDependencies`
