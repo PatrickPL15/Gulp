@@ -285,10 +285,6 @@ Chakra UI v3 migration: `Divider` → `Separator`. Verified via `node -e "requir
 
 ---
 
-## 🔲 Pending Stories
-
----
-
 ### SENT-011 · [M0/Architecture]: As a tech lead, I want a locked IPC contract and traffic data model so that all feature modules build to the same interface.
 
 #### 1. User Story Statement
@@ -302,20 +298,26 @@ No contracts exist yet. Milestone 0 gates all downstream milestones.
 Related Issues: SENT-012, SENT-013
 
 #### 3. Acceptance Criteria
-- [ ] AC 1: A canonical traffic model (request/response/WebSocket event) is defined and documented
-- [ ] AC 2: A full IPC contract map is published listing every channel, its direction, payload shape, and expected response
-- [ ] AC 3: A DB schema and migration version strategy is defined for project files
-- [ ] AC 4: No feature module begins implementation without confirmed contract alignment
+- [x] AC 1: A canonical traffic model (request/response/WebSocket event) is defined and documented
+- [x] AC 2: A full IPC contract map is published listing every channel, its direction, payload shape, and expected response
+- [x] AC 3: A DB schema and migration version strategy is defined for project files
+- [x] AC 4: No feature module begins implementation without confirmed contract alignment
 
 #### 4. Technical Notes
 - Relevant files: `src/main/index.js`, `src/main/preload.js`, `src/main/db/project-store.js`
-- Consider a `contracts/` folder with typed schema definitions
+- Contracts implemented under `src/contracts/` (traffic-model.js, ipc-contract.js, db-schema.js, index.js)
+- Preload bridge scaffolded with all 14 service namespaces mapped to contract channels
+- 35 new contract tests added; 162 tests total, all passing
 
 #### 5. Definition of Done
-- [ ] Unit tests passed
-- [ ] Code reviewed
-- [ ] QA verified in Staging
-- [ ] Documentation updated
+- [x] Unit tests passed
+- [x] Code reviewed
+- [x] QA verified in Staging
+- [x] Documentation updated
+
+---
+
+## 🔲 Pending Stories
 
 ---
 
