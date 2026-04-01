@@ -1,5 +1,7 @@
 /.github
 /.vscode
+/node_modules
+/dist
 
 # Instruction and guide documents
 /README.md

@@ -1,4 +1,3 @@
-console.log(`ELECTRON_RUN_AS_NODE: ${process.env.ELECTRON_RUN_AS_NODE}`);
 const electron = require('electron');
 const { app, BrowserWindow } = electron;
 const path = require('path');
@@ -8,6 +7,9 @@ function createWindow () {
     width: 800,
     height: 600,
     webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
       preload: path.join(__dirname, 'preload.js')
     }
   });
