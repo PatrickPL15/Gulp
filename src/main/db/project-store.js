@@ -1,9 +1,21 @@
-/*
-TODO(Sentinel): Project persistence store
-- Save project data in real-time to local database files.
-- Persist traffic history, rules, scope, and module state.
-- Add crash-safe writes and recovery integrity checks.
-*/
+/**
+ * @file project-store.js
+ * Sentinel project persistence stub.
+ *
+ * TODO(M1): Implement using better-sqlite3 with WAL mode.
+ * Schema and migration logic are defined in src/contracts/db-schema.js.
+ * Initialise by calling runMigrations(db) after opening the database.
+ *
+ * See SENT-012 for full acceptance criteria.
+ */
 
+'use strict';
 
-module.exports = {};
+const { CURRENT_VERSION, MIGRATIONS, runMigrations, rowToProjectMeta } = require('../../contracts/db-schema');
+
+module.exports = {
+  CURRENT_VERSION,
+  MIGRATIONS,
+  runMigrations,
+  rowToProjectMeta,
+};
