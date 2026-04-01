@@ -29,7 +29,7 @@ const WsDirection = {
   SERVER_TO_CLIENT: 's2c',
 };
 
-/** @enum {string} WebSocket opcode values (RFC 6455 §11.8). */
+/** @enum {number} WebSocket opcode values (RFC 6455 §11.8). */
 const WsOpcode = {
   CONTINUATION: 0x0,
   TEXT:         0x1,
