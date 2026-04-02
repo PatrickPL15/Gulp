@@ -20,3 +20,4 @@ Known operational and implementation edge cases for this repository.
 
 ## Append-Only Updates
 - 2026-04-01: Added migration-chain, DB-open cleanup, and jsdom resolution failure patterns observed in this repo.
+- 2026-04-02: History queries may fallback to in-memory mode when project-store bootstrap fails; verify persistent mode with reopen tests and avoid assuming durability from runtime-only checks.

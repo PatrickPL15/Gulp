@@ -3,9 +3,15 @@
 ## Objective
 Deliver the Sentinel Web Security Suite in milestone order with a stable, testable path from MVP proxy capabilities to advanced scanning and extensibility.
 
+## Status Snapshot (2026-04-02)
+- Milestone 1 is complete: project persistence and CA lifecycle are implemented and tested.
+- Milestone 2 is complete: intercepting proxy, rules engine, persistent history, and history-panel queue/search workflows are implemented.
+- Bridge-level handoff from history into repeater and intruder services is implemented to support downstream module integration.
+- Remaining milestones (3+) focus on deeper Repeater/Intruder UX, scope/scanner modules, and advanced tooling.
+
 ## Assumptions
 - Existing Electron + Gulp + React + Chakra foundation remains in place.
-- Feature stubs and TODO files already exist under `src/main/proxy/`, `src/main/db/`, `src/main/certs/`, and `src/renderer/js/components/sentinel/`.
+- Advanced feature stubs and TODO files remain under `src/main/proxy/` and `src/renderer/js/components/sentinel/` for milestones 3+.
 - Estimates below are for one experienced full-stack engineer and represent implementation effort only (not external audits).
 
 ## Priority Order
