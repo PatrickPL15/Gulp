@@ -104,6 +104,13 @@ contextBridge.exposeInMainWorld('sentinel', {
     process:   (args)   => invoke('decoder:process', args),
   },
 
+  // --- Embedded browser --------------------------------------------------
+  browser: {
+    createSession: (args) => invoke('browser:session:create', args),
+    listSessions:  ()     => invoke('browser:sessions:list', {}),
+    navigate:      (args) => invoke('browser:navigate', args),
+  },
+
   // --- OOB service ------------------------------------------------------
   oob: {
     createPayload: (args) => invoke('oob:payload:create', args),

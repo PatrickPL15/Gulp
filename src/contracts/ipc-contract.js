@@ -13,7 +13,7 @@
  *   - payload:  shape of the argument object sent with the call.
  *   - response: shape of the resolved value (invoke channels only).
  *
- * Schema version: 4
+ * Schema version: 6
  */
 
 'use strict';
@@ -309,6 +309,31 @@ const CHANNELS = [
   },
 
   // -------------------------------------------------------------------------
+  // Embedded browser
+  // -------------------------------------------------------------------------
+  {
+    channel:   'browser:session:create',
+    direction: 'invoke',
+    payload:   '{ name?: string }',
+    response:  '{ session: BrowserSession }',
+    notes:     'Creates a browser session for the embedded browser panel.',
+  },
+  {
+    channel:   'browser:sessions:list',
+    direction: 'invoke',
+    payload:   '{}',
+    response:  '{ items: BrowserSession[] }',
+    notes:     'Lists embedded browser sessions.',
+  },
+  {
+    channel:   'browser:navigate',
+    direction: 'invoke',
+    payload:   '{ sessionId: string, url: string }',
+    response:  '{ session: BrowserSession, response: HttpResponse }',
+    notes:     'Navigates a session URL through the Sentinel proxy.',
+  },
+
+  // -------------------------------------------------------------------------
   // Out-of-band (OOB) service
   // -------------------------------------------------------------------------
   {
@@ -509,7 +534,7 @@ function getPushChannels() {
 // ---------------------------------------------------------------------------
 
 module.exports = {
-  SCHEMA_VERSION: 5,
+  SCHEMA_VERSION: 6,
   CHANNELS,
   getChannel,
   getChannelsForService,

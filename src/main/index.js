@@ -1,5 +1,5 @@
 const electron = require('electron');
-const { app, BrowserWindow, ipcMain } = electron;
+const { app, BrowserWindow, ipcMain, dialog } = electron;
 const path = require('path');
 const caManager = require('./certs/ca-manager');
 const projectStore = require('./db/project-store');
@@ -11,6 +11,8 @@ const repeaterService = require('./proxy/repeater-service');
 const intruderEngine = require('./proxy/intruder-engine');
 const targetMapper = require('./proxy/target-mapper');
 const scannerEngine = require('./proxy/scanner-engine');
+const decoderService = require('./proxy/decoder-service');
+const embeddedBrowserService = require('./proxy/embedded-browser-service');
 
 let mainWindowRef = null;
 let shutdownInProgress = null;
@@ -30,6 +32,21 @@ function sendToRenderer(channel, payload) {
     return;
   }
   target.webContents.send(channel, payload);
+}
+
+async function pickImportFile({ title, filters }) {
+  const focusedWindow = BrowserWindow.getFocusedWindow() || getActiveWindow() || null;
+  const result = await dialog.showOpenDialog(focusedWindow, {
+    title,
+    properties: ['openFile'],
+    filters,
+  });
+
+  if (!result || result.canceled || !Array.isArray(result.filePaths) || result.filePaths.length === 0) {
+    return null;
+  }
+
+  return result.filePaths[0];
 }
 
 function registerProxyHandlers() {
@@ -140,10 +157,19 @@ function registerProxyHandlers() {
   });
 
   ipcMain.handle('scope:import:burp', async (_event, args = {}) => {
-    if (!args.filePath) {
-      throw new Error('scope:import:burp requires filePath');
+    const selectedPath = await pickImportFile({
+      title: 'Import Burp Scope Configuration',
+      filters: [
+        { name: 'Burp Config', extensions: ['xml', 'json'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    });
+
+    if (!selectedPath) {
+      return { ok: false, imported: 0, warnings: ['Import cancelled by user.'] };
     }
-    const result = targetMapper.importBurpFromFile(args.filePath);
+
+    const result = await targetMapper.importBurpFromFile(selectedPath);
     await projectStore.replaceScopeRules(result.rules || []);
     return {
       ok: true,
@@ -153,10 +179,19 @@ function registerProxyHandlers() {
   });
 
   ipcMain.handle('scope:import:csv', async (_event, args = {}) => {
-    if (!args.filePath) {
-      throw new Error('scope:import:csv requires filePath');
+    const selectedPath = await pickImportFile({
+      title: 'Import CSV Scope Configuration',
+      filters: [
+        { name: 'CSV Files', extensions: ['csv'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    });
+
+    if (!selectedPath) {
+      return { ok: false, imported: 0, warnings: ['Import cancelled by user.'] };
     }
-    const result = targetMapper.importCsvFromFile(args.filePath, args.format || 'generic');
+
+    const result = await targetMapper.importCsvFromFile(selectedPath, args.format || 'generic');
     await projectStore.replaceScopeRules(result.rules || []);
     return {
       ok: true,
@@ -175,6 +210,22 @@ function registerProxyHandlers() {
 
   ipcMain.handle('scanner:results', async (_event, args = {}) => {
     return scannerEngine.results(args);
+  });
+
+  ipcMain.handle('decoder:process', async (_event, args = {}) => {
+    return decoderService.process(args);
+  });
+
+  ipcMain.handle('browser:session:create', async (_event, args = {}) => {
+    return { session: embeddedBrowserService.createSession(args) };
+  });
+
+  ipcMain.handle('browser:sessions:list', async () => {
+    return embeddedBrowserService.listSessions();
+  });
+
+  ipcMain.handle('browser:navigate', async (_event, args = {}) => {
+    return embeddedBrowserService.navigate(args);
   });
 
   interceptEngine.on('request', request => {
@@ -292,6 +343,11 @@ async function shutdownServices() {
 }
 
 app.whenReady().then(() => {
+  embeddedBrowserService.setProxyAdapters({
+    getProxyStatus: async () => protocolSupport.getStatus(),
+    startProxy: async (args = {}) => protocolSupport.start(args),
+  });
+
   caManager.ensureCaArtifacts();
   openDefaultProjectStore().catch(() => {
     // If persistence bootstrap fails, keep runtime usable with in-memory history.

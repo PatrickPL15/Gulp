@@ -68,6 +68,7 @@ describe('Preload Bridge API Surface', () => {
 
     expect(sentinel).toBeDefined();
     expect(Object.keys(sentinel).sort()).toEqual([
+      'browser',
       'ca',
       'decoder',
       'extensions',
@@ -240,6 +241,19 @@ describe('Preload Bridge - all invoke channels', () => {
     decoder.process({ input: 'aGVsbG8=', operations: [{ op: 'base64:decode' }] });
 
     expect(ipcInvoke).toHaveBeenCalledWith('decoder:process', { input: 'aGVsbG8=', operations: [{ op: 'base64:decode' }] });
+  });
+
+  it('browser namespace uses correct channels', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { browser } = exposed.sentinel;
+
+    browser.createSession({ name: 'Primary' });
+    browser.listSessions();
+    browser.navigate({ sessionId: 'sess-1', url: 'https://example.com' });
+
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:session:create', { name: 'Primary' });
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:sessions:list', {});
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:navigate', { sessionId: 'sess-1', url: 'https://example.com' });
   });
 
   it('oob namespace: all invoke methods use correct channels', () => {

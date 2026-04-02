@@ -15,6 +15,7 @@ const modules = [
   'Target',
   'Scanner',
   'Decoder',
+  'Embedded Browser',
   'Extensions',
 ];
 
@@ -27,6 +28,7 @@ const moduleDescriptions = {
   Target:     'Manage scope and navigate discovered surface area.',
   Scanner:    'Run passive/active checks and review findings.',
   Decoder:    'Encode/decode payloads and inspect transformed values.',
+  'Embedded Browser': 'Browse targets through Sentinel proxy without external browser setup.',
   Extensions: 'Manage custom tools and extension-provided workflows.',
 };
 

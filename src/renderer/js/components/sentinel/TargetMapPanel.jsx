@@ -39,8 +39,6 @@ function TargetMapPanel() {
     cidr: '',
     ip: '',
   });
-  const [burpPath, setBurpPath] = React.useState('');
-  const [csvPath, setCsvPath] = React.useState('');
   const [csvFormat, setCsvFormat] = React.useState('hackerone');
   const [statusText, setStatusText] = React.useState('');
   const [errorText, setErrorText] = React.useState('');
@@ -139,7 +137,11 @@ function TargetMapPanel() {
       if (!sentinel || !sentinel.scope) {
         return;
       }
-      const result = await sentinel.scope.importBurp({ filePath: burpPath });
+      const result = await sentinel.scope.importBurp({});
+      if (!result || result.ok === false) {
+        setStatusText('Burp import cancelled.');
+        return;
+      }
       await loadScope();
       await loadSitemap();
       setStatusText(`Imported ${result.imported || 0} Burp scope entries.`);
@@ -156,7 +158,11 @@ function TargetMapPanel() {
       if (!sentinel || !sentinel.scope) {
         return;
       }
-      const result = await sentinel.scope.importCsv({ filePath: csvPath, format: csvFormat });
+      const result = await sentinel.scope.importCsv({ format: csvFormat });
+      if (!result || result.ok === false) {
+        setStatusText('CSV import cancelled.');
+        return;
+      }
       await loadScope();
       await loadSitemap();
       setStatusText(`Imported ${result.imported || 0} CSV scope entries.`);
@@ -206,11 +212,11 @@ function TargetMapPanel() {
           <Text fontWeight='semibold' mb={2}>Import Scope Rules</Text>
           <VStack align='stretch' spacing={2}>
             <HStack>
-              <Input placeholder='Burp config file path (.xml/.json)' value={burpPath} onChange={event => setBurpPath(event.target.value)} />
+              <Text fontSize='sm' color='fg.muted' flex='1'>Choose a Burp XML/JSON file in the system file picker.</Text>
               <Button size='sm' variant='outline' onClick={importBurp}>Import Burp</Button>
             </HStack>
             <HStack>
-              <Input placeholder='CSV file path' value={csvPath} onChange={event => setCsvPath(event.target.value)} />
+              <Text fontSize='sm' color='fg.muted' flex='1'>Choose a CSV file in the system file picker.</Text>
               <Button
                 size='sm'
                 variant={csvFormat === 'hackerone' ? 'solid' : 'outline'}

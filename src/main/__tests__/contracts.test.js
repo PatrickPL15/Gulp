@@ -219,7 +219,7 @@ describe('contracts/ipc-contract', () => {
   it('covers all expected service namespaces', () => {
     const services = [
       'proxy', 'history', 'rules', 'repeater', 'intruder',
-      'target', 'scope', 'scanner', 'decoder', 'oob',
+      'target', 'scope', 'scanner', 'decoder', 'browser', 'oob',
       'sequencer', 'extensions', 'project', 'ca',
     ];
     for (const svc of services) {

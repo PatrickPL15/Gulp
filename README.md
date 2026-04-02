@@ -6,7 +6,7 @@ Desktop security-workbench foundation built with Electron (main process), React 
 - Electron + renderer scaffold is running from built output (`dist/main/index.js`).
 - Chakra UI integration is in place with theme config in `src/renderer/js/theme.js`.
 - Vitest test setup exists (`test`, `test:ui`, `test:coverage` scripts).
-- Sentinel M1-M5 capabilities are implemented: CA lifecycle, intercepting proxy, rules, persistent history, Repeater response viewers, Intruder payload attacks, and target/scope management.
+- Sentinel M1-M6 capabilities are implemented: CA lifecycle, intercepting proxy, rules, persistent history, Repeater response viewers, Intruder payload attacks, target/scope management, and decoder/embedded-browser workflows.
 - Latest milestone validation snapshot includes SEN-018 scope suites plus proxy/persistence regression suites passing.
 - Sentinel roadmap and checklist are tracked in:
    - `APP_COMPLETION_AND_TEST_CHECKLIST.md`
@@ -55,9 +55,9 @@ Desktop security-workbench foundation built with Electron (main process), React 
 │  │  │  ├─ scanner-engine.js              (baseline runtime with scope-aware target filtering)
 │  │  │  ├─ oob-service.js                 (TODO scaffold)
 │  │  │  ├─ sequencer-service.js           (TODO scaffold)
-│  │  │  ├─ decoder-service.js             (TODO scaffold)
+│  │  │  ├─ decoder-service.js             (chained transform engine with reversible execution)
 │  │  │  ├─ extension-host.js              (TODO scaffold)
-│  │  │  └─ embedded-browser-service.js    (TODO scaffold)
+│  │  │  └─ embedded-browser-service.js    (proxy-routed in-app browser session service)
 │  │  └─ __tests__/
 │  └─ renderer/
 │     ├─ index.html
@@ -80,9 +80,9 @@ Desktop security-workbench foundation built with Electron (main process), React 
 │              ├─ ScannerPanel.jsx         (TODO scaffold)
 │              ├─ OobPanel.jsx             (TODO scaffold)
 │              ├─ SequencerPanel.jsx       (TODO scaffold)
-│              ├─ DecoderPanel.jsx         (TODO scaffold)
+│              ├─ DecoderPanel.jsx         (chain editor with intermediate output and reverse mode)
 │              ├─ ExtensionsPanel.jsx      (TODO scaffold)
-│              ├─ EmbeddedBrowserPanel.jsx (TODO scaffold)
+│              ├─ EmbeddedBrowserPanel.jsx (session/address bar panel with embedded response preview)
 │              └─ __tests__/
 └─ dist/ (generated)
 ```
@@ -136,7 +136,7 @@ The following capability groups are planned and tracked in checklist/plan docs:
 3. Intruder automation (payload engines + richer result analytics).
 4. Scope and target mapping. (completed in M5)
 5. Advanced scanner/OOB/sequencer workflows.
-6. Decoder and embedded browser integration.
+6. Decoder and embedded browser integration. (completed in M6)
 7. Extension host and hardening.
 8. Burp Suite project configuration import.
 9. CSV ingestion for external scope/config exports (for example HackerOne).

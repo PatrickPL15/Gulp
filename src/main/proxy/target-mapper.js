@@ -8,7 +8,12 @@ SEN-018 Target mapping and scope enforcement
 'use strict';
 
 const fs = require('node:fs');
+const path = require('node:path');
 const { randomUUID } = require('node:crypto');
+
+const MAX_IMPORT_FILE_BYTES = 2 * 1024 * 1024;
+const BURP_EXTENSIONS = new Set(['.xml', '.json']);
+const CSV_EXTENSIONS = new Set(['.csv']);
 
 function clone(value) {
 	return JSON.parse(JSON.stringify(value));
@@ -20,6 +25,46 @@ function normalizeText(value) {
 
 function normalizeHost(host) {
 	return normalizeText(host).toLowerCase();
+}
+
+function normalizeRuleKind(rawKind, fallback = 'include') {
+	const value = normalizeText(rawKind).toLowerCase();
+	if (!value) {
+		return fallback;
+	}
+
+	if (['exclude', 'excluded', 'deny', 'block', 'out', 'out-of-scope', 'false', '0', 'no'].includes(value)) {
+		return 'exclude';
+	}
+
+	if (['include', 'included', 'allow', 'in', 'in-scope', 'true', '1', 'yes'].includes(value)) {
+		return 'include';
+	}
+
+	return fallback;
+}
+
+async function readImportFile(filePath, allowedExtensions) {
+	if (!filePath || typeof filePath !== 'string') {
+		throw new Error('import requires a file path');
+	}
+
+	const resolvedPath = path.resolve(filePath);
+	const extension = path.extname(resolvedPath).toLowerCase();
+	if (!allowedExtensions.has(extension)) {
+		throw new Error(`unsupported import file extension: ${extension || 'none'}`);
+	}
+
+	const stat = await fs.promises.stat(resolvedPath);
+	if (!stat.isFile()) {
+		throw new Error('import path must point to a file');
+	}
+
+	if (stat.size > MAX_IMPORT_FILE_BYTES) {
+		throw new Error(`import file exceeds ${MAX_IMPORT_FILE_BYTES} byte limit`);
+	}
+
+	return fs.promises.readFile(resolvedPath, 'utf8');
 }
 
 function parseAuthority(raw) {
@@ -154,7 +199,7 @@ function extractTarget(input = {}) {
 
 function compileRule(rule = {}) {
 	const id = normalizeText(rule.id) || randomUUID();
-	const kind = rule.kind === 'exclude' ? 'exclude' : 'include';
+	const kind = normalizeRuleKind(rule.kind, 'include');
 	const host = normalizeHost(rule.host || rule.domain);
 	const path = normalizeText(rule.path || '/');
 	const protocol = normalizeText(rule.protocol).toLowerCase();
@@ -545,7 +590,7 @@ class TargetMapper {
 			const port = row.port ? Number(row.port) : null;
 			const cidr = row.cidr || row.range || '';
 			const ip = row.ip || '';
-			let kind = row.kind || row.type || row.include || 'include';
+			let kind = normalizeRuleKind(row.kind || row.type || row.include, 'include');
 
 			if (isHackerOne) {
 				const eligibility = normalizeText(row.eligible_for_bounty || row.eligible || '').toLowerCase();
@@ -576,15 +621,15 @@ class TargetMapper {
 		return { rules, warnings };
 	}
 
-	importBurpFromFile(filePath) {
-		const raw = fs.readFileSync(String(filePath), 'utf8');
+	async importBurpFromFile(filePath) {
+		const raw = await readImportFile(filePath, BURP_EXTENSIONS);
 		const parsed = this.parseBurpImport(raw);
 		this.setScopeRules([...this.getScopeRules(), ...parsed.rules]);
 		return { ok: true, imported: parsed.rules.length, warnings: parsed.warnings, rules: this.getScopeRules() };
 	}
 
-	importCsvFromFile(filePath, format = 'generic') {
-		const raw = fs.readFileSync(String(filePath), 'utf8');
+	async importCsvFromFile(filePath, format = 'generic') {
+		const raw = await readImportFile(filePath, CSV_EXTENSIONS);
 		const parsed = this.parseCsvImport(raw, format);
 		this.setScopeRules([...this.getScopeRules(), ...parsed.rules]);
 		return { ok: true, imported: parsed.rules.length, warnings: parsed.warnings, rules: this.getScopeRules() };

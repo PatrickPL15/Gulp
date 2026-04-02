@@ -21,6 +21,7 @@ const IntruderPanel = require('./sentinel/IntruderPanel');
 const TargetMapPanel = require('./sentinel/TargetMapPanel');
 const ScannerPanel = require('./sentinel/ScannerPanel');
 const DecoderPanel = require('./sentinel/DecoderPanel');
+const EmbeddedBrowserPanel = require('./sentinel/EmbeddedBrowserPanel');
 const ExtensionsPanel = require('./sentinel/ExtensionsPanel');
 const { modules, moduleDescriptions } = require('./app-constants');
 
@@ -63,6 +64,11 @@ const panelStatusFields = {
     { label: 'Encoding chain', key: 'encodingType' },
     { label: 'Chain steps', key: 'chainLength' }
   ],
+  'Embedded Browser': [
+    { label: 'Open sessions', key: 'openSessions' },
+    { label: 'Last URL', key: 'lastUrl' },
+    { label: 'Proxy route', key: 'proxyRoute' }
+  ],
   Extensions: [
     { label: 'Loaded', key: 'loadedCount' },
     { label: 'Active', key: 'activeCount' }
@@ -78,6 +84,7 @@ const defaultPanelStatus = {
   Target: { scopeEntries: 0, discoveredHosts: 0, scopeMode: 'in-scope-only' },
   Scanner: { findings: 0, activeScans: 0, lastScanTarget: '\u2014' },
   Decoder: { encodingType: 'URL', chainLength: 1 },
+  'Embedded Browser': { openSessions: 0, lastUrl: '\u2014', proxyRoute: 'auto' },
   Extensions: { loadedCount: 0, activeCount: 0 }
 };
 
@@ -90,6 +97,7 @@ const modulePanels = {
   Target: TargetMapPanel,
   Scanner: ScannerPanel,
   Decoder: DecoderPanel,
+  'Embedded Browser': EmbeddedBrowserPanel,
   Extensions: ExtensionsPanel
 };
 
