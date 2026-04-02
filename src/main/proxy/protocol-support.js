@@ -116,6 +116,106 @@ function resolveTargetUrl(request) {
 	return new URL(`${protocol}//${authority}${path}`);
 }
 
+/**
+ * Standalone HTTP forwarder.  Used by both ProtocolSupport and RepeaterService.
+ * Returns a response object that includes a `rawBody` Buffer and `rawBodyBase64`
+ * for callers that need raw bytes (hex viewer, binary replay).
+ *
+ * @param {object} request - Canonical HttpRequest model.
+ * @returns {Promise<object>} Canonical HttpResponse plus `rawBody` Buffer.
+ */
+const FORWARD_TIMEOUT_MS = 30_000;
+const MAX_RESPONSE_BYTES = 25 * 1024 * 1024; // 25 MB
+
+async function forwardRequest(request) {
+	const requestStart = Date.now();
+	const targetUrl = resolveTargetUrl(request);
+	const client = targetUrl.protocol === 'https:' ? https : http;
+	const headers = normalizeHeaders(request.headers || {});
+
+	delete headers['proxy-connection'];
+	headers.host = targetUrl.host;
+
+	let bodyBuffer = Buffer.alloc(0);
+	if (typeof request.body === 'string') {
+		bodyBuffer = Buffer.from(request.body, 'utf8');
+	} else if (typeof request.rawBodyBase64 === 'string' && request.rawBodyBase64.length > 0) {
+		try {
+			bodyBuffer = Buffer.from(request.rawBodyBase64, 'base64');
+		} catch {
+			bodyBuffer = Buffer.alloc(0);
+		}
+	}
+
+	delete headers['content-length'];
+	delete headers['transfer-encoding'];
+	if (bodyBuffer.length > 0) {
+		headers['content-length'] = String(bodyBuffer.length);
+	}
+
+	return new Promise((resolve, reject) => {
+		const upstreamReq = client.request({
+			protocol: targetUrl.protocol,
+			hostname: targetUrl.hostname,
+			port: targetUrl.port || (targetUrl.protocol === 'https:' ? 443 : 80),
+			method: request.method || 'GET',
+			path: `${targetUrl.pathname}${targetUrl.search}`,
+			headers,
+			timeout: FORWARD_TIMEOUT_MS,
+		}, upstreamRes => {
+			const ttfb = Date.now() - requestStart;
+			const chunks = [];
+			let accumulated = 0;
+
+			upstreamRes.on('data', chunk => {
+				accumulated += chunk.length;
+				if (accumulated > MAX_RESPONSE_BYTES) {
+					upstreamReq.destroy(new Error('Upstream response exceeds 25 MB size limit'));
+					return;
+				}
+				chunks.push(Buffer.from(chunk));
+			});
+			upstreamRes.on('end', () => {
+				const rawBody = Buffer.concat(chunks);
+				const contentType = String(upstreamRes.headers['content-type'] || '').split(';')[0] || '';
+				const decodedBody = isTextualContentType(contentType)
+					? rawBody.toString('utf8')
+					: null;
+				const timestamp = Date.now();
+				resolve({
+					id: randomUUID(),
+					requestId: request.id,
+					connectionId: request.connectionId,
+					timestamp,
+					statusCode: upstreamRes.statusCode || 502,
+					statusMessage: upstreamRes.statusMessage || 'Bad Gateway',
+					headers: normalizeHeaders(upstreamRes.headers),
+					contentType,
+					body: decodedBody,
+					bodyLength: rawBody.length,
+					rawBodyBase64: rawBody.length > 0 ? rawBody.toString('base64') : null,
+					timings: {
+						sendStart: 0,
+						ttfb,
+						total: timestamp - requestStart,
+					},
+					rawBody,
+				});
+			});
+		});
+
+		upstreamReq.on('error', reject);
+		upstreamReq.on('timeout', () => {
+			upstreamReq.destroy(new Error(`Upstream request timed out after ${FORWARD_TIMEOUT_MS / 1000} seconds`));
+		});
+
+		if (bodyBuffer.length > 0) {
+			upstreamReq.write(bodyBuffer);
+		}
+		upstreamReq.end();
+	});
+}
+
 class ProtocolSupport {
 	constructor(options = {}) {
 		this.interceptEngine = options.interceptEngine || interceptEngineModule;
@@ -278,80 +378,7 @@ class ProtocolSupport {
 	}
 
 	async forwardHttpRequest(request) {
-		const requestStart = Date.now();
-		const targetUrl = resolveTargetUrl(request);
-		const client = targetUrl.protocol === 'https:' ? https : http;
-		const headers = normalizeHeaders(request.headers || {});
-
-		delete headers['proxy-connection'];
-		headers.host = targetUrl.host;
-
-		let bodyBuffer = Buffer.alloc(0);
-		if (typeof request.body === 'string') {
-			bodyBuffer = Buffer.from(request.body, 'utf8');
-		} else if (typeof request.rawBodyBase64 === 'string' && request.rawBodyBase64.length > 0) {
-			try {
-				bodyBuffer = Buffer.from(request.rawBodyBase64, 'base64');
-			} catch {
-				bodyBuffer = Buffer.alloc(0);
-			}
-		}
-
-		delete headers['content-length'];
-		delete headers['transfer-encoding'];
-		if (bodyBuffer.length > 0) {
-			headers['content-length'] = String(bodyBuffer.length);
-		}
-
-		return new Promise((resolve, reject) => {
-			const upstreamReq = client.request({
-				protocol: targetUrl.protocol,
-				hostname: targetUrl.hostname,
-				port: targetUrl.port || (targetUrl.protocol === 'https:' ? 443 : 80),
-				method: request.method || 'GET',
-				path: `${targetUrl.pathname}${targetUrl.search}`,
-				headers,
-			}, upstreamRes => {
-				const ttfb = Date.now() - requestStart;
-				const chunks = [];
-
-				upstreamRes.on('data', chunk => chunks.push(Buffer.from(chunk)));
-				upstreamRes.on('end', () => {
-					const rawBody = Buffer.concat(chunks);
-					const contentType = String(upstreamRes.headers['content-type'] || '').split(';')[0] || '';
-					const decodedBody = isTextualContentType(contentType)
-						? rawBody.toString('utf8')
-						: null;
-					const timestamp = Date.now();
-					const response = {
-						id: randomUUID(),
-						requestId: request.id,
-						connectionId: request.connectionId,
-						timestamp,
-						statusCode: upstreamRes.statusCode || 502,
-						statusMessage: upstreamRes.statusMessage || 'Bad Gateway',
-						headers: normalizeHeaders(upstreamRes.headers),
-						contentType,
-						body: decodedBody,
-						bodyLength: rawBody.length,
-						timings: {
-							sendStart: 0,
-							ttfb,
-							total: timestamp - requestStart,
-						},
-						rawBody,
-					};
-					resolve(response);
-				});
-			});
-
-			upstreamReq.on('error', reject);
-
-			if (bodyBuffer.length > 0) {
-				upstreamReq.write(bodyBuffer);
-			}
-			upstreamReq.end();
-		});
+		return forwardRequest(request);
 	}
 }
 
@@ -364,3 +391,4 @@ const defaultProtocolSupport = createProtocolSupport();
 module.exports = defaultProtocolSupport;
 module.exports.ProtocolSupport = ProtocolSupport;
 module.exports.createProtocolSupport = createProtocolSupport;
+module.exports.forwardRequest = forwardRequest;

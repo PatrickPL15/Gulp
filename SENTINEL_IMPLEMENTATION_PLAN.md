@@ -6,8 +6,11 @@ Deliver the Sentinel Web Security Suite in milestone order with a stable, testab
 ## Status Snapshot (2026-04-02)
 - Milestone 1 is complete: project persistence and CA lifecycle are implemented and tested.
 - Milestone 2 is complete: intercepting proxy, rules engine, persistent history, and history-panel queue/search workflows are implemented.
-- Bridge-level handoff from history into repeater and intruder services is implemented to support downstream module integration.
-- Remaining milestones (3+) focus on deeper Repeater/Intruder UX, scope/scanner modules, and advanced tooling.
+- Milestone 3 is complete: Repeater and Response Viewers (SEN-016) are fully implemented and tested.
+  - Real HTTP forwarding via extracted `forwardRequest` primitive; entry/sends history model; `rawBodyBase64` for Hex viewer.
+  - `RepeaterPanel.jsx` covers all 5 ACs: load from history, edit request, Raw/Hex/Rendered response, per-send history, side-by-side compare.
+  - IPC contract at schema v4 (`repeater:get` channel added). 9 integration tests passing.
+- Remaining milestones (4+) focus on Intruder/UX, scope/scanner modules, and advanced tooling.
 
 ## Assumptions
 - Existing Electron + Gulp + React + Chakra foundation remains in place.

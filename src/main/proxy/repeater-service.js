@@ -1,14 +1,31 @@
 /*
-SEN-015 bridge support for Repeater.
-- Accepts requests from history and stores repeater session entries.
+SEN-016 Repeater service
+- Loads captured requests into editable entries.
+- Sends modified requests to upstream and records per-entry send history.
+- Provides Raw, Hex, and Rendered response data for the panel viewer.
 */
 
 'use strict';
 
 const { randomUUID } = require('node:crypto');
+const { forwardRequest } = require('./protocol-support');
 
 function clone(value) {
 	return JSON.parse(JSON.stringify(value));
+}
+
+/**
+ * Strip rawBody (Buffer) before storing — keep rawBodyBase64 instead.
+ * @param {object} response
+ * @returns {object}
+ */
+function sanitiseResponse(response) {
+	if (!response) {
+		return null;
+	}
+	const { rawBody, ...rest } = response;
+	void rawBody;
+	return rest;
 }
 
 class RepeaterService {
@@ -16,41 +33,86 @@ class RepeaterService {
 		this.entries = [];
 	}
 
-	async send({ request } = {}) {
+	/**
+	 * Send a request, creating a new entry when no entryId is provided, or
+	 * appending a new send record to an existing entry.
+	 *
+	 * @param {{ request: object, entryId?: string }} args
+	 * @returns {Promise<{ response: object, entry: object }>}
+	 */
+	async send({ request, entryId } = {}) {
 		if (!request) {
 			throw new Error('repeater:send requires a request payload');
 		}
 
-		const now = Date.now();
-		const responseBody = 'Repeater request queued (network replay in SEN-016)';
-		const entry = {
+		const requestWithId = {
 			id: randomUUID(),
-			createdAt: now,
-			request: clone(request),
-			response: {
-				id: randomUUID(),
-				timestamp: now,
-				statusCode: 200,
-				statusMessage: 'OK',
-				headers: { 'content-type': 'text/plain; charset=utf-8' },
-				body: responseBody,
-				bodyLength: Buffer.byteLength(responseBody, 'utf8'),
-			},
+			connectionId: randomUUID(),
+			...clone(request),
 		};
 
-		this.entries.unshift(entry);
-		if (this.entries.length > 200) {
-			this.entries.splice(200);
+		const response = sanitiseResponse(await forwardRequest(requestWithId));
+		const sentAt = Date.now();
+		const sendRecord = {
+			id: randomUUID(),
+			sentAt,
+			request: clone(requestWithId),
+			response: clone(response),
+		};
+
+		let entry;
+		if (entryId) {
+			entry = this.entries.find(e => e.id === entryId);
+		}
+
+		if (entry) {
+			entry.updatedAt = sentAt;
+			entry.request = clone(requestWithId);
+			entry.response = clone(response);
+			entry.sends.unshift(sendRecord);
+		} else {
+			entry = {
+				id: randomUUID(),
+				createdAt: sentAt,
+				updatedAt: sentAt,
+				request: clone(requestWithId),
+				response: clone(response),
+				sends: [sendRecord],
+			};
+			this.entries.unshift(entry);
+			if (this.entries.length > 200) {
+				this.entries.splice(200);
+			}
 		}
 
 		return {
-			response: clone(entry.response),
-			entry: clone(entry),
+			response: clone(response),
+			entry: this._entryWithoutSends(entry),
 		};
 	}
 
-	async listHistory() {
-		return { items: clone(this.entries) };
+	/**
+	 * Get a single entry with its full send history.
+	 * @param {string} id
+	 * @returns {object | null}
+	 */
+	getEntry(id) {
+		const entry = this.entries.find(e => e.id === id);
+		return entry ? clone(entry) : null;
+	}
+
+	/**
+	 * Lightweight entry list for the sidebar (no sends arrays).
+	 * @returns {{ items: object[] }}
+	 */
+	listHistory() {
+		return { items: this.entries.map(e => this._entryWithoutSends(e)) };
+	}
+
+	_entryWithoutSends(entry) {
+		const { sends, ...rest } = entry;
+		void sends;
+		return clone(rest);
 	}
 }
 

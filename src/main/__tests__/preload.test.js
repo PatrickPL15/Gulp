@@ -179,9 +179,11 @@ describe('Preload Bridge - all invoke channels', () => {
 
     repeater.send({ request: { method: 'GET', url: 'https://example.com/' } });
     repeater.historyList();
+    repeater.get({ id: 'entry-1' });
 
     expect(ipcInvoke).toHaveBeenCalledWith('repeater:send', { request: { method: 'GET', url: 'https://example.com/' } });
     expect(ipcInvoke).toHaveBeenCalledWith('repeater:history:list', {});
+    expect(ipcInvoke).toHaveBeenCalledWith('repeater:get', { id: 'entry-1' });
   });
 
   it('intruder namespace: all invoke methods use correct channels', () => {

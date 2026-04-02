@@ -66,6 +66,7 @@ contextBridge.exposeInMainWorld('sentinel', {
   // --- Repeater ---------------------------------------------------------
   repeater: {
     send:         (args) => invoke('repeater:send', args),
+    get:          (args) => invoke('repeater:get', args),
     historyList:  ()     => invoke('repeater:history:list', {}),
   },
 
