@@ -1,7 +1,7 @@
 # Test Coverage Strategy
 
 ## Overview
-This project enforces **80%+ code coverage** on the implementation tier (non-TODO stubs). Coverage is measured on the Vitest platform with v8 provider.
+This project enforces **80%+ code coverage** on implementation modules. Coverage is measured on the Vitest platform with v8 provider.
 
 ## Coverage Breakdown
 
@@ -10,12 +10,24 @@ This project enforces **80%+ code coverage** on the implementation tier (non-TOD
   - Complete Chakra UI theme configuration with explicit color tokens
   - Testable due to pure function/data structure nature
 
-### Excluded (TODO Stubs)
-The following are intentionally excluded because they are architectural placeholders:
-- `src/main/proxy/*.js` *(13 Sentinel proxy services - TODOs)*
-- `src/main/db/*.js` *(Database persistence - TODO)*
-- `src/main/certs/*.js` *(CA lifecycle - TODO)*
-- `src/renderer/js/components/sentinel/*.jsx` *(12 UI panels - TODOs)*
+### Excluded (Remaining TODO Modules)
+The following are intentionally excluded because they remain architectural placeholders:
+- `src/main/proxy/target-mapper.js`
+- `src/main/proxy/scanner-engine.js`
+- `src/main/proxy/oob-service.js`
+- `src/main/proxy/sequencer-service.js`
+- `src/main/proxy/decoder-service.js`
+- `src/main/proxy/extension-host.js`
+- `src/main/proxy/embedded-browser-service.js`
+- `src/renderer/js/components/sentinel/RepeaterPanel.jsx`
+- `src/renderer/js/components/sentinel/IntruderPanel.jsx`
+- `src/renderer/js/components/sentinel/TargetMapPanel.jsx`
+- `src/renderer/js/components/sentinel/ScannerPanel.jsx`
+- `src/renderer/js/components/sentinel/OobPanel.jsx`
+- `src/renderer/js/components/sentinel/SequencerPanel.jsx`
+- `src/renderer/js/components/sentinel/DecoderPanel.jsx`
+- `src/renderer/js/components/sentinel/ExtensionsPanel.jsx`
+- `src/renderer/js/components/sentinel/EmbeddedBrowserPanel.jsx`
 
 These will accumulate real logic during Sentinel implementation (Milestone 0+).
 
@@ -26,9 +38,9 @@ These will accumulate real logic during Sentinel implementation (Milestone 0+).
   - *(Electron/React bootstrap code requires integration tests)*
 
 ## Test Metrics
-- **Test Files**: 10 suites
-- **Total Tests**: 83 passing
-- **Core Coverage (theme.js)**: 100%
+- **Test Files**: 15 suites
+- **Total Tests**: 141 passing
+- **Recent additions**: SEN-014 and SEN-015 proxy/history lifecycle coverage
 - **Average (measured files)**: >80%
 
 ## Running Tests
@@ -41,8 +53,8 @@ npm run test:coverage   # Coverage report
 ```
 
 ## Future Coverage Targets
-1. Sentinel Milestone 1–2: Add tests for proxy/DB/cert services → 50%+ aggregate
-2. Sentinel Milestone 3+: UI panel tests → 70%+ aggregate
+1. Sentinel Milestone 3+: Expand Repeater and Intruder behavior assertions (request replay + result modeling)
+2. Sentinel Milestone 4-6: Add module-level tests for target map/scope, scanner, and decoder flows
 3. Post-MVP: Full feature parity → 90%+ target (with integration tests)
 
 ---

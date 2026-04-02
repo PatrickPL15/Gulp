@@ -19,3 +19,4 @@ Workspace context loading and review discipline for Electron + Gulp + React.
 
 ## Append-Only Updates
 - 2026-04-01: Added explicit workflow to connect runtime findings to concrete validation commands.
+- 2026-04-02: After milestone completion, synchronize status docs (`JIRA_STORIES.md`, `README.md`, `TEST_COVERAGE.md`) in the same pass to prevent stale TODO/stub references.

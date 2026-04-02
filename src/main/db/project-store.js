@@ -331,6 +331,28 @@ class ProjectStore {
     };
   }
 
+  async getTrafficItem(id) {
+    this.ensureOpen();
+    if (!id) {
+      return null;
+    }
+
+    const row = await getAsync(
+      this.db,
+      'SELECT data FROM traffic_history WHERE id = ? LIMIT 1',
+      [id]
+    );
+
+    return row ? JSON.parse(row.data) : null;
+  }
+
+  async clearTrafficHistory() {
+    this.ensureOpen();
+    await runAsync(this.db, 'DELETE FROM traffic_history');
+    await runAsync(this.db, 'UPDATE project_meta SET updated_at = ? WHERE id = ?', [Date.now(), 'default']);
+    return { ok: true };
+  }
+
   async replaceRules(rules = []) {
     this.ensureOpen();
     await execAsync(this.db, 'BEGIN IMMEDIATE TRANSACTION;');
@@ -350,6 +372,15 @@ class ProjectStore {
       await execAsync(this.db, 'ROLLBACK;');
       throw error;
     }
+  }
+
+  async listRules() {
+    this.ensureOpen();
+    const rows = await allAsync(
+      this.db,
+      'SELECT data FROM rules ORDER BY priority ASC'
+    );
+    return rows.map(row => JSON.parse(row.data));
   }
 
   async replaceScopeRules(rules = []) {
@@ -413,6 +444,9 @@ module.exports = {
   getProjectMeta: () => defaultStore.getProjectMeta(),
   upsertTrafficItem: item => defaultStore.upsertTrafficItem(item),
   queryTraffic: args => defaultStore.queryTraffic(args),
+  getTrafficItem: id => defaultStore.getTrafficItem(id),
+  clearTrafficHistory: () => defaultStore.clearTrafficHistory(),
+  listRules: () => defaultStore.listRules(),
   replaceRules: rules => defaultStore.replaceRules(rules),
   replaceScopeRules: rules => defaultStore.replaceScopeRules(rules),
   setModuleState: (moduleName, state) => defaultStore.setModuleState(moduleName, state),

@@ -20,3 +20,4 @@ Repository-level coding and review preferences.
 
 ## Append-Only Updates
 - 2026-04-01: Added explicit preference for regression-test-first fixes and deterministic open/reopen persistence checks.
+- 2026-04-02: For history features, wire persistent storage at startup (`project-store` open + `history-log.setProjectStore`) and keep reopen-path tests for restart durability.

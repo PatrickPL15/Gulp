@@ -57,6 +57,7 @@ describe('contracts/traffic-model', () => {
         queryString:  '',
         headers:      {},
         body:         null,
+        rawBodyBase64: null,
         tls:          false,
         tags:         [],
         comment:      '',

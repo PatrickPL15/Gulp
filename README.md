@@ -6,7 +6,8 @@ Desktop security-workbench foundation built with Electron (main process), React 
 - Electron + renderer scaffold is running from built output (`dist/main/index.js`).
 - Chakra UI integration is in place with theme config in `src/renderer/js/theme.js`.
 - Vitest test setup exists (`test`, `test:ui`, `test:coverage` scripts).
-- Sentinel feature set is scaffolded with TODO-oriented service and UI module files.
+- Sentinel M1-M2 core capabilities are implemented: CA lifecycle, intercepting proxy, rules, persistent history, and history handoff into repeater/intruder workflows.
+- Latest validation snapshot: 15 test suites / 141 tests passing, plus successful `npm run build`.
 - Sentinel roadmap and checklist are tracked in:
    - `APP_COMPLETION_AND_TEST_CHECKLIST.md`
    - `SENTINEL_IMPLEMENTATION_PLAN.md`
@@ -42,14 +43,14 @@ Desktop security-workbench foundation built with Electron (main process), React 
 │  │  ├─ certs/
 │  │  │  └─ ca-manager.js                  (CA lifecycle service)
 │  │  ├─ db/
-│  │  │  └─ project-store.js               (TODO scaffold)
+│  │  │  └─ project-store.js               (SQLite project persistence service)
 │  │  ├─ proxy/
-│  │  │  ├─ intercept-engine.js            (TODO scaffold)
-│  │  │  ├─ history-log.js                 (TODO scaffold)
-│  │  │  ├─ protocol-support.js            (TODO scaffold)
-│  │  │  ├─ rules-engine.js                (TODO scaffold)
-│  │  │  ├─ repeater-service.js            (TODO scaffold)
-│  │  │  ├─ intruder-engine.js             (TODO scaffold)
+│  │  │  ├─ intercept-engine.js            (intercept queue + pause/edit/forward/drop)
+│  │  │  ├─ history-log.js                 (persistent queryable traffic history)
+│  │  │  ├─ protocol-support.js            (HTTP/1.1 proxy runtime)
+│  │  │  ├─ rules-engine.js                (match/replace rule execution)
+│  │  │  ├─ repeater-service.js            (history handoff bridge)
+│  │  │  ├─ intruder-engine.js             (history handoff bridge)
 │  │  │  ├─ target-mapper.js               (TODO scaffold)
 │  │  │  ├─ scanner-engine.js              (TODO scaffold)
 │  │  │  ├─ oob-service.js                 (TODO scaffold)
@@ -70,9 +71,9 @@ Desktop security-workbench foundation built with Electron (main process), React 
 │           ├─ App.jsx
 │           ├─ __tests__/
 │           └─ sentinel/
-│              ├─ DashboardShell.jsx       (TODO scaffold)
-│              ├─ ProxyPanel.jsx           (TODO scaffold)
-│              ├─ HistoryPanel.jsx         (TODO scaffold)
+│              ├─ DashboardShell.jsx       (dashboard shell + CA guidance summary)
+│              ├─ ProxyPanel.jsx           (intercept queue control and request editing)
+│              ├─ HistoryPanel.jsx         (paginated filterable history + tool handoff)
 │              ├─ RepeaterPanel.jsx        (TODO scaffold)
 │              ├─ IntruderPanel.jsx        (TODO scaffold)
 │              ├─ TargetMapPanel.jsx       (TODO scaffold)
@@ -123,14 +124,15 @@ npm run dev
 
 ## Testing Snapshot
 - Test framework is Vitest with jsdom and Testing Library.
+- Current run status: 15 suites / 141 tests passing.
 - Coverage/report strategy is documented in `TEST_COVERAGE.md`.
 
 ## TODO Scope (Sentinel)
 The following capability groups are planned and tracked in checklist/plan docs:
 
 1. Core proxy pipeline (intercept, edit, forward, rules, history).
-2. Manual tools (Repeater + response viewers).
-3. Intruder automation (payload engines + result analytics).
+2. Manual tools (Repeater response viewers and deeper editing/replay).
+3. Intruder automation (payload engines + richer result analytics).
 4. Scope and target mapping.
 5. Advanced scanner/OOB/sequencer workflows.
 6. Decoder and embedded browser integration.
