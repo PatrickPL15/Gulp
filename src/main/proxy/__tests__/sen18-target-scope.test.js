@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 const { createTargetMapper } = require('../target-mapper');
 const { createRulesEngine } = require('../rules-engine');
@@ -62,6 +65,30 @@ describe('SEN-018 target mapping and scope enforcement', () => {
     expect(parsed.rules.length).toBe(2);
     expect(parsed.rules[0].kind).toBe('include');
     expect(parsed.rules[1].kind).toBe('exclude');
+  });
+
+  it('treats generic CSV include=false rows as exclude rules', () => {
+    const mapper = createTargetMapper();
+    const csv = [
+      'host,include,path',
+      'admin.example.com,false,/',
+      'api.example.com,true,/api',
+    ].join('\n');
+
+    const parsed = mapper.parseCsvImport(csv, 'generic');
+    expect(parsed.rules.length).toBe(2);
+    expect(parsed.rules[0].kind).toBe('exclude');
+    expect(parsed.rules[1].kind).toBe('include');
+  });
+
+  it('rejects unsupported Burp import file extensions', async () => {
+    const mapper = createTargetMapper();
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sentinel-scope-import-'));
+    const invalidPath = path.join(tempDir, 'scope.txt');
+    fs.writeFileSync(invalidPath, '<scope></scope>', 'utf8');
+
+    await expect(mapper.importBurpFromFile(invalidPath)).rejects.toThrow('unsupported import file extension');
+    fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
   it('builds a site map and preserves in/out scope visibility', () => {

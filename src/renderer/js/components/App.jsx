@@ -20,7 +20,10 @@ const RepeaterPanel = require('./sentinel/RepeaterPanel');
 const IntruderPanel = require('./sentinel/IntruderPanel');
 const TargetMapPanel = require('./sentinel/TargetMapPanel');
 const ScannerPanel = require('./sentinel/ScannerPanel');
+const OobPanel = require('./sentinel/OobPanel');
+const SequencerPanel = require('./sentinel/SequencerPanel');
 const DecoderPanel = require('./sentinel/DecoderPanel');
+const EmbeddedBrowserPanel = require('./sentinel/EmbeddedBrowserPanel');
 const ExtensionsPanel = require('./sentinel/ExtensionsPanel');
 const { modules, moduleDescriptions } = require('./app-constants');
 
@@ -59,9 +62,24 @@ const panelStatusFields = {
     { label: 'Active scans', key: 'activeScans' },
     { label: 'Last scan target', key: 'lastScanTarget' }
   ],
+  OOB: [
+    { label: 'Payloads', key: 'payloads' },
+    { label: 'Callbacks', key: 'callbacks' },
+    { label: 'Last callback source', key: 'lastSource' }
+  ],
+  Sequencer: [
+    { label: 'Samples', key: 'samples' },
+    { label: 'Entropy score', key: 'entropy' },
+    { label: 'Rating', key: 'rating' }
+  ],
   Decoder: [
     { label: 'Encoding chain', key: 'encodingType' },
     { label: 'Chain steps', key: 'chainLength' }
+  ],
+  'Embedded Browser': [
+    { label: 'Open sessions', key: 'openSessions' },
+    { label: 'Last URL', key: 'lastUrl' },
+    { label: 'Proxy route', key: 'proxyRoute' }
   ],
   Extensions: [
     { label: 'Loaded', key: 'loadedCount' },
@@ -77,7 +95,10 @@ const defaultPanelStatus = {
   Intruder: { positions: 0, payloadCount: 0, attackStatus: 'Idle' },
   Target: { scopeEntries: 0, discoveredHosts: 0, scopeMode: 'in-scope-only' },
   Scanner: { findings: 0, activeScans: 0, lastScanTarget: '\u2014' },
+  OOB: { payloads: 0, callbacks: 0, lastSource: '\u2014' },
+  Sequencer: { samples: 0, entropy: '\u2014', rating: 'pending' },
   Decoder: { encodingType: 'URL', chainLength: 1 },
+  'Embedded Browser': { openSessions: 0, lastUrl: '\u2014', proxyRoute: 'auto' },
   Extensions: { loadedCount: 0, activeCount: 0 }
 };
 
@@ -89,7 +110,10 @@ const modulePanels = {
   Intruder: IntruderPanel,
   Target: TargetMapPanel,
   Scanner: ScannerPanel,
+  OOB: OobPanel,
+  Sequencer: SequencerPanel,
   Decoder: DecoderPanel,
+  'Embedded Browser': EmbeddedBrowserPanel,
   Extensions: ExtensionsPanel
 };
 

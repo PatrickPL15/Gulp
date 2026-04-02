@@ -6,8 +6,8 @@ Desktop security-workbench foundation built with Electron (main process), React 
 - Electron + renderer scaffold is running from built output (`dist/main/index.js`).
 - Chakra UI integration is in place with theme config in `src/renderer/js/theme.js`.
 - Vitest test setup exists (`test`, `test:ui`, `test:coverage` scripts).
-- Sentinel M1-M5 capabilities are implemented: CA lifecycle, intercepting proxy, rules, persistent history, Repeater response viewers, Intruder payload attacks, and target/scope management.
-- Latest milestone validation snapshot includes SEN-018 scope suites plus proxy/persistence regression suites passing.
+- Sentinel M1-M7 capabilities are implemented: CA lifecycle, intercepting proxy, rules, persistent history, Repeater response viewers, Intruder payload attacks, target/scope management, scanner/OOB/sequencer workflows, and decoder/embedded-browser workflows.
+- Latest milestone validation snapshot includes M7 scanner/OOB/sequencer suites plus proxy/persistence/renderer regression suites passing.
 - Sentinel roadmap and checklist are tracked in:
    - `APP_COMPLETION_AND_TEST_CHECKLIST.md`
    - `SENTINEL_IMPLEMENTATION_PLAN.md`
@@ -52,12 +52,12 @@ Desktop security-workbench foundation built with Electron (main process), React 
 │  │  │  ├─ repeater-service.js            (editable resend workflow + per-send history)
 │  │  │  ├─ intruder-engine.js             (payload attack runtime + progress/results)
 │  │  │  ├─ target-mapper.js               (scope rules, imports, and sitemap generation)
-│  │  │  ├─ scanner-engine.js              (baseline runtime with scope-aware target filtering)
-│  │  │  ├─ oob-service.js                 (TODO scaffold)
-│  │  │  ├─ sequencer-service.js           (TODO scaffold)
-│  │  │  ├─ decoder-service.js             (TODO scaffold)
+│  │  │  ├─ scanner-engine.js              (passive+active vulnerability checks with persisted findings)
+│  │  │  ├─ oob-service.js                 (payload listener and callback correlation service)
+│  │  │  ├─ sequencer-service.js           (token capture, entropy analysis, and CSV export)
+│  │  │  ├─ decoder-service.js             (chained transform engine with reversible execution)
 │  │  │  ├─ extension-host.js              (TODO scaffold)
-│  │  │  └─ embedded-browser-service.js    (TODO scaffold)
+│  │  │  └─ embedded-browser-service.js    (proxy-routed in-app browser session service)
 │  │  └─ __tests__/
 │  └─ renderer/
 │     ├─ index.html
@@ -77,12 +77,12 @@ Desktop security-workbench foundation built with Electron (main process), React 
 │              ├─ RepeaterPanel.jsx        (response viewers + compare workflow)
 │              ├─ IntruderPanel.jsx        (marker-based attack editor + live results)
 │              ├─ TargetMapPanel.jsx       (scope CRUD, Burp/CSV import, and in/out-scope sitemap)
-│              ├─ ScannerPanel.jsx         (TODO scaffold)
-│              ├─ OobPanel.jsx             (TODO scaffold)
-│              ├─ SequencerPanel.jsx       (TODO scaffold)
-│              ├─ DecoderPanel.jsx         (TODO scaffold)
+│              ├─ ScannerPanel.jsx         (active/passive findings orchestration panel)
+│              ├─ OobPanel.jsx             (payload generation and callback correlation panel)
+│              ├─ SequencerPanel.jsx       (capture/analyze/export entropy workflow panel)
+│              ├─ DecoderPanel.jsx         (chain editor with intermediate output and reverse mode)
 │              ├─ ExtensionsPanel.jsx      (TODO scaffold)
-│              ├─ EmbeddedBrowserPanel.jsx (TODO scaffold)
+│              ├─ EmbeddedBrowserPanel.jsx (session/address bar panel with embedded response preview)
 │              └─ __tests__/
 └─ dist/ (generated)
 ```
@@ -125,7 +125,7 @@ npm run dev
 ## Testing Snapshot
 - Test framework is Vitest with jsdom and Testing Library.
 - Current milestone validation: 6 focused M4 suites / 114 tests passing, plus successful Gulp build.
-- Current targeted backend and renderer suites pass, including SEN-018 and project-store stability checks.
+- Current targeted backend and renderer suites pass, including SEN-018 through SEN-023 and project-store stability checks.
 - Coverage/report strategy is documented in `TEST_COVERAGE.md`.
 
 ## TODO Scope (Sentinel)
@@ -135,8 +135,8 @@ The following capability groups are planned and tracked in checklist/plan docs:
 2. Manual tools (Repeater response viewers and deeper editing/replay).
 3. Intruder automation (payload engines + richer result analytics).
 4. Scope and target mapping. (completed in M5)
-5. Advanced scanner/OOB/sequencer workflows.
-6. Decoder and embedded browser integration.
+5. Advanced scanner/OOB/sequencer workflows. (completed in M7)
+6. Decoder and embedded browser integration. (completed in M6)
 7. Extension host and hardening.
 8. Burp Suite project configuration import.
 9. CSV ingestion for external scope/config exports (for example HackerOne).

@@ -68,6 +68,7 @@ describe('Preload Bridge API Surface', () => {
 
     expect(sentinel).toBeDefined();
     expect(Object.keys(sentinel).sort()).toEqual([
+      'browser',
       'ca',
       'decoder',
       'extensions',
@@ -220,6 +221,17 @@ describe('Preload Bridge - all invoke channels', () => {
     expect(ipcInvoke).toHaveBeenCalledWith('scope:import:csv', { filePath: '/tmp/scope.csv', format: 'hackerone' });
   });
 
+  it('scope import supports picker-first calls without filePath', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { scope } = exposed.sentinel;
+
+    scope.importCsv({ format: 'generic' });
+    scope.importBurp({});
+
+    expect(ipcInvoke).toHaveBeenCalledWith('scope:import:csv', { format: 'generic' });
+    expect(ipcInvoke).toHaveBeenCalledWith('scope:import:burp', {});
+  });
+
   it('scanner namespace: all invoke methods use correct channels', () => {
     const { exposed, ipcInvoke } = executePreload();
     const { scanner } = exposed.sentinel;
@@ -240,6 +252,19 @@ describe('Preload Bridge - all invoke channels', () => {
     decoder.process({ input: 'aGVsbG8=', operations: [{ op: 'base64:decode' }] });
 
     expect(ipcInvoke).toHaveBeenCalledWith('decoder:process', { input: 'aGVsbG8=', operations: [{ op: 'base64:decode' }] });
+  });
+
+  it('browser namespace uses correct channels', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { browser } = exposed.sentinel;
+
+    browser.createSession({ name: 'Primary' });
+    browser.listSessions();
+    browser.navigate({ sessionId: 'sess-1', url: 'https://example.com' });
+
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:session:create', { name: 'Primary' });
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:sessions:list', {});
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:navigate', { sessionId: 'sess-1', url: 'https://example.com' });
   });
 
   it('oob namespace: all invoke methods use correct channels', () => {

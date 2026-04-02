@@ -175,7 +175,7 @@ describe('App rendering', () => {
     expect(screen.getByText('Sentinel Workspace')).toBeTruthy();
   });
 
-  it('shows all 9 module buttons', () => {
+  it('shows all module buttons', () => {
     render(<TestApp />);
     modules.forEach(name => {
       expect(screen.getAllByText(name).length).toBeGreaterThan(0);
@@ -255,8 +255,8 @@ describe('version display logic', () => {
 // App.jsx constants validation
 // ---------------------------------------------------------------------------
 describe('App module constants', () => {
-  it('modules array has 9 items', () => {
-    expect(modules.length).toBe(9);
+  it('modules array has 10 items', () => {
+    expect(modules.length).toBe(12);
   });
 
   it('all modules have a non-empty description', () => {
