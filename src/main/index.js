@@ -11,6 +11,7 @@ const repeaterService = require('./proxy/repeater-service');
 const intruderEngine = require('./proxy/intruder-engine');
 
 let mainWindowRef = null;
+let shutdownInProgress = null;
 
 function getActiveWindow() {
   if (mainWindowRef && !mainWindowRef.isDestroyed()) {
@@ -173,6 +174,28 @@ function createWindow () {
   return mainWindow;
 }
 
+async function shutdownServices() {
+  if (shutdownInProgress) {
+    return shutdownInProgress;
+  }
+
+  shutdownInProgress = (async () => {
+    try {
+      await protocolSupport.stop();
+    } catch {
+      // Ignore stop errors during shutdown.
+    }
+
+    try {
+      await projectStore.closeProject();
+    } catch {
+      // Ignore close errors during shutdown.
+    }
+  })();
+
+  return shutdownInProgress;
+}
+
 app.whenReady().then(() => {
   caManager.ensureCaArtifacts();
   openDefaultProjectStore().catch(() => {
@@ -184,6 +207,17 @@ app.whenReady().then(() => {
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+app.on('will-quit', (event) => {
+  if (shutdownInProgress) {
+    return;
+  }
+
+  event.preventDefault();
+  shutdownServices().finally(() => {
+    app.quit();
   });
 });
 
