@@ -42,7 +42,12 @@ function matchesText(actual, condition) {
 	}
 	if (operator === 'regex') {
 		const flags = condition.flags || 'i';
-		return new RegExp(value, flags).test(text);
+		try {
+			return new RegExp(value, flags).test(text);
+		} catch {
+			// Invalid regex patterns or flags are treated as non-matches.
+			return false;
+		}
 	}
 	return text.toLowerCase().includes(value.toLowerCase());
 }
@@ -99,6 +104,9 @@ function matchesRule(rule, request) {
 function replaceInField(value, find, replaceWith) {
 	const source = asString(value);
 	const findValue = asString(find);
+	if (!findValue) {
+		return source;
+	}
 	return source.split(findValue).join(asString(replaceWith));
 }
 

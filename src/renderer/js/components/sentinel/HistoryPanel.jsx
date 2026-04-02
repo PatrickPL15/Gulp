@@ -24,8 +24,9 @@ function HistoryPanel() {
 		method: '',
 		statusCode: '',
 	});
+	const loadHistoryRef = React.useRef(null);
 
-	const loadHistory = React.useCallback(async (nextPage = page) => {
+	const loadHistory = React.useCallback(async (nextPage = 0) => {
 		const sentinel = window.sentinel;
 		if (!sentinel || !sentinel.history) {
 			setLoading(false);
@@ -59,7 +60,11 @@ function HistoryPanel() {
 		} finally {
 			setLoading(false);
 		}
-	}, [filters, page, pageSize]);
+	}, [filters, pageSize]);
+
+	React.useEffect(() => {
+		loadHistoryRef.current = loadHistory;
+	}, [loadHistory]);
 
 	React.useEffect(() => {
 		let cancelled = false;
@@ -69,13 +74,17 @@ function HistoryPanel() {
 			return undefined;
 		}
 
-		loadHistory(0);
+		if (loadHistoryRef.current) {
+			loadHistoryRef.current(0);
+		}
 
 		const unsubscribe = sentinel.history.onPush((item) => {
 			if (cancelled || !item) {
 				return;
 			}
-			loadHistory(0);
+			if (loadHistoryRef.current) {
+				loadHistoryRef.current(0);
+			}
 		});
 
 		return () => {
@@ -84,7 +93,7 @@ function HistoryPanel() {
 				unsubscribe();
 			}
 		};
-	}, [loadHistory]);
+	}, []);
 
 	async function clearHistory() {
 		const sentinel = window.sentinel;

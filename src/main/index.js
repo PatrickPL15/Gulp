@@ -82,7 +82,9 @@ function registerProxyHandlers() {
   });
 
   ipcMain.handle('rules:save', async (_event, args = {}) => {
-    const result = rulesEngine.setRules(args.rules || []);
+    const nextRules = args.rules || [];
+    await projectStore.replaceRules(nextRules);
+    const result = rulesEngine.setRules(nextRules);
     return { ok: result.ok };
   });
 
@@ -128,6 +130,9 @@ async function openDefaultProjectStore() {
   const defaultProjectPath = path.join(projectsDir, 'default.sentinel.db');
   await projectStore.openProject(defaultProjectPath, { projectName: 'Default Sentinel Project' });
   historyLog.setProjectStore(projectStore);
+
+  const persistedRules = await projectStore.listRules();
+  rulesEngine.setRules(persistedRules);
 }
 
 function registerCaHandlers() {

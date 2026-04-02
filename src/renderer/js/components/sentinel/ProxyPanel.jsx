@@ -56,10 +56,22 @@ function ProxyPanel() {
 			});
 		});
 
+		const unsubscribeResponse = sentinel.proxy.intercept.onResponse((response) => {
+			if (cancelled || !response || !response.requestId) {
+				return;
+			}
+
+			setQueue(prev => prev.filter(item => item.id !== response.requestId));
+			setSelectedId(prev => (prev === response.requestId ? '' : prev));
+		});
+
 		return () => {
 			cancelled = true;
 			if (typeof unsubscribe === 'function') {
 				unsubscribe();
+			}
+			if (typeof unsubscribeResponse === 'function') {
+				unsubscribeResponse();
 			}
 		};
 	}, []);

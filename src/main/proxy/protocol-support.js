@@ -27,6 +27,21 @@ function normalizeHeaders(rawHeaders = {}) {
 	return normalized;
 }
 
+function isTextualContentType(contentType = '') {
+	const value = String(contentType || '').toLowerCase();
+	if (!value) {
+		return false;
+	}
+
+	return (
+		value.startsWith('text/') ||
+		value.includes('json') ||
+		value.includes('xml') ||
+		value.includes('javascript') ||
+		value.includes('x-www-form-urlencoded')
+	);
+}
+
 function readBody(req) {
 	return new Promise((resolve, reject) => {
 		const chunks = [];
@@ -148,6 +163,12 @@ class ProtocolSupport {
 		const bodyBuffer = await readBody(req);
 		const timestamp = Date.now();
 		const connectionId = randomUUID();
+		const normalizedHeaders = normalizeHeaders(req.headers || {});
+		const contentType = normalizedHeaders['content-type'] || '';
+		const bodyText = bodyBuffer.length > 0 && isTextualContentType(contentType)
+			? bodyBuffer.toString('utf8')
+			: null;
+		const rawBodyBase64 = bodyBuffer.length > 0 ? bodyBuffer.toString('base64') : null;
 
 		const target = /^https?:\/\//i.test(req.url || '') ? new URL(req.url) : null;
 		const requestModel = {
@@ -160,8 +181,9 @@ class ProtocolSupport {
 			port: target ? Number(target.port || (target.protocol === 'https:' ? 443 : 80)) : 80,
 			path: target ? `${target.pathname || '/'}${target.search || ''}` : (req.url || '/'),
 			queryString: target ? (target.search || '').replace(/^\?/, '') : '',
-			headers: normalizeHeaders(req.headers || {}),
-			body: bodyBuffer.length ? bodyBuffer.toString('utf8') : null,
+			headers: normalizedHeaders,
+			body: bodyText,
+			rawBodyBase64,
 			protocol: 'HTTP/1.1',
 			tls: false,
 			tags: [],
@@ -212,7 +234,22 @@ class ProtocolSupport {
 		delete headers['proxy-connection'];
 		headers.host = targetUrl.host;
 
-		const bodyBuffer = request.body ? Buffer.from(request.body, 'utf8') : Buffer.alloc(0);
+		let bodyBuffer = Buffer.alloc(0);
+		if (typeof request.body === 'string') {
+			bodyBuffer = Buffer.from(request.body, 'utf8');
+		} else if (typeof request.rawBodyBase64 === 'string' && request.rawBodyBase64.length > 0) {
+			try {
+				bodyBuffer = Buffer.from(request.rawBodyBase64, 'base64');
+			} catch {
+				bodyBuffer = Buffer.alloc(0);
+			}
+		}
+
+		delete headers['content-length'];
+		delete headers['transfer-encoding'];
+		if (bodyBuffer.length > 0) {
+			headers['content-length'] = String(bodyBuffer.length);
+		}
 
 		return new Promise((resolve, reject) => {
 			const upstreamReq = client.request({

@@ -39,6 +39,29 @@ function requestViaProxy(proxyPort, targetUrl) {
   });
 }
 
+function requestBinaryViaProxy(proxyPort, targetUrl, payload) {
+  return new Promise((resolve, reject) => {
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port: proxyPort,
+      method: 'POST',
+      path: targetUrl,
+      headers: {
+        host: new URL(targetUrl).host,
+        'content-type': 'application/octet-stream',
+        'content-length': payload.length,
+      },
+    }, async (res) => {
+      const body = await readResponseBody(res);
+      resolve({ statusCode: res.statusCode, body });
+    });
+
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
+
 describe('SEN-14 proxy core', () => {
   const cleanup = [];
 
@@ -183,6 +206,63 @@ describe('SEN-14 proxy core', () => {
     expect(filtered.items[0].id).toBe('hist-3');
   });
 
+  it('treats invalid regex rules as non-match without throwing', async () => {
+    const rulesEngine = createRulesEngine([
+      {
+        id: 'bad-regex',
+        priority: 1,
+        enabled: true,
+        match: {
+          host: { operator: 'regex', value: '[invalid', flags: 'z' },
+        },
+        actions: [{ type: 'replace', target: 'path', value: '/should-not-apply' }],
+      },
+    ]);
+
+    expect(() => rulesEngine.applyToRequest({
+      id: 'req-regex',
+      method: 'GET',
+      host: 'example.test',
+      path: '/original',
+      headers: {},
+      body: null,
+    })).not.toThrow();
+
+    const result = rulesEngine.applyToRequest({
+      id: 'req-regex-2',
+      method: 'GET',
+      host: 'example.test',
+      path: '/original',
+      headers: {},
+      body: null,
+    });
+
+    expect(result.path).toBe('/original');
+  });
+
+  it('treats empty-string find in replace action as no-op', async () => {
+    const rulesEngine = createRulesEngine([
+      {
+        id: 'empty-find',
+        priority: 1,
+        enabled: true,
+        match: { path: '/api' },
+        actions: [{ type: 'replace', target: 'path', find: '', replace: 'X' }],
+      },
+    ]);
+
+    const result = rulesEngine.applyToRequest({
+      id: 'req-empty-find',
+      method: 'GET',
+      host: 'example.test',
+      path: '/api/v1/users',
+      headers: {},
+      body: null,
+    });
+
+    expect(result.path).toBe('/api/v1/users');
+  });
+
   it('intercepts HTTP/1.1 proxy traffic, applies rules, and logs request/response pairs', async () => {
     const upstreamServer = http.createServer((req, res) => {
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
@@ -225,5 +305,83 @@ describe('SEN-14 proxy core', () => {
     expect(traffic.total).toBe(1);
     expect(traffic.items[0].request.method).toBe('GET');
     expect(traffic.items[0].response.statusCode).toBe(200);
+  });
+
+  it('forwards binary request payloads without utf8 corruption', async () => {
+    let upstreamBodyHex = '';
+    const upstreamServer = http.createServer((req, res) => {
+      const chunks = [];
+      req.on('data', chunk => chunks.push(Buffer.from(chunk)));
+      req.on('end', () => {
+        upstreamBodyHex = Buffer.concat(chunks).toString('hex');
+        res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('ok');
+      });
+    });
+
+    await new Promise(resolve => upstreamServer.listen(0, '127.0.0.1', resolve));
+    const upstreamPort = upstreamServer.address().port;
+    cleanup.push(async () => {
+      await new Promise(resolve => upstreamServer.close(resolve));
+    });
+
+    const rulesEngine = createRulesEngine([]);
+    const historyLog = createHistoryLog();
+    const interceptEngine = createInterceptEngine({ rulesEngine, interceptEnabled: false });
+    const protocolSupport = createProtocolSupport({ rulesEngine, historyLog, interceptEngine });
+
+    const started = await protocolSupport.start({ port: 0 });
+    cleanup.push(async () => {
+      await protocolSupport.stop();
+    });
+
+    const payload = Buffer.from([0xff, 0x00, 0x01, 0x80, 0x41, 0x42, 0x43, 0x00]);
+    const targetUrl = `http://127.0.0.1:${upstreamPort}/upload`;
+    const proxied = await requestBinaryViaProxy(started.port, targetUrl, payload);
+
+    expect(proxied.statusCode).toBe(200);
+    expect(upstreamBodyHex).toBe(payload.toString('hex'));
+  });
+
+  it('recomputes content-length when forwarded body differs from original headers', async () => {
+    let observedContentLength = '';
+    let observedTransferEncoding = '';
+    let observedBody = '';
+
+    const upstreamServer = http.createServer((req, res) => {
+      const chunks = [];
+      observedContentLength = String(req.headers['content-length'] || '');
+      observedTransferEncoding = String(req.headers['transfer-encoding'] || '');
+      req.on('data', chunk => chunks.push(Buffer.from(chunk)));
+      req.on('end', () => {
+        observedBody = Buffer.concat(chunks).toString('utf8');
+        res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('ok');
+      });
+    });
+
+    await new Promise(resolve => upstreamServer.listen(0, '127.0.0.1', resolve));
+    const upstreamPort = upstreamServer.address().port;
+    cleanup.push(async () => {
+      await new Promise(resolve => upstreamServer.close(resolve));
+    });
+
+    const protocolSupport = createProtocolSupport();
+    const response = await protocolSupport.forwardHttpRequest({
+      method: 'POST',
+      host: '127.0.0.1',
+      url: `http://127.0.0.1:${upstreamPort}/submit`,
+      headers: {
+        'content-length': '999',
+        'transfer-encoding': 'chunked',
+        'content-type': 'text/plain; charset=utf-8',
+      },
+      body: 'edited-body',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(observedBody).toBe('edited-body');
+    expect(observedContentLength).toBe(String(Buffer.byteLength('edited-body', 'utf8')));
+    expect(observedTransferEncoding).toBe('');
   });
 });

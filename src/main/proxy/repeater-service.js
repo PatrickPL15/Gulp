@@ -22,6 +22,7 @@ class RepeaterService {
 		}
 
 		const now = Date.now();
+		const responseBody = 'Repeater request queued (network replay in SEN-016)';
 		const entry = {
 			id: randomUUID(),
 			createdAt: now,
@@ -32,8 +33,8 @@ class RepeaterService {
 				statusCode: 200,
 				statusMessage: 'OK',
 				headers: { 'content-type': 'text/plain; charset=utf-8' },
-				body: 'Repeater request queued (network replay in SEN-016)',
-				bodyLength: 47,
+				body: responseBody,
+				bodyLength: Buffer.byteLength(responseBody, 'utf8'),
 			},
 		};
 

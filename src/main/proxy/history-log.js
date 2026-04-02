@@ -134,6 +134,13 @@ class HistoryLog extends EventEmitter {
 
 	async clear() {
 		this.items = [];
+		if (this.projectStore && typeof this.projectStore.clearTrafficHistory === 'function') {
+			try {
+				await this.projectStore.clearTrafficHistory();
+			} catch {
+				// Keep in-memory clear semantics even if persistent clear fails.
+			}
+		}
 		return { ok: true };
 	}
 }

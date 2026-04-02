@@ -111,6 +111,44 @@ describe('SEN-15 history persistence and tool handoff', () => {
     expect(rows.items[0].id).toBe('persisted-item');
   });
 
+  it('clear removes persisted history and prevents reappearance after reopen', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sentinel-sen15-'));
+    const dbPath = path.join(tempDir, 'project.sentinel.db');
+
+    const writerStore = createProjectStore();
+    await writerStore.open(dbPath, { projectName: 'SEN-15 Clear Persistence Test' });
+
+    const writerHistory = createHistoryLog({ projectStore: writerStore });
+    await writerHistory.logTraffic({
+      id: 'clear-item',
+      kind: 'http',
+      timestamp: 2222,
+      request: { method: 'GET', host: 'clear.test', path: '/gone' },
+      response: { statusCode: 200 },
+    });
+
+    const beforeClear = await writerHistory.query({ page: 0, pageSize: 25, filter: {} });
+    expect(beforeClear.total).toBe(1);
+
+    await writerHistory.clear();
+    const afterClear = await writerHistory.query({ page: 0, pageSize: 25, filter: {} });
+    expect(afterClear.total).toBe(0);
+
+    await writerStore.close();
+
+    const readerStore = createProjectStore();
+    await readerStore.open(dbPath, { projectName: 'SEN-15 Clear Persistence Test' });
+    cleanupTasks.push(async () => {
+      await readerStore.close();
+      removeSqliteArtifacts(dbPath);
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    });
+
+    const readerHistory = createHistoryLog({ projectStore: readerStore });
+    const rows = await readerHistory.query({ page: 0, pageSize: 25, filter: { host: 'clear.test' } });
+    expect(rows.total).toBe(0);
+  });
+
   it('can send history request items to repeater and intruder', async () => {
     const historyLog = createHistoryLog();
     const repeater = createRepeaterService();
@@ -133,6 +171,9 @@ describe('SEN-15 history persistence and tool handoff', () => {
     const loaded = await historyLog.get(item.id);
     const repeaterResult = await repeater.send({ request: loaded.request });
     expect(repeaterResult.entry.request.path).toBe('/resource');
+    expect(repeaterResult.response.bodyLength).toBe(
+      Buffer.byteLength(repeaterResult.response.body, 'utf8')
+    );
 
     const configured = await intruder.configure({
       config: {
