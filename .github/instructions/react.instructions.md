@@ -33,3 +33,4 @@ react
 - **Dark Mode:** Set Chakra `initialColorMode="dark"` and store preference in project metadata. Use custom severity palette (critical=red, high=orange, medium=yellow, low=blue, info=gray).
 - **Performance Goals:** Target <50ms first paint after UI update, 60fps scroll, <500MB memory (steady state). Profile with React DevTools and Chrome DevTools.
 - **IPC Patterns:** Prefer `ipcRenderer.on` push events over `ipcRenderer.invoke` polling. Never store large arrays directly in top-level `useState`; use buffered or windowed patterns.
+- 2026-04-02: HistoryPanel pattern now uses server-side pagination + explicit filter apply (host/path/method/status) and row actions that call preload-safe handoff methods (`history:get` -> `repeater:send` / `intruder:configure`).

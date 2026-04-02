@@ -13,7 +13,7 @@
  *   - payload:  shape of the argument object sent with the call.
  *   - response: shape of the resolved value (invoke channels only).
  *
- * Schema version: 1
+ * Schema version: 3
  */
 
 'use strict';
@@ -68,7 +68,7 @@ const CHANNELS = [
   {
     channel:   'proxy:intercept:forward',
     direction: 'invoke',
-    payload:   '{ requestId: string, editedRequest?: HttpRequest }',
+    payload:   '{ requestId: string, editedRequest?: HttpRequest /* may include rawBodyBase64 for binary replay */ }',
     response:  '{ ok: boolean }',
     notes:     'Forwards a paused request, optionally with analyst edits applied.',
   },
@@ -96,6 +96,13 @@ const CHANNELS = [
     payload:   'HttpResponse',
     response:  'n/a',
     notes:     'Emitted when a response is paused and awaiting analyst action.',
+  },
+  {
+    channel:   'proxy:intercept:error',
+    direction: 'push',
+    payload:   '{ requestId: string, request: HttpRequest, error: string }',
+    response:  'n/a',
+    notes:     'Emitted when forwarding a paused request fails and the item remains queued for retry.',
   },
 
   // -------------------------------------------------------------------------
@@ -432,6 +439,13 @@ const CHANNELS = [
     response:  '{ ok: boolean }',
     notes:     'Regenerates the CA key pair; invalidates all cached leaf certs.',
   },
+  {
+    channel:   'ca:trust:guidance',
+    direction: 'invoke',
+    payload:   '{}',
+    response:  '{ guidance: { platform: string, title: string, steps: string[] } }',
+    notes:     'Returns OS-specific trust-store installation guidance for the current CA.',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -481,7 +495,7 @@ function getPushChannels() {
 // ---------------------------------------------------------------------------
 
 module.exports = {
-  SCHEMA_VERSION: 1,
+  SCHEMA_VERSION: 3,
   CHANNELS,
   getChannel,
   getChannelsForService,

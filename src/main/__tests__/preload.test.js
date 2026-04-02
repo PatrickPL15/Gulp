@@ -92,10 +92,12 @@ describe('Preload Bridge API Surface', () => {
     sentinel.proxy.start({ port: 8080 });
     sentinel.history.query({ page: 0, pageSize: 25 });
     sentinel.project.meta();
+    sentinel.ca.trustGuidance();
 
     expect(ipcInvoke).toHaveBeenCalledWith('proxy:start', { port: 8080 });
     expect(ipcInvoke).toHaveBeenCalledWith('history:query', { page: 0, pageSize: 25 });
     expect(ipcInvoke).toHaveBeenCalledWith('project:meta', {});
+    expect(ipcInvoke).toHaveBeenCalledWith('ca:trust:guidance', {});
   });
 
   it('push subscriptions return unsubscribe and remove wrapped listeners', () => {

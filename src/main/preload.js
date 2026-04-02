@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('sentinel', {
       drop:    (args)  => invoke('proxy:intercept:drop', args),
       onRequest:  (fn) => onPush('proxy:intercept:request', fn),
       onResponse: (fn) => onPush('proxy:intercept:response', fn),
+      onError:    (fn) => onPush('proxy:intercept:error', fn),
     },
   },
 
@@ -134,9 +135,10 @@ contextBridge.exposeInMainWorld('sentinel', {
 
   // --- CA certificate ---------------------------------------------------
   ca: {
-    get:    ()          => invoke('ca:get', {}),
-    export: (args)      => invoke('ca:export', args),
-    rotate: ()          => invoke('ca:rotate', {}),
+    get:           ()    => invoke('ca:get', {}),
+    export:        (args)=> invoke('ca:export', args),
+    rotate:        ()    => invoke('ca:rotate', {}),
+    trustGuidance: ()    => invoke('ca:trust:guidance', {}),
   },
 });
 

@@ -91,10 +91,14 @@ describe('project-store (SEN-012)', () => {
       pageSize: 10,
       filter: { host: 'example.com' },
     });
+    const persistedRules = await projectStore.listRules();
 
     expect(history.total).toBe(1);
     expect(history.items[0].id).toBe('traffic-1');
     expect(history.items[0].request.host).toBe('example.com');
+    expect(persistedRules).toHaveLength(1);
+    expect(persistedRules[0].id).toBe('rule-1');
+    expect(persistedRules[0].name).toBe('Header rule');
   });
 
   it('exports migration metadata and helpers for compatibility', () => {

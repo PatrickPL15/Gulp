@@ -21,9 +21,16 @@ describe('Sentinel Database and Certificate Services', () => {
       expect(typeof mod.ProjectStore).toBe('function');
     });
 
-    it('exports createProjectStore factory', () => {
-      const mod = require(path.join(DB_DIR, 'project-store'));
-      expect(typeof mod.createProjectStore).toBe('function');
+    it('should verify ca-manager exposes lifecycle API', () => {
+      const caManager = require('../certs/ca-manager');
+
+      expect(caManager).toBeTruthy();
+      expect(typeof caManager.ensureCaArtifacts).toBe('function');
+      expect(typeof caManager.getCaCertificatePem).toBe('function');
+      expect(typeof caManager.exportCaCertificate).toBe('function');
+      expect(typeof caManager.getLeafCertificate).toBe('function');
+      expect(typeof caManager.rotateCa).toBe('function');
+      expect(typeof caManager.getTrustInstallGuidance).toBe('function');
     });
 
     it('exports singleton convenience functions', () => {

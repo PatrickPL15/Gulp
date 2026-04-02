@@ -7,7 +7,7 @@
  * history, repeater, intruder, scanner …) MUST use these structures without
  * deviation.  Structural changes require an explicit M0 amendment + version bump.
  *
- * Schema version: 1
+ * Schema version: 2
  */
 
 'use strict';
@@ -64,6 +64,7 @@ const TrafficKind = {
  * @property {string}   queryString   - Raw query string without leading '?', or ''.
  * @property {Record<string, string>} headers - Header name -> value map (lowercased names).
  * @property {string|null} body       - Request body as UTF-8 string, or null if absent.
+ * @property {string|null} rawBodyBase64 - Optional raw request body bytes in base64 for binary-safe replay.
  * @property {HttpProtocol} protocol  - Protocol version negotiated for this connection.
  * @property {boolean}  tls           - True when the connection was TLS-wrapped.
  * @property {string[]} tags          - User-applied labels (e.g. 'in-scope', 'interesting').
@@ -90,6 +91,7 @@ function createHttpRequest() {
     queryString:  '',
     headers:      {},
     body:         null,
+    rawBodyBase64: null,
     protocol:     HttpProtocol.HTTP_1_1,
     tls:          false,
     tags:         [],
@@ -240,7 +242,7 @@ function createWsTrafficItem() {
 // ---------------------------------------------------------------------------
 
 module.exports = {
-  SCHEMA_VERSION: 1,
+  SCHEMA_VERSION: 2,
 
   HttpProtocol,
   WsDirection,
