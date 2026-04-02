@@ -136,15 +136,15 @@ describe('Preload Bridge - all invoke channels', () => {
     proxy.stop();
     proxy.status();
     proxy.intercept.toggle({ enabled: true });
-    proxy.intercept.forward({ id: 'req-1' });
-    proxy.intercept.drop({ id: 'req-1' });
+    proxy.intercept.forward({ requestId: 'req-1' });
+    proxy.intercept.drop({ requestId: 'req-1' });
 
     expect(ipcInvoke).toHaveBeenCalledWith('proxy:start', { port: 9090 });
     expect(ipcInvoke).toHaveBeenCalledWith('proxy:stop', {});
     expect(ipcInvoke).toHaveBeenCalledWith('proxy:status', {});
     expect(ipcInvoke).toHaveBeenCalledWith('proxy:intercept:toggle', { enabled: true });
-    expect(ipcInvoke).toHaveBeenCalledWith('proxy:intercept:forward', { id: 'req-1' });
-    expect(ipcInvoke).toHaveBeenCalledWith('proxy:intercept:drop', { id: 'req-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('proxy:intercept:forward', { requestId: 'req-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('proxy:intercept:drop', { requestId: 'req-1' });
   });
 
   it('history namespace: all invoke methods use correct channels', () => {
@@ -165,20 +165,20 @@ describe('Preload Bridge - all invoke channels', () => {
     const { rules } = exposed.sentinel;
 
     rules.list();
-    rules.save([{ id: 'r1' }]);
+    rules.save({ rules: [{ id: 'r1' }] });
 
     expect(ipcInvoke).toHaveBeenCalledWith('rules:list', {});
-    expect(ipcInvoke).toHaveBeenCalledWith('rules:save', [{ id: 'r1' }]);
+    expect(ipcInvoke).toHaveBeenCalledWith('rules:save', { rules: [{ id: 'r1' }] });
   });
 
   it('repeater namespace: all invoke methods use correct channels', () => {
     const { exposed, ipcInvoke } = executePreload();
     const { repeater } = exposed.sentinel;
 
-    repeater.send({ requestId: 'r1' });
+    repeater.send({ request: { method: 'GET', url: 'https://example.com/' } });
     repeater.historyList();
 
-    expect(ipcInvoke).toHaveBeenCalledWith('repeater:send', { requestId: 'r1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('repeater:send', { request: { method: 'GET', url: 'https://example.com/' } });
     expect(ipcInvoke).toHaveBeenCalledWith('repeater:history:list', {});
   });
 
@@ -186,15 +186,15 @@ describe('Preload Bridge - all invoke channels', () => {
     const { exposed, ipcInvoke } = executePreload();
     const { intruder } = exposed.sentinel;
 
-    intruder.configure({ mode: 'sniper' });
-    intruder.start({ targetId: 't1' });
-    intruder.stop({ targetId: 't1' });
-    intruder.results({ targetId: 't1' });
+    intruder.configure({ config: { mode: 'sniper' } });
+    intruder.start({ configId: 'cfg-1' });
+    intruder.stop({ attackId: 'atk-1' });
+    intruder.results({ attackId: 'atk-1', page: 0, pageSize: 25 });
 
-    expect(ipcInvoke).toHaveBeenCalledWith('intruder:configure', { mode: 'sniper' });
-    expect(ipcInvoke).toHaveBeenCalledWith('intruder:start', { targetId: 't1' });
-    expect(ipcInvoke).toHaveBeenCalledWith('intruder:stop', { targetId: 't1' });
-    expect(ipcInvoke).toHaveBeenCalledWith('intruder:results', { targetId: 't1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('intruder:configure', { config: { mode: 'sniper' } });
+    expect(ipcInvoke).toHaveBeenCalledWith('intruder:start', { configId: 'cfg-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('intruder:stop', { attackId: 'atk-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('intruder:results', { attackId: 'atk-1', page: 0, pageSize: 25 });
   });
 
   it('target and scope namespaces use correct channels', () => {
@@ -203,37 +203,37 @@ describe('Preload Bridge - all invoke channels', () => {
 
     target.sitemap();
     scope.get();
-    scope.set([{ host: 'x.com' }]);
-    scope.importBurp({ xml: '<xml/>' });
-    scope.importCsv({ csv: 'host,path' });
+    scope.set({ rules: [{ host: 'x.com' }] });
+    scope.importBurp({ filePath: '/tmp/burp-project.xml' });
+    scope.importCsv({ filePath: '/tmp/scope.csv', format: 'hackerone' });
 
     expect(ipcInvoke).toHaveBeenCalledWith('target:sitemap', {});
     expect(ipcInvoke).toHaveBeenCalledWith('scope:get', {});
-    expect(ipcInvoke).toHaveBeenCalledWith('scope:set', [{ host: 'x.com' }]);
-    expect(ipcInvoke).toHaveBeenCalledWith('scope:import:burp', { xml: '<xml/>' });
-    expect(ipcInvoke).toHaveBeenCalledWith('scope:import:csv', { csv: 'host,path' });
+    expect(ipcInvoke).toHaveBeenCalledWith('scope:set', { rules: [{ host: 'x.com' }] });
+    expect(ipcInvoke).toHaveBeenCalledWith('scope:import:burp', { filePath: '/tmp/burp-project.xml' });
+    expect(ipcInvoke).toHaveBeenCalledWith('scope:import:csv', { filePath: '/tmp/scope.csv', format: 'hackerone' });
   });
 
   it('scanner namespace: all invoke methods use correct channels', () => {
     const { exposed, ipcInvoke } = executePreload();
     const { scanner } = exposed.sentinel;
 
-    scanner.start({ targetId: 's1' });
-    scanner.stop({ targetId: 's1' });
-    scanner.results({ targetId: 's1' });
+    scanner.start({ targets: ['https://example.com'], config: {} });
+    scanner.stop({ scanId: 'scan-1' });
+    scanner.results({ scanId: 'scan-1', page: 0, pageSize: 25 });
 
-    expect(ipcInvoke).toHaveBeenCalledWith('scanner:start', { targetId: 's1' });
-    expect(ipcInvoke).toHaveBeenCalledWith('scanner:stop', { targetId: 's1' });
-    expect(ipcInvoke).toHaveBeenCalledWith('scanner:results', { targetId: 's1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('scanner:start', { targets: ['https://example.com'], config: {} });
+    expect(ipcInvoke).toHaveBeenCalledWith('scanner:stop', { scanId: 'scan-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('scanner:results', { scanId: 'scan-1', page: 0, pageSize: 25 });
   });
 
   it('decoder namespace uses correct channel', () => {
     const { exposed, ipcInvoke } = executePreload();
     const { decoder } = exposed.sentinel;
 
-    decoder.process({ input: 'aGVsbG8=', op: 'base64:decode' });
+    decoder.process({ input: 'aGVsbG8=', operations: [{ op: 'base64:decode' }] });
 
-    expect(ipcInvoke).toHaveBeenCalledWith('decoder:process', { input: 'aGVsbG8=', op: 'base64:decode' });
+    expect(ipcInvoke).toHaveBeenCalledWith('decoder:process', { input: 'aGVsbG8=', operations: [{ op: 'base64:decode' }] });
   });
 
   it('oob namespace: all invoke methods use correct channels', () => {
@@ -241,23 +241,23 @@ describe('Preload Bridge - all invoke channels', () => {
     const { oob } = exposed.sentinel;
 
     oob.createPayload({ type: 'dns' });
-    oob.listHits({ payloadId: 'p1' });
+    oob.listHits({ id: 'p1' });
 
     expect(ipcInvoke).toHaveBeenCalledWith('oob:payload:create', { type: 'dns' });
-    expect(ipcInvoke).toHaveBeenCalledWith('oob:hits:list', { payloadId: 'p1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('oob:hits:list', { id: 'p1' });
   });
 
   it('sequencer namespace: all invoke methods use correct channels', () => {
     const { exposed, ipcInvoke } = executePreload();
     const { sequencer } = exposed.sentinel;
 
-    sequencer.captureStart({ targetId: 'seq-1' });
-    sequencer.captureStop({ targetId: 'seq-1' });
-    sequencer.analyze({ targetId: 'seq-1' });
+    sequencer.captureStart({ config: { requestId: 'req-1' } });
+    sequencer.captureStop({ sessionId: 'sess-1' });
+    sequencer.analyze({ sessionId: 'sess-1' });
 
-    expect(ipcInvoke).toHaveBeenCalledWith('sequencer:capture:start', { targetId: 'seq-1' });
-    expect(ipcInvoke).toHaveBeenCalledWith('sequencer:capture:stop', { targetId: 'seq-1' });
-    expect(ipcInvoke).toHaveBeenCalledWith('sequencer:analyze', { targetId: 'seq-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('sequencer:capture:start', { config: { requestId: 'req-1' } });
+    expect(ipcInvoke).toHaveBeenCalledWith('sequencer:capture:stop', { sessionId: 'sess-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('sequencer:analyze', { sessionId: 'sess-1' });
   });
 
   it('extensions namespace: all invoke methods use correct channels', () => {
@@ -265,12 +265,12 @@ describe('Preload Bridge - all invoke channels', () => {
     const { extensions } = exposed.sentinel;
 
     extensions.list();
-    extensions.install({ path: '/tmp/ext.zip' });
+    extensions.install({ packagePath: '/tmp/ext.zip' });
     extensions.uninstall({ id: 'ext-1' });
     extensions.toggle({ id: 'ext-1', enabled: false });
 
     expect(ipcInvoke).toHaveBeenCalledWith('extensions:list', {});
-    expect(ipcInvoke).toHaveBeenCalledWith('extensions:install', { path: '/tmp/ext.zip' });
+    expect(ipcInvoke).toHaveBeenCalledWith('extensions:install', { packagePath: '/tmp/ext.zip' });
     expect(ipcInvoke).toHaveBeenCalledWith('extensions:uninstall', { id: 'ext-1' });
     expect(ipcInvoke).toHaveBeenCalledWith('extensions:toggle', { id: 'ext-1', enabled: false });
   });
@@ -279,14 +279,14 @@ describe('Preload Bridge - all invoke channels', () => {
     const { exposed, ipcInvoke } = executePreload();
     const { project } = exposed.sentinel;
 
-    project.new({ name: 'New Project' });
-    project.open({ path: '/tmp/proj.db' });
+    project.new({ name: 'New Project', filePath: '/tmp/project.db' });
+    project.open({ filePath: '/tmp/proj.db' });
     project.save();
     project.close();
     project.meta();
 
-    expect(ipcInvoke).toHaveBeenCalledWith('project:new', { name: 'New Project' });
-    expect(ipcInvoke).toHaveBeenCalledWith('project:open', { path: '/tmp/proj.db' });
+    expect(ipcInvoke).toHaveBeenCalledWith('project:new', { name: 'New Project', filePath: '/tmp/project.db' });
+    expect(ipcInvoke).toHaveBeenCalledWith('project:open', { filePath: '/tmp/proj.db' });
     expect(ipcInvoke).toHaveBeenCalledWith('project:save', {});
     expect(ipcInvoke).toHaveBeenCalledWith('project:close', {});
     expect(ipcInvoke).toHaveBeenCalledWith('project:meta', {});
@@ -297,11 +297,11 @@ describe('Preload Bridge - all invoke channels', () => {
     const { ca } = exposed.sentinel;
 
     ca.get();
-    ca.export({ format: 'pem' });
+    ca.export({ destPath: '/tmp/ca.pem' });
     ca.rotate();
 
     expect(ipcInvoke).toHaveBeenCalledWith('ca:get', {});
-    expect(ipcInvoke).toHaveBeenCalledWith('ca:export', { format: 'pem' });
+    expect(ipcInvoke).toHaveBeenCalledWith('ca:export', { destPath: '/tmp/ca.pem' });
     expect(ipcInvoke).toHaveBeenCalledWith('ca:rotate', {});
   });
 });
@@ -345,8 +345,8 @@ describe('Preload Bridge - all push channels', () => {
 
     expect(ipcOn).toHaveBeenCalledWith('intruder:progress', expect.any(Function));
     const wrapped = ipcOn.mock.calls[0][1];
-    wrapped({}, { percent: 50 });
-    expect(handler).toHaveBeenCalledWith({ percent: 50 });
+    wrapped({}, { attackId: 'atk-1', sent: 50, total: 100, lastResult: null });
+    expect(handler).toHaveBeenCalledWith({ attackId: 'atk-1', sent: 50, total: 100, lastResult: null });
 
     unsub();
     expect(ipcRemoveListener).toHaveBeenCalledWith('intruder:progress', wrapped);
@@ -360,8 +360,8 @@ describe('Preload Bridge - all push channels', () => {
 
     expect(ipcOn).toHaveBeenCalledWith('scanner:progress', expect.any(Function));
     const wrapped = ipcOn.mock.calls[0][1];
-    wrapped({}, { checked: 10, total: 100 });
-    expect(handler).toHaveBeenCalledWith({ checked: 10, total: 100 });
+    wrapped({}, { scanId: 'scan-1', pct: 10 });
+    expect(handler).toHaveBeenCalledWith({ scanId: 'scan-1', pct: 10 });
 
     unsub();
     expect(ipcRemoveListener).toHaveBeenCalledWith('scanner:progress', wrapped);

@@ -4,23 +4,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 
 vi.mock('../theme', () => ({ default: { colors: { brand: { 50: '#eef6ff' } } } }));
 
-// ---------------------------------------------------------------------------
-// Module-level constants mirroring App.jsx
-// ---------------------------------------------------------------------------
-const modules = ['Dashboard', 'Proxy', 'History', 'Repeater', 'Intruder',
-  'Target', 'Scanner', 'Decoder', 'Extensions'];
-
-const moduleDescriptions = {
-  Dashboard: 'Overview of active project state, findings, and workflow shortcuts.',
-  Proxy:     'Intercept, inspect, and forward HTTP/S traffic.',
-  History:   'Search and filter previously captured traffic.',
-  Repeater:  'Modify and replay requests for manual testing.',
-  Intruder:  'Run payload attacks with baseline anomaly analysis.',
-  Target:    'Manage scope and navigate discovered surface area.',
-  Scanner:   'Run passive/active checks and review findings.',
-  Decoder:   'Encode/decode payloads and inspect transformed values.',
-  Extensions:'Manage custom tools and extension-provided workflows.',
-};
+// Import the same constants App.jsx uses so this file cannot silently diverge.
+const { modules, moduleDescriptions } = require('../app-constants');
 
 // ---------------------------------------------------------------------------
 // TestApp — replicates App.jsx state logic using plain HTML (no Chakra).
