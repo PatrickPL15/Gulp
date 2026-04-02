@@ -114,6 +114,7 @@ Use this checklist to finish implementation and validate the Electron + Gulp + R
 ### Cross-Platform and Runtime Basics
 1. Confirm close behavior works as expected on Windows.
 2. Confirm re-open behavior through `activate` logic remains valid.
+3. Add post-build validation layer tests that run against built `dist/` artifacts (separate from source unit tests).
 
 ## 6) Regression Checklist Before Marking Complete
 1. Re-run `npx gulp build` with no task failures.
@@ -127,6 +128,7 @@ Use this checklist to finish implementation and validate the Electron + Gulp + R
 2. Add a prestart script to enforce a build before app launch.
 3. Add IPC integration tests for preload-exposed APIs.
 4. Add CI job that runs build and startup smoke validation.
+5. Add a dedicated build-validation test command/config (for example `test:build`) that validates packaged runtime paths without re-running source unit suites.
 
 ## Definition of Done
 1. Source changes implemented in `src/` and/or `gulpfile.js`.
@@ -177,6 +179,7 @@ Use this checklist to finish implementation and validate the Electron + Gulp + R
 1. Implement CA generation and trust-install workflow for HTTPS MITM.
 2. Validate high concurrency performance and latency limits.
 3. Implement real-time project persistence with crash-safe writes.
+4. Implement a build artifact validation test layer in CI to verify `dist/main` and `dist/renderer` runtime integrity after `npx gulp build`.
 
 ## 9) Sentinel File-Level TODO Map
 
