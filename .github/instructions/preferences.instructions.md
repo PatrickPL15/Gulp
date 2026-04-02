@@ -21,3 +21,6 @@ Repository-level coding and review preferences.
 ## Append-Only Updates
 - 2026-04-01: Added explicit preference for regression-test-first fixes and deterministic open/reopen persistence checks.
 - 2026-04-02: For history features, wire persistent storage at startup (`project-store` open + `history-log.setProjectStore`) and keep reopen-path tests for restart durability.
+- 2026-04-02: Prefer desktop-workbench renderer layouts (fixed viewport, collapsible panes, activity bar, tabbed workspace, status bar) over document-like scrolling pages.
+- 2026-04-02: Prefer virtualized dense data surfaces and buffered UI updates over large top-level arrays in React state.
+- 2026-04-02: Default visual direction is dark-first with explicit severity semantics and reduced corner radius.

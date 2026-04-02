@@ -34,3 +34,7 @@ react
 - **Performance Goals:** Target <50ms first paint after UI update, 60fps scroll, <500MB memory (steady state). Profile with React DevTools and Chrome DevTools.
 - **IPC Patterns:** Prefer `ipcRenderer.on` push events over `ipcRenderer.invoke` polling. Never store large arrays directly in top-level `useState`; use buffered or windowed patterns.
 - 2026-04-02: HistoryPanel pattern now uses server-side pagination + explicit filter apply (host/path/method/status) and row actions that call preload-safe handoff methods (`history:get` -> `repeater:send` / `intruder:configure`).
+- 2026-04-02: Workbench shell directive requires fixed viewport root (`h="100vh"`, `overflow="hidden"`), activity bar navigation, tabbed concurrent workspace, collapsible sidebars, and bottom status bar metrics.
+- 2026-04-02: Proxy log/traffic views should standardize on `@tanstack/react-table` + virtualization (`@tanstack/react-virtual` or `react-window`) with compact density (`fontFamily="mono"`, `fontSize="xs"`, `py={1}`, `px={2}`).
+- 2026-04-02: Request/response inspector should use Monaco for Raw mode and provide Headers/Raw/Preview (or Hex) tab groups.
+- 2026-04-02: Repeater handoff should push request objects into shared app state and open a dedicated repeater tab without blocking the list surface.

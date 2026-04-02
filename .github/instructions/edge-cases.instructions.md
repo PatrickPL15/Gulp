@@ -21,3 +21,6 @@ Known operational and implementation edge cases for this repository.
 ## Append-Only Updates
 - 2026-04-01: Added migration-chain, DB-open cleanup, and jsdom resolution failure patterns observed in this repo.
 - 2026-04-02: History queries may fallback to in-memory mode when project-store bootstrap fails; verify persistent mode with reopen tests and avoid assuming durability from runtime-only checks.
+- 2026-04-02: Unthrottled per-event React updates from proxy/scanner streams can freeze renderer under burst traffic; use buffered flush windows (100-200ms).
+- 2026-04-02: Rendering full proxy arrays in top-level state causes memory growth and list thrash; use virtualization and demand-loaded detail panels.
+- 2026-04-02: Row selection should not trigger table data regeneration; keep master list model stable and isolate inspector state.

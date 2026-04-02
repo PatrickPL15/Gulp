@@ -176,3 +176,15 @@ npm run start
 
 ### Main process changes not reflected
 - Confirm `src/main/**` was copied to `dist/main/` by build/watch.
+
+## Workbench UI Directive (Planned)
+Upcoming UI work follows a fixed desktop-workbench architecture:
+
+1. Shell layout uses fixed viewport (`h="100vh"`, `overflow="hidden"`) with collapsible panes.
+2. Left activity bar provides quick switching for Proxy, Scanner, and Repeater.
+3. Main workspace uses tabbed workflows (Chakra Tabs `variant="enclosed"`) for concurrent tasks.
+4. Bottom status bar surfaces real-time engine status, active scans/tasks, and memory usage.
+5. Proxy/history tables target high-density rendering and virtualization (`@tanstack/react-table` + `@tanstack/react-virtual` or `react-window`).
+6. Request/response inspector roadmap includes Monaco-powered Raw view plus Headers/Raw/Preview tabs.
+7. Renderer update cadence for high-frequency streams is buffered/throttled (100-200ms) to keep UI responsive.
+8. Theme direction is dark-first with severity semantics: critical `red.600`, high `orange.500`, medium `yellow.400`, low `blue.400`, info `gray.400`.
