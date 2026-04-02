@@ -24,9 +24,19 @@ const availableOps = [
   'gzip:decode',
 ];
 
+function createOperationEntry(op, idCounterRef) {
+  const nextId = `op-${idCounterRef.current}`;
+  idCounterRef.current += 1;
+  return {
+    id: nextId,
+    op,
+  };
+}
+
 function DecoderPanel() {
+  const operationIdCounterRef = React.useRef(1);
   const [input, setInput] = React.useState('');
-  const [operations, setOperations] = React.useState(['base64:decode']);
+  const [operations, setOperations] = React.useState(() => [createOperationEntry('base64:decode', operationIdCounterRef)]);
   const [recursiveDepth, setRecursiveDepth] = React.useState('1');
   const [reverse, setReverse] = React.useState(false);
   const [result, setResult] = React.useState('');
@@ -43,7 +53,7 @@ function DecoderPanel() {
     try {
       const payload = await sentinel.decoder.process({
         input,
-        operations,
+        operations: operations.map(item => item.op),
         reverse,
         recursiveDepth: Number(recursiveDepth) || 1,
       });
@@ -56,11 +66,13 @@ function DecoderPanel() {
   }
 
   function updateOperation(index, op) {
-    setOperations(prev => prev.map((current, currentIndex) => (currentIndex === index ? op : current)));
+    setOperations(prev => prev.map((current, currentIndex) => (currentIndex === index
+      ? { ...current, op }
+      : current)));
   }
 
   function addOperation(op) {
-    setOperations(prev => [...prev, op]);
+    setOperations(prev => [...prev, createOperationEntry(op, operationIdCounterRef)]);
   }
 
   function removeOperation(index) {
@@ -90,10 +102,10 @@ function DecoderPanel() {
           </HStack>
 
           {operations.map((operation, index) => (
-            <HStack key={`${operation}-${index}`} mb={2}>
+            <HStack key={operation.id} mb={2}>
               <Code minW='80px'>{index + 1}</Code>
               <Input
-                value={operation}
+                value={operation.op}
                 onChange={event => updateOperation(index, event.target.value)}
                 placeholder='operation'
               />

@@ -13,7 +13,7 @@
  *   - payload:  shape of the argument object sent with the call.
  *   - response: shape of the resolved value (invoke channels only).
  *
- * Schema version: 6
+ * Schema version: 7
  */
 
 'use strict';
@@ -253,16 +253,16 @@ const CHANNELS = [
   {
     channel:   'scope:import:burp',
     direction: 'invoke',
-    payload:   '{ filePath: string }',
+    payload:   '{ filePath?: string }',
     response:  '{ ok: boolean, imported: number, warnings: string[] }',
-    notes:     'Imports scope/project settings from a Burp Suite project configuration XML.',
+    notes:     'Imports scope/project settings from a Burp config; uses provided filePath or opens a picker when omitted.',
   },
   {
     channel:   'scope:import:csv',
     direction: 'invoke',
-    payload:   '{ filePath: string, format: "hackerone" | "generic" }',
+    payload:   '{ filePath?: string, format: "hackerone" | "generic" }',
     response:  '{ ok: boolean, imported: number, warnings: string[] }',
-    notes:     'Imports scope rules from an external CSV (e.g. HackerOne program scope export).',
+    notes:     'Imports scope rules from CSV; uses provided filePath or opens a picker when omitted.',
   },
 
   // -------------------------------------------------------------------------
@@ -329,7 +329,7 @@ const CHANNELS = [
     channel:   'browser:navigate',
     direction: 'invoke',
     payload:   '{ sessionId: string, url: string }',
-    response:  '{ session: BrowserSession, response: HttpResponse }',
+    response:  '{ session: BrowserSession, response: HttpResponse, proxy: { port: number } }',
     notes:     'Navigates a session URL through the Sentinel proxy.',
   },
 
@@ -534,7 +534,7 @@ function getPushChannels() {
 // ---------------------------------------------------------------------------
 
 module.exports = {
-  SCHEMA_VERSION: 6,
+  SCHEMA_VERSION: 7,
   CHANNELS,
   getChannel,
   getChannelsForService,

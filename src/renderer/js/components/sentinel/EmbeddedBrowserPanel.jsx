@@ -11,13 +11,39 @@ const {
   VStack,
 } = require('@chakra-ui/react');
 
+function escapeHtml(text) {
+  return String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function buildSafePreviewDoc(text) {
+  const escaped = escapeHtml(text);
+  return [
+    '<!doctype html>',
+    '<html>',
+    '<head>',
+    '<meta charset="utf-8"/>',
+    '<meta http-equiv="Content-Security-Policy" content="default-src \"none\"; img-src \"none\"; media-src \"none\"; font-src \"none\"; style-src \"none\"; script-src \"none\"; connect-src \"none\"; frame-src \"none\"; object-src \"none\"; base-uri \"none\"; form-action \"none\""/>',
+    '<title>Sentinel Preview</title>',
+    '</head>',
+    '<body>',
+    `<pre>${escaped}</pre>`,
+    '</body>',
+    '</html>',
+  ].join('');
+}
+
 function EmbeddedBrowserPanel() {
   const [sessions, setSessions] = React.useState([]);
   const [activeSessionId, setActiveSessionId] = React.useState('');
   const [address, setAddress] = React.useState('https://example.com');
   const [statusText, setStatusText] = React.useState('');
   const [errorText, setErrorText] = React.useState('');
-  const [previewHtml, setPreviewHtml] = React.useState('');
+  const [previewDoc, setPreviewDoc] = React.useState(() => buildSafePreviewDoc('Preview not loaded yet.'));
 
   const activeSession = sessions.find(session => session.id === activeSessionId) || null;
 
@@ -97,9 +123,9 @@ function EmbeddedBrowserPanel() {
       }
 
       if (payload && payload.body) {
-        setPreviewHtml(payload.body);
+        setPreviewDoc(buildSafePreviewDoc(payload.body));
       } else {
-        setPreviewHtml('<html><body><pre>Binary/empty response preview unavailable.</pre></body></html>');
+        setPreviewDoc(buildSafePreviewDoc('Binary/empty response preview unavailable.'));
       }
 
       setStatusText(`Navigated via proxy ${response && response.proxy ? response.proxy.port : 'unknown'}.`);
@@ -157,9 +183,9 @@ function EmbeddedBrowserPanel() {
           <Box borderWidth='1px' borderRadius='md' overflow='hidden' h='300px' bg='bg.subtle'>
             <iframe
               title='embedded-browser-preview'
-              srcDoc={previewHtml}
+              srcDoc={previewDoc}
               style={{ width: '100%', height: '100%', border: 'none', background: 'white' }}
-              sandbox='allow-forms allow-modals allow-popups'
+              sandbox=''
             />
           </Box>
         </Box>

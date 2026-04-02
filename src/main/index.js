@@ -11,6 +11,8 @@ const repeaterService = require('./proxy/repeater-service');
 const intruderEngine = require('./proxy/intruder-engine');
 const targetMapper = require('./proxy/target-mapper');
 const scannerEngine = require('./proxy/scanner-engine');
+const oobService = require('./proxy/oob-service');
+const sequencerService = require('./proxy/sequencer-service');
 const decoderService = require('./proxy/decoder-service');
 const embeddedBrowserService = require('./proxy/embedded-browser-service');
 
@@ -157,7 +159,8 @@ function registerProxyHandlers() {
   });
 
   ipcMain.handle('scope:import:burp', async (_event, args = {}) => {
-    const selectedPath = await pickImportFile({
+    const providedPath = typeof args.filePath === 'string' ? args.filePath.trim() : '';
+    const selectedPath = providedPath || await pickImportFile({
       title: 'Import Burp Scope Configuration',
       filters: [
         { name: 'Burp Config', extensions: ['xml', 'json'] },
@@ -179,7 +182,8 @@ function registerProxyHandlers() {
   });
 
   ipcMain.handle('scope:import:csv', async (_event, args = {}) => {
-    const selectedPath = await pickImportFile({
+    const providedPath = typeof args.filePath === 'string' ? args.filePath.trim() : '';
+    const selectedPath = providedPath || await pickImportFile({
       title: 'Import CSV Scope Configuration',
       filters: [
         { name: 'CSV Files', extensions: ['csv'] },
@@ -210,6 +214,26 @@ function registerProxyHandlers() {
 
   ipcMain.handle('scanner:results', async (_event, args = {}) => {
     return scannerEngine.results(args);
+  });
+
+  ipcMain.handle('oob:payload:create', async (_event, args = {}) => {
+    return oobService.createPayload(args);
+  });
+
+  ipcMain.handle('oob:hits:list', async (_event, args = {}) => {
+    return oobService.listHits(args);
+  });
+
+  ipcMain.handle('sequencer:capture:start', async (_event, args = {}) => {
+    return sequencerService.captureStart(args);
+  });
+
+  ipcMain.handle('sequencer:capture:stop', async (_event, args = {}) => {
+    return sequencerService.captureStop(args);
+  });
+
+  ipcMain.handle('sequencer:analyze', async (_event, args = {}) => {
+    return sequencerService.analyze(args);
   });
 
   ipcMain.handle('decoder:process', async (_event, args = {}) => {
@@ -251,6 +275,16 @@ function registerProxyHandlers() {
   scannerEngine.on('progress', payload => {
     sendToRenderer('scanner:progress', payload);
   });
+
+  oobService.on('hit', payload => {
+    sendToRenderer('oob:hit', payload);
+  });
+
+  historyLog.on('push', item => {
+    scannerEngine.observeTraffic(item).catch(() => {
+      // Ignore passive scan errors to avoid impacting history ingestion.
+    });
+  });
 }
 
 async function openDefaultProjectStore() {
@@ -277,6 +311,33 @@ async function openDefaultProjectStore() {
   if (typeof scannerEngine.setScopeEvaluator === 'function') {
     scannerEngine.setScopeEvaluator(scopeEvaluator);
   }
+
+  if (typeof scannerEngine.setAdapters === 'function') {
+    scannerEngine.setAdapters({
+      persistFinding: finding => projectStore.upsertScannerFinding(finding),
+      listPersistedFindings: args => projectStore.listScannerFindings(args),
+      getTrafficItem: id => projectStore.getTrafficItem(id),
+      queryTraffic: args => projectStore.queryTraffic(args),
+    });
+  }
+
+  if (typeof oobService.setAdapters === 'function') {
+    oobService.setAdapters({
+      persistInteraction: interaction => projectStore.upsertOobInteraction(interaction),
+      listPersistedInteractions: args => projectStore.listOobInteractions(args),
+    });
+  }
+
+  if (typeof sequencerService.setAdapters === 'function') {
+    sequencerService.setAdapters({
+      getTrafficItem: id => projectStore.getTrafficItem(id),
+      upsertSession: session => projectStore.upsertSequencerSession(session),
+      addTokenRow: tokenRow => projectStore.addSequencerToken(tokenRow),
+      getSession: sessionId => projectStore.getSequencerSession(sessionId),
+      listTokenRows: sessionId => projectStore.listSequencerTokens(sessionId),
+    });
+  }
+
   if (typeof protocolSupport.setScopeEvaluator === 'function') {
     protocolSupport.setScopeEvaluator(scopeEvaluator);
   }

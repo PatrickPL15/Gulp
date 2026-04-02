@@ -256,7 +256,7 @@ describe('version display logic', () => {
 // ---------------------------------------------------------------------------
 describe('App module constants', () => {
   it('modules array has 10 items', () => {
-    expect(modules.length).toBe(10);
+    expect(modules.length).toBe(12);
   });
 
   it('all modules have a non-empty description', () => {

@@ -421,6 +421,195 @@ class ProjectStore {
     return rows.map(row => JSON.parse(row.data));
   }
 
+  async upsertScannerFinding(finding) {
+    this.ensureOpen();
+    await runAsync(
+      this.db,
+      `INSERT INTO scanner_findings (id, scan_id, severity, name, host, path, created_at, data)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         scan_id = excluded.scan_id,
+         severity = excluded.severity,
+         name = excluded.name,
+         host = excluded.host,
+         path = excluded.path,
+         created_at = excluded.created_at,
+         data = excluded.data`,
+      [
+        finding.id,
+        finding.scanId,
+        finding.severity || 'info',
+        finding.name || 'Finding',
+        finding.host || null,
+        finding.path || null,
+        Number.isFinite(finding.createdAt) ? finding.createdAt : Date.now(),
+        JSON.stringify(finding),
+      ]
+    );
+    await runAsync(this.db, 'UPDATE project_meta SET updated_at = ? WHERE id = ?', [Date.now(), 'default']);
+    return { ok: true };
+  }
+
+  async listScannerFindings({ scanId, page = 0, pageSize = 50 } = {}) {
+    this.ensureOpen();
+    const where = [];
+    const params = [];
+    if (scanId) {
+      where.push('scan_id = ?');
+      params.push(scanId);
+    }
+
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const safePage = Math.max(0, Number(page) || 0);
+    const safePageSize = Math.max(1, Number(pageSize) || 50);
+    const offset = safePage * safePageSize;
+
+    const rows = await allAsync(
+      this.db,
+      `SELECT data FROM scanner_findings ${whereSql}
+       ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      [...params, safePageSize, offset]
+    );
+    const totalRow = await getAsync(
+      this.db,
+      `SELECT COUNT(*) AS count FROM scanner_findings ${whereSql}`,
+      params
+    );
+
+    return {
+      findings: rows.map(row => JSON.parse(row.data)),
+      total: totalRow ? totalRow.count : 0,
+    };
+  }
+
+  async upsertOobInteraction(interaction) {
+    this.ensureOpen();
+    await runAsync(
+      this.db,
+      `INSERT INTO oob_interactions (id, payload_id, kind, received_at, source_ip, data)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         payload_id = excluded.payload_id,
+         kind = excluded.kind,
+         received_at = excluded.received_at,
+         source_ip = excluded.source_ip,
+         data = excluded.data`,
+      [
+        interaction.id,
+        interaction.payloadId,
+        interaction.kind || 'http',
+        Number.isFinite(interaction.timestamp) ? interaction.timestamp : Date.now(),
+        interaction.source || null,
+        JSON.stringify(interaction),
+      ]
+    );
+    await runAsync(this.db, 'UPDATE project_meta SET updated_at = ? WHERE id = ?', [Date.now(), 'default']);
+    return { ok: true };
+  }
+
+  async listOobInteractions({ payloadId, page = 0, pageSize = 200 } = {}) {
+    this.ensureOpen();
+    const where = [];
+    const params = [];
+    if (payloadId) {
+      where.push('payload_id = ?');
+      params.push(payloadId);
+    }
+
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const safePage = Math.max(0, Number(page) || 0);
+    const safePageSize = Math.max(1, Number(pageSize) || 200);
+    const offset = safePage * safePageSize;
+
+    const rows = await allAsync(
+      this.db,
+      `SELECT data FROM oob_interactions ${whereSql}
+       ORDER BY received_at DESC LIMIT ? OFFSET ?`,
+      [...params, safePageSize, offset]
+    );
+
+    return {
+      hits: rows.map(row => JSON.parse(row.data)),
+    };
+  }
+
+  async upsertSequencerSession(session) {
+    this.ensureOpen();
+    await runAsync(
+      this.db,
+      `INSERT INTO sequencer_sessions (id, status, config, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         status = excluded.status,
+         config = excluded.config,
+         updated_at = excluded.updated_at`,
+      [
+        session.id,
+        session.status || 'capturing',
+        JSON.stringify(session.config || {}),
+        Number.isFinite(session.createdAt) ? session.createdAt : Date.now(),
+        Number.isFinite(session.updatedAt) ? session.updatedAt : Date.now(),
+      ]
+    );
+    await runAsync(this.db, 'UPDATE project_meta SET updated_at = ? WHERE id = ?', [Date.now(), 'default']);
+    return { ok: true };
+  }
+
+  async getSequencerSession(sessionId) {
+    this.ensureOpen();
+    const row = await getAsync(
+      this.db,
+      'SELECT id, status, config, created_at, updated_at FROM sequencer_sessions WHERE id = ? LIMIT 1',
+      [sessionId]
+    );
+    if (!row) {
+      return null;
+    }
+    return {
+      id: row.id,
+      status: row.status,
+      config: JSON.parse(row.config || '{}'),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  async addSequencerToken({ id, sessionId, position, token, capturedAt }) {
+    this.ensureOpen();
+    await runAsync(
+      this.db,
+      `INSERT INTO sequencer_tokens (id, session_id, position, token, captured_at)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         session_id = excluded.session_id,
+         position = excluded.position,
+         token = excluded.token,
+         captured_at = excluded.captured_at`,
+      [id, sessionId, position, token, capturedAt]
+    );
+    return { ok: true };
+  }
+
+  async listSequencerTokens(sessionId) {
+    this.ensureOpen();
+    const rows = await allAsync(
+      this.db,
+      `SELECT id, session_id, position, token, captured_at
+       FROM sequencer_tokens
+       WHERE session_id = ?
+       ORDER BY position ASC`,
+      [sessionId]
+    );
+
+    return rows.map(row => ({
+      id: row.id,
+      sessionId: row.session_id,
+      position: row.position,
+      token: row.token,
+      capturedAt: row.captured_at,
+    }));
+  }
+
   async setModuleState(moduleName, state) {
     this.ensureOpen();
     await runAsync(
@@ -459,5 +648,13 @@ module.exports = {
   replaceRules: rules => defaultStore.replaceRules(rules),
   listScopeRules: () => defaultStore.listScopeRules(),
   replaceScopeRules: rules => defaultStore.replaceScopeRules(rules),
+  upsertScannerFinding: finding => defaultStore.upsertScannerFinding(finding),
+  listScannerFindings: args => defaultStore.listScannerFindings(args),
+  upsertOobInteraction: interaction => defaultStore.upsertOobInteraction(interaction),
+  listOobInteractions: args => defaultStore.listOobInteractions(args),
+  upsertSequencerSession: session => defaultStore.upsertSequencerSession(session),
+  getSequencerSession: sessionId => defaultStore.getSequencerSession(sessionId),
+  addSequencerToken: tokenRow => defaultStore.addSequencerToken(tokenRow),
+  listSequencerTokens: sessionId => defaultStore.listSequencerTokens(sessionId),
   setModuleState: (moduleName, state) => defaultStore.setModuleState(moduleName, state),
 };

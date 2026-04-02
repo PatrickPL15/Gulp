@@ -221,6 +221,17 @@ describe('Preload Bridge - all invoke channels', () => {
     expect(ipcInvoke).toHaveBeenCalledWith('scope:import:csv', { filePath: '/tmp/scope.csv', format: 'hackerone' });
   });
 
+  it('scope import supports picker-first calls without filePath', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { scope } = exposed.sentinel;
+
+    scope.importCsv({ format: 'generic' });
+    scope.importBurp({});
+
+    expect(ipcInvoke).toHaveBeenCalledWith('scope:import:csv', { format: 'generic' });
+    expect(ipcInvoke).toHaveBeenCalledWith('scope:import:burp', {});
+  });
+
   it('scanner namespace: all invoke methods use correct channels', () => {
     const { exposed, ipcInvoke } = executePreload();
     const { scanner } = exposed.sentinel;
