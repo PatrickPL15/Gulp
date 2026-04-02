@@ -4,7 +4,22 @@
 /dist
 
 # Instruction and guide documents
-/README.md
 /APP_COMPLETION_AND_TEST_CHECKLIST.md
 /SENTINEL_IMPLEMENTATION_PLAN.md
-/Gulp/README.md
+*GUIDE*.md
+*guide*.md
+*CHECKLIST*.md
+*checklist*.md
+*PLAN*.md
+*plan*.md
+
+# Jira planning artifacts
+/JIRA_STORIES.md
+/JIRA_STORIES.csv
+/SENTINEL_EPICS.csv
+
+# CSV exports and backlog snapshots
+*.csv
+APP_COMPLETION_AND_TEST_CHECKLIST.md
+SENTINEL_IMPLEMENTATION_PLAN.md
+SENTINEL_EPICS.md

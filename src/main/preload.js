@@ -2,9 +2,9 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 // ---------------------------------------------------------------------------
 // Helper — wraps ipcRenderer.invoke so renderer code never imports electron.
-// All channel names are validated against the IPC contract at build-time via
-// ipc-contract.js; adding a channel here without updating ipc-contract.js first
-// is a contract violation.
+// Channel names are validated against the IPC contract by
+// src/main/__tests__/contracts.test.js. Adding a channel here without updating
+// src/contracts/ipc-contract.js first is a contract violation.
 // ---------------------------------------------------------------------------
 
 /** @param {string} channel @param {any} [args] @returns {Promise<any>} */

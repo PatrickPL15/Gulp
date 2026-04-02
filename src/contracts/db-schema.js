@@ -212,16 +212,8 @@ const MIGRATIONS = [
  * @returns {number} The schema version after migration.
  */
 function runMigrations(db) {
-  // Bootstrap: create project_meta only if it doesn't exist yet.
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS project_meta (
-      id         TEXT PRIMARY KEY,
-      name       TEXT NOT NULL,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL,
-      schema_ver INTEGER NOT NULL DEFAULT 0
-    )
-  `);
+  // Bootstrap with the canonical v1 project_meta DDL to avoid schema drift.
+  db.exec(DDL_V1[0]);
 
   const row = db.prepare('SELECT schema_ver FROM project_meta WHERE id = ?').get('default');
   let currentVer = row ? row.schema_ver : 0;

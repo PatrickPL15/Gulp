@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 
 // ---------------------------------------------------------------------------
-// Contracts suite — Milestone 0 (Architecture Baseline, SENT-011)
+// Contracts suite — Milestone 0 (Architecture Baseline, SEN-011)
 //
 // These tests verify that the contract modules export the expected surface area.
 // They do NOT test runtime behaviour (that belongs to service implementation
@@ -195,6 +197,36 @@ describe('contracts/ipc-contract', () => {
     for (const svc of services) {
       const matched = contract.getChannelsForService(svc);
       expect(matched.length, `service "${svc}" has no channels`).toBeGreaterThan(0);
+    }
+  });
+
+  it('validates preload invoke channels against contract direction', () => {
+    const preloadPath = path.resolve(__dirname, '..', 'preload.js');
+    const source = fs.readFileSync(preloadPath, 'utf8');
+    const matches = [...source.matchAll(/invoke\('([^']+)'/g)].map(m => m[1]);
+    const usedInvoke = [...new Set(matches)].sort();
+
+    expect(usedInvoke.length).toBeGreaterThan(0);
+
+    for (const channel of usedInvoke) {
+      const def = contract.getChannel(channel);
+      expect(def, `missing contract for invoke channel: ${channel}`).toBeDefined();
+      expect(def.direction, `invoke channel has wrong direction: ${channel}`).toBe('invoke');
+    }
+  });
+
+  it('validates preload push channels against contract direction', () => {
+    const preloadPath = path.resolve(__dirname, '..', 'preload.js');
+    const source = fs.readFileSync(preloadPath, 'utf8');
+    const matches = [...source.matchAll(/onPush\('([^']+)'/g)].map(m => m[1]);
+    const usedPush = [...new Set(matches)].sort();
+
+    expect(usedPush.length).toBeGreaterThan(0);
+
+    for (const channel of usedPush) {
+      const def = contract.getChannel(channel);
+      expect(def, `missing contract for push channel: ${channel}`).toBeDefined();
+      expect(def.direction, `push channel has wrong direction: ${channel}`).toBe('push');
     }
   });
 });

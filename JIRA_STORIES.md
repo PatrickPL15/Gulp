@@ -8,7 +8,7 @@ Stories are ordered by completion status (✅ Done → 🔲 Pending) then by mil
 
 ---
 
-### SENT-001 · [DevEx]: As a developer, I want a Vitest test suite with coverage so that I can validate service stubs and renderer logic confidently.
+### SEN-001 · [DevEx]: As a developer, I want a Vitest test suite with coverage so that I can validate service stubs and renderer logic confidently.
 
 #### 1. User Story Statement
 As a **developer**
@@ -18,7 +18,7 @@ So that **I can catch regressions early and track how much code is exercised**
 #### 2. Context / Background
 Project started without any test infrastructure. Vitest was selected to match the ESM/JSX stack and provide v8 coverage without a separate runner.
 
-Related Issues: SENT-002
+Related Issues: SEN-002
 
 #### 3. Acceptance Criteria
 - [x] AC 1: `npm test` runs all tests with no manual configuration
@@ -38,7 +38,7 @@ Related Issues: SENT-002
 
 ---
 
-### SENT-002 · [DevEx]: As a developer, I want `.gitignore` set correctly so that build artifacts and tooling config are not committed.
+### SEN-002 · [DevEx]: As a developer, I want `.gitignore` set correctly so that build artifacts and tooling config are not committed.
 
 #### 1. User Story Statement
 As a **developer**
@@ -65,7 +65,7 @@ Entries live at repo root `.gitignore`.
 
 ---
 
-### SENT-003 · [DevEx]: As a developer, I want unused packaging artifact folders removed so that the repository does not contain unreferenced third-party files.
+### SEN-003 · [DevEx]: As a developer, I want unused packaging artifact folders removed so that the repository does not contain unreferenced third-party files.
 
 #### 1. User Story Statement
 As a **developer**
@@ -91,7 +91,7 @@ No source files imported these folders. Safe to delete.
 
 ---
 
-### SENT-004 · [Docs]: As a contributor, I want an accurate README so that I can understand the project structure, stack, and how to run it.
+### SEN-004 · [Docs]: As a contributor, I want an accurate README so that I can understand the project structure, stack, and how to run it.
 
 #### 1. User Story Statement
 As a **new contributor**
@@ -101,7 +101,7 @@ So that **I can onboard quickly without guessing at missing context**
 #### 2. Context / Background
 The original README did not reflect the Sentinel scope, planning items, or current component structure.
 
-Related Issues: SENT-005
+Related Issues: SEN-005
 
 #### 3. Acceptance Criteria
 - [x] AC 1: README shows the current `src/` file tree with TODO annotations on stubs
@@ -118,7 +118,7 @@ Related Issues: SENT-005
 
 ---
 
-### SENT-005 · [Docs]: As a project lead, I want planning docs updated with Burp, HackerOne, and custom-script TODO items so that the full intended scope is tracked.
+### SEN-005 · [Docs]: As a project lead, I want planning docs updated with Burp, HackerOne, and custom-script TODO items so that the full intended scope is tracked.
 
 #### 1. User Story Statement
 As a **project lead**
@@ -128,7 +128,7 @@ So that **no intended scope item is missing from milestone planning**
 #### 2. Context / Background
 Burp Suite project config import, HackerOne CSV ingestion, and custom-script automation were identified as required features not yet in any planning doc.
 
-Related Issues: SENT-004, SENT-016, SENT-017, SENT-018
+Related Issues: SEN-004, SEN-016, SEN-017, SEN-018
 
 #### 3. Acceptance Criteria
 - [x] AC 1: `SENTINEL_IMPLEMENTATION_PLAN.md` contains Burp Suite import entry under M5
@@ -144,7 +144,7 @@ Related Issues: SENT-004, SENT-016, SENT-017, SENT-018
 
 ---
 
-### SENT-006 · [Renderer]: As a developer, I want the renderer entry point renamed from `app.jsx` to `main.jsx` so that it is unambiguous from the `App.jsx` root component.
+### SEN-006 · [Renderer]: As a developer, I want the renderer entry point renamed from `app.jsx` to `main.jsx` so that it is unambiguous from the `App.jsx` root component.
 
 #### 1. User Story Statement
 As a **developer**
@@ -171,7 +171,7 @@ So that **the distinction between entry point and root component is immediately 
 
 ---
 
-### SENT-007 · [Renderer/Shell]: As a security analyst, I want a Sentinel workspace shell so that I can navigate between security testing modules in a single window.
+### SEN-007 · [Renderer/Shell]: As a security analyst, I want a Sentinel workspace shell so that I can navigate between security testing modules in a single window.
 
 #### 1. User Story Statement
 As a **security analyst**
@@ -181,7 +181,7 @@ So that **I can move between modules and manage the proxy without losing context
 #### 2. Context / Background
 `App.jsx` previously had only version info. The shell needed module buttons, pane strip, status badges, and a pause/resume proxy control.
 
-Related Issues: SENT-008
+Related Issues: SEN-008
 
 #### 3. Acceptance Criteria
 - [x] AC 1: Module navigation buttons render for Dashboard, Proxy, History, Repeater, Intruder, Target, Scanner, Decoder, Extensions
@@ -199,7 +199,7 @@ Related Issues: SENT-008
 
 ---
 
-### SENT-008 · [Renderer/Panels]: As a developer, I want all 12 sentinel panel stubs converted to real React components so that the module navigation can render actual UI.
+### SEN-008 · [Renderer/Panels]: As a developer, I want all 12 sentinel panel stubs converted to real React components so that the module navigation can render actual UI.
 
 #### 1. User Story Statement
 As a **developer**
@@ -209,7 +209,7 @@ So that **the workspace shell can render the correct panel when a pane is select
 #### 2. Context / Background
 All 12 panel files were comment-only TODO stubs with no JSX. The shell's `React.createElement` call required real components.
 
-Related Issues: SENT-007
+Related Issues: SEN-007
 
 #### 3. Acceptance Criteria
 - [x] AC 1: All 12 panel files export a named React function component via `module.exports`
@@ -229,7 +229,7 @@ Panels: `DashboardShell`, `ProxyPanel`, `HistoryPanel`, `RepeaterPanel`, `Intrud
 
 ---
 
-### SENT-009 · [Renderer/Shell]: As a security analyst, I want the sidebar status card to show panel-specific fields so that I always see relevant context for the active module.
+### SEN-009 · [Renderer/Shell]: As a security analyst, I want the sidebar status card to show panel-specific fields so that I always see relevant context for the active module.
 
 #### 1. User Story Statement
 As a **security analyst**
@@ -239,7 +239,7 @@ So that **I can see proxy queue depth, scope count, or findings without switchin
 #### 2. Context / Background
 The sidebar previously showed generic fields (open panes count, active module name). Panel-specific fields make it contextually useful.
 
-Related Issues: SENT-007
+Related Issues: SEN-007
 
 #### 3. Acceptance Criteria
 - [x] AC 1: Each module has a defined set of status fields (label + state key)
@@ -259,7 +259,7 @@ Related Issues: SENT-007
 
 ---
 
-### SENT-010 · [Bug]: As a user, I want the app window to render content on startup so that I am not presented with a blank screen.
+### SEN-010 · [Bug]: As a user, I want the app window to render content on startup so that I am not presented with a blank screen.
 
 #### 1. User Story Statement
 As a **user**
@@ -285,7 +285,7 @@ Chakra UI v3 migration: `Divider` → `Separator`. Verified via `node -e "requir
 
 ---
 
-### SENT-011 · [M0/Architecture]: As a tech lead, I want a locked IPC contract and traffic data model so that all feature modules build to the same interface.
+### SEN-011 · [M0/Architecture]: As a tech lead, I want a locked IPC contract and traffic data model so that all feature modules build to the same interface.
 
 #### 1. User Story Statement
 As a **tech lead**
@@ -295,7 +295,7 @@ So that **feature modules do not need structural rewrites when integrated**
 #### 2. Context / Background
 No contracts exist yet. Milestone 0 gates all downstream milestones.
 
-Related Issues: SENT-012, SENT-013
+Related Issues: SEN-012, SEN-013
 
 #### 3. Acceptance Criteria
 - [x] AC 1: A canonical traffic model (request/response/WebSocket event) is defined and documented
@@ -321,7 +321,7 @@ Related Issues: SENT-012, SENT-013
 
 ---
 
-### SENT-012 · [M1/Platform]: As a developer, I want project persistence with crash-safe writes so that analyst work is never silently lost.
+### SEN-012 · [M1/Platform]: As a developer, I want project persistence with crash-safe writes so that analyst work is never silently lost.
 
 #### 1. User Story Statement
 As a **developer**
@@ -329,30 +329,33 @@ I want a real-time project store backed by SQLite that survives crashes
 So that **analysts do not lose rules, scope, history, or module state on unexpected exit**
 
 #### 2. Context / Background
-`src/main/db/project-store.js` is a stub with no implementation. All Sentinel modules depend on persistence.
+`src/main/db/project-store.js` now provides a SQLite-backed project store with migration bootstrap, incremental persistence APIs, and crash-safety configuration. All Sentinel modules depend on this persistence layer.
 
-Related Issues: SENT-011, SENT-013
+Related Issues: SEN-011, SEN-013
 
 #### 3. Acceptance Criteria
-- [ ] AC 1: A project file is created on first launch and loaded on subsequent launches
-- [ ] AC 2: Traffic history, rules, scope, and module state are persisted incrementally
-- [ ] AC 3: Crash-safe write pattern (WAL mode or equivalent) is used
-- [ ] AC 4: Recovery integrity check runs on project load and reports corruption clearly
-- [ ] AC 5: Project file version is stored and migration strategy handles older versions
+- [x] AC 1: A project file is created on first launch and loaded on subsequent launches
+- [x] AC 2: Traffic history, rules, scope, and module state are persisted incrementally
+- [x] AC 3: Crash-safe write pattern (WAL mode or equivalent) is used
+- [x] AC 4: Recovery integrity check runs on project load and reports corruption clearly
+- [x] AC 5: Project file version is stored and migration strategy handles older versions
 
 #### 4. Technical Notes
 - `src/main/db/project-store.js`
 - SQLite3 is already in `dependencies`
+- WAL + `synchronous=FULL` enabled on open for crash-safety
+- Integrity check executed with `PRAGMA quick_check` and explicit `PROJECT_DB_CORRUPT` error code on failure
+- Added integration tests in `src/main/__tests__/project-store.test.js`
 
 #### 5. Definition of Done
-- [ ] Unit tests passed
-- [ ] Code reviewed
-- [ ] QA verified in Staging
-- [ ] Documentation updated
+- [x] Unit tests passed
+- [x] Code reviewed
+- [x] QA verified in Staging
+- [x] Documentation updated
 
 ---
 
-### SENT-013 · [M1/Platform]: As a developer, I want CA certificate generation and lifecycle management so that the proxy can perform TLS interception.
+### SEN-013 · [M1/Platform]: As a developer, I want CA certificate generation and lifecycle management so that the proxy can perform TLS interception.
 
 #### 1. User Story Statement
 As a **developer**
@@ -362,7 +365,7 @@ So that **the proxy can perform TLS MITM and analysts can install the CA into th
 #### 2. Context / Background
 `src/main/certs/ca-manager.js` is a stub. TLS interception is a hard dependency of Milestone 2.
 
-Related Issues: SENT-011, SENT-014
+Related Issues: SEN-011, SEN-014
 
 #### 3. Acceptance Criteria
 - [ ] AC 1: A CA key pair is generated on first run and persisted securely
@@ -383,7 +386,7 @@ Related Issues: SENT-011, SENT-014
 
 ---
 
-### SENT-014 · [M2/Proxy]: As a security analyst, I want an intercepting proxy so that I can pause, edit, and forward HTTP/S traffic.
+### SEN-014 · [M2/Proxy]: As a security analyst, I want an intercepting proxy so that I can pause, edit, and forward HTTP/S traffic.
 
 #### 1. User Story Statement
 As a **security analyst**
@@ -393,7 +396,7 @@ So that **I can inspect and manipulate web application traffic for security test
 #### 2. Context / Background
 Core Sentinel MVP capability. `src/main/proxy/intercept-engine.js` has empty `pause`, `forward`, `drop`, `edit` stubs. Depends on M1 (persistence) and M1 CA.
 
-Related Issues: SENT-011, SENT-012, SENT-013, SENT-015
+Related Issues: SEN-011, SEN-012, SEN-013, SEN-015
 
 #### 3. Acceptance Criteria
 - [ ] AC 1: HTTP/1.1 traffic flowing through the configured proxy port is intercepted
@@ -417,7 +420,7 @@ Related Issues: SENT-011, SENT-012, SENT-013, SENT-015
 
 ---
 
-### SENT-015 · [M2/Proxy]: As a security analyst, I want searchable traffic history so that I can find and inspect earlier requests across a session.
+### SEN-015 · [M2/Proxy]: As a security analyst, I want searchable traffic history so that I can find and inspect earlier requests across a session.
 
 #### 1. User Story Statement
 As a **security analyst**
@@ -425,9 +428,9 @@ I want all proxied traffic stored and searchable by host, path, status, and meth
 So that **I can revisit any captured request without it scrolling off screen**
 
 #### 2. Context / Background
-`history-log.js` is a stub. Depends on project persistence (SENT-012) and proxy engine (SENT-014).
+`history-log.js` is a stub. Depends on project persistence (SEN-012) and proxy engine (SEN-014).
 
-Related Issues: SENT-014
+Related Issues: SEN-014
 
 #### 3. Acceptance Criteria
 - [ ] AC 1: Every proxied request/response pair is written to the history store
@@ -447,7 +450,7 @@ Related Issues: SENT-014
 
 ---
 
-### SENT-016 · [M3/Repeater]: As a security analyst, I want to replay and modify captured requests so that I can manually probe endpoints repeatedly.
+### SEN-016 · [M3/Repeater]: As a security analyst, I want to replay and modify captured requests so that I can manually probe endpoints repeatedly.
 
 #### 1. User Story Statement
 As a **security analyst**
@@ -455,9 +458,9 @@ I want to load any captured request into a Repeater tab, edit it, send it, and i
 So that **I can iteratively test inputs and observe responses without resetting browser state**
 
 #### 2. Context / Background
-`repeater-service.js` is a stub. Depends on history (SENT-015).
+`repeater-service.js` is a stub. Depends on history (SEN-015).
 
-Related Issues: SENT-015
+Related Issues: SEN-015
 
 #### 3. Acceptance Criteria
 - [ ] AC 1: Any history item can be sent to a new Repeater tab
@@ -477,7 +480,7 @@ Related Issues: SENT-015
 
 ---
 
-### SENT-017 · [M4/Intruder]: As a security analyst, I want an automated payload attack engine so that I can brute-force and fuzz web application inputs.
+### SEN-017 · [M4/Intruder]: As a security analyst, I want an automated payload attack engine so that I can brute-force and fuzz web application inputs.
 
 #### 1. User Story Statement
 As a **security analyst**
@@ -487,7 +490,7 @@ So that **I can efficiently enumerate and identify vulnerable input parameters**
 #### 2. Context / Background
 `intruder-engine.js` is a stub. One of the most complex modules; depends on history and repeater primitives.
 
-Related Issues: SENT-016
+Related Issues: SEN-016
 
 #### 3. Acceptance Criteria
 - [ ] AC 1: Analyst can mark one or more positions in a request template
@@ -508,7 +511,7 @@ Related Issues: SENT-016
 
 ---
 
-### SENT-018 · [M5/Target]: As a security analyst, I want scope management with Burp and HackerOne import so that I can define and enforce target boundaries quickly.
+### SEN-018 · [M5/Target]: As a security analyst, I want scope management with Burp and HackerOne import so that I can define and enforce target boundaries quickly.
 
 #### 1. User Story Statement
 As a **security analyst**
@@ -518,7 +521,7 @@ So that **I stay within authorised target scope and avoid testing out-of-scope a
 #### 2. Context / Background
 `target-mapper.js` is a stub. Burp import and HackerOne CSV ingestion were added as explicit planning items.
 
-Related Issues: SENT-014
+Related Issues: SEN-014
 
 #### 3. Acceptance Criteria
 - [ ] AC 1: Analyst can add/remove scope entries by host, domain, IP, or CIDR range
@@ -541,7 +544,7 @@ Related Issues: SENT-014
 
 ---
 
-### SENT-019 · [M6/Decoder]: As a security analyst, I want a chained decoder so that I can transform and reverse payloads in a single workflow.
+### SEN-019 · [M6/Decoder]: As a security analyst, I want a chained decoder so that I can transform and reverse payloads in a single workflow.
 
 #### 1. User Story Statement
 As a **security analyst**
@@ -551,7 +554,7 @@ So that **I can quickly decode obfuscated values or construct encoded payloads f
 #### 2. Context / Background
 `decoder-service.js` is a stub. Standalone utility; minimal server-side dependencies.
 
-Related Issues: SENT-011
+Related Issues: SEN-011
 
 #### 3. Acceptance Criteria
 - [ ] AC 1: Decoder supports Base64 encode/decode, URL encode/decode, HTML entity encode/decode, Hex, and GZIP
@@ -571,7 +574,7 @@ Related Issues: SENT-011
 
 ---
 
-### SENT-020 · [M6/Browser]: As a security analyst, I want an embedded browser routed through the proxy so that I can browse targets without reconfiguring an external browser.
+### SEN-020 · [M6/Browser]: As a security analyst, I want an embedded browser routed through the proxy so that I can browse targets without reconfiguring an external browser.
 
 #### 1. User Story Statement
 As a **security analyst**
@@ -579,9 +582,9 @@ I want to launch an embedded browser session that automatically routes all traff
 So that **I can browse, authenticate, and capture traffic without external browser proxy setup**
 
 #### 2. Context / Background
-`embedded-browser-service.js` is a stub. Depends on a running proxy (SENT-014).
+`embedded-browser-service.js` is a stub. Depends on a running proxy (SEN-014).
 
-Related Issues: SENT-014
+Related Issues: SEN-014
 
 #### 3. Acceptance Criteria
 - [ ] AC 1: Embedded browser opens within the EmbeddedBrowserPanel
@@ -601,7 +604,7 @@ Related Issues: SENT-014
 
 ---
 
-### SENT-021 · [M7/Scanner]: As a security analyst, I want passive and active scanning so that I can identify common vulnerabilities automatically.
+### SEN-021 · [M7/Scanner]: As a security analyst, I want passive and active scanning so that I can identify common vulnerabilities automatically.
 
 #### 1. User Story Statement
 As a **security analyst**
@@ -609,9 +612,9 @@ I want the scanner to passively flag header/hygiene issues on observed traffic a
 So that **I get automated vulnerability signals without replaying every request manually**
 
 #### 2. Context / Background
-`scanner-engine.js` is a stub. Depends on history (SENT-015) and scope enforcement (SENT-018).
+`scanner-engine.js` is a stub. Depends on history (SEN-015) and scope enforcement (SEN-018).
 
-Related Issues: SENT-015, SENT-018
+Related Issues: SEN-015, SEN-018
 
 #### 3. Acceptance Criteria
 - [ ] AC 1: Passive scanner runs automatically on all history items and flags security header issues, information disclosure, and cookie attribute deficiencies
@@ -632,7 +635,7 @@ Related Issues: SENT-015, SENT-018
 
 ---
 
-### SENT-022 · [M7/OOB]: As a security analyst, I want OOB callback tracking so that I can detect blind injection vulnerabilities.
+### SEN-022 · [M7/OOB]: As a security analyst, I want OOB callback tracking so that I can detect blind injection vulnerabilities.
 
 #### 1. User Story Statement
 As a **security analyst**
@@ -640,9 +643,9 @@ I want out-of-band probe payloads generated that phone home to a listener, with 
 So that **I can confirm blind SSRF, blind XSS, and blind XXE without relying on response differences**
 
 #### 2. Context / Background
-`oob-service.js` is a stub. Advanced capability; depends on scanner (SENT-021).
+`oob-service.js` is a stub. Advanced capability; depends on scanner (SEN-021).
 
-Related Issues: SENT-021
+Related Issues: SEN-021
 
 #### 3. Acceptance Criteria
 - [ ] AC 1: Unique OOB payload URLs are generated per probe
@@ -661,7 +664,7 @@ Related Issues: SENT-021
 
 ---
 
-### SENT-023 · [M7/Sequencer]: As a security analyst, I want token entropy analysis so that I can assess the predictability of session tokens.
+### SEN-023 · [M7/Sequencer]: As a security analyst, I want token entropy analysis so that I can assess the predictability of session tokens.
 
 #### 1. User Story Statement
 As a **security analyst**
@@ -671,7 +674,7 @@ So that **I can identify weak session token generation without manual statistica
 #### 2. Context / Background
 `sequencer-service.js` is a stub. Depends on history and repeater for token collection.
 
-Related Issues: SENT-016
+Related Issues: SEN-016
 
 #### 3. Acceptance Criteria
 - [ ] AC 1: Analyst can select a token field from a captured response (cookie, header, body)
@@ -691,7 +694,7 @@ Related Issues: SENT-016
 
 ---
 
-### SENT-024 · [M8/Extensions]: As a developer, I want an extension host with a safe API so that third-party tools can integrate with Sentinel without breaking security boundaries.
+### SEN-024 · [M8/Extensions]: As a developer, I want an extension host with a safe API so that third-party tools can integrate with Sentinel without breaking security boundaries.
 
 #### 1. User Story Statement
 As a **developer or power user**
@@ -701,7 +704,7 @@ So that **Sentinel can be extended with custom workflows without modifying core 
 #### 2. Context / Background
 `extension-host.js` is a stub. Milestone 8 — after core modules are stable.
 
-Related Issues: SENT-011
+Related Issues: SEN-011
 
 #### 3. Acceptance Criteria
 - [ ] AC 1: Extensions are loaded from a designated directory and listed in ExtensionsPanel
@@ -722,7 +725,7 @@ Related Issues: SENT-011
 
 ---
 
-### SENT-025 · [M8/Automation]: As a power user, I want a custom-script automation runtime so that I can define trigger-based actions without writing a full extension.
+### SEN-025 · [M8/Automation]: As a power user, I want a custom-script automation runtime so that I can define trigger-based actions without writing a full extension.
 
 #### 1. User Story Statement
 As a **power user**
@@ -730,9 +733,9 @@ I want to write lightweight scripts that fire on proxy intercept events, scanner
 So that **I can automate repetitive testing workflows without modifying the core application**
 
 #### 2. Context / Background
-Custom-script automation was added to the plan as part of M8. Depends on extension host (SENT-024) for the runtime infrastructure.
+Custom-script automation was added to the plan as part of M8. Depends on extension host (SEN-024) for the runtime infrastructure.
 
-Related Issues: SENT-024
+Related Issues: SEN-024
 
 #### 3. Acceptance Criteria
 - [ ] AC 1: Analyst can write and save scripts attached to one or more trigger types
@@ -753,7 +756,7 @@ Related Issues: SENT-024
 
 ---
 
-### SENT-026 · [M8/Hardening]: As a developer, I want a security hardening pass on IPC and renderer boundaries so that the app meets production security standards.
+### SEN-026 · [M8/Hardening]: As a developer, I want a security hardening pass on IPC and renderer boundaries so that the app meets production security standards.
 
 #### 1. User Story Statement
 As a **developer**
@@ -763,7 +766,7 @@ So that **Sentinel itself is not a vector for privilege escalation or code injec
 #### 2. Context / Background
 `preload.js` currently only exposes `electronInfo`. The full set of channels will grow across milestones; a final hardening pass is needed before any public release. Relates to `contextIsolation`, `nodeIntegration: false`, and `sandbox: true` settings.
 
-Related Issues: SENT-011, SENT-014
+Related Issues: SEN-011, SEN-014
 
 #### 3. Acceptance Criteria
 - [ ] AC 1: All IPC channels are enumerated and each has a documented security rationale

@@ -7,7 +7,7 @@ So that I can catch regressions early and track how much code is exercised
 h2. Context / Background
 Project started without any test infrastructure. Vitest was selected to match the ESM/JSX stack and provide v8 coverage without a separate runner.
 
-Related Issues: SENT-002
+Related Issues: SEN-002
 
 h2. Acceptance Criteria
 - [x] AC 1: npm test runs all tests with no manual configuration
@@ -75,7 +75,7 @@ So that I can onboard quickly without guessing at missing context
 h2. Context / Background
 The original README did not reflect the Sentinel scope, planning items, or current component structure.
 
-Related Issues: SENT-005
+Related Issues: SEN-005
 
 h2. Acceptance Criteria
 - [x] AC 1: README shows the current src/ file tree with TODO annotations on stubs
@@ -97,7 +97,7 @@ So that no intended scope item is missing from milestone planning
 h2. Context / Background
 Burp Suite project config import, HackerOne CSV ingestion, and custom-script automation were identified as required features not yet in any planning doc.
 
-Related Issues: SENT-004, SENT-016, SENT-017, SENT-018
+Related Issues: SEN-004, SEN-016, SEN-017, SEN-018
 
 h2. Acceptance Criteria
 - [x] AC 1: SENTINEL_IMPLEMENTATION_PLAN.md contains Burp Suite import entry under M5
@@ -140,7 +140,7 @@ So that I can move between modules and manage the proxy without losing context
 h2. Context / Background
 App.jsx previously had only version info. The shell needed module buttons, pane strip, status badges, and a pause/resume proxy control.
 
-Related Issues: SENT-008
+Related Issues: SEN-008
 
 h2. Acceptance Criteria
 - [x] AC 1: Module navigation buttons render for Dashboard, Proxy, History, Repeater, Intruder, Target, Scanner, Decoder, Extensions
@@ -163,7 +163,7 @@ So that the workspace shell can render the correct panel when a pane is selected
 h2. Context / Background
 All 12 panel files were comment-only TODO stubs with no JSX. The shell's render call required real components.
 
-Related Issues: SENT-007
+Related Issues: SEN-007
 
 h2. Acceptance Criteria
 - [x] AC 1: All 12 panel files export a named React function component via module.exports
@@ -188,7 +188,7 @@ So that I can see proxy queue depth, scope count, or findings without switching 
 h2. Context / Background
 The sidebar previously showed generic fields. Panel-specific fields make it contextually useful.
 
-Related Issues: SENT-007
+Related Issues: SEN-007
 
 h2. Acceptance Criteria
 - [x] AC 1: Each module has a defined set of status fields (label plus state key)
@@ -234,7 +234,7 @@ So that feature modules do not need structural rewrites when integrated
 h2. Context / Background
 No contracts exist yet. Milestone 0 gates all downstream milestones.
 
-Related Issues: SENT-012, SENT-013
+Related Issues: SEN-012, SEN-013
 
 h2. Acceptance Criteria
 - [ ] AC 1: A canonical traffic model is defined and documented
@@ -257,26 +257,29 @@ I want a real-time project store backed by SQLite that survives crashes
 So that analysts do not lose rules, scope, history, or module state on unexpected exit
 
 h2. Context / Background
-src/main/db/project-store.js is a stub with no implementation. All Sentinel modules depend on persistence.
+src/main/db/project-store.js now implements a SQLite-backed store with migration bootstrap, crash-safe writes, and integrity checks.
 
-Related Issues: SENT-011, SENT-013
+Related Issues: SEN-011, SEN-013
 
 h2. Acceptance Criteria
-- [ ] AC 1: A project file is created on first launch and loaded on subsequent launches
-- [ ] AC 2: Traffic history, rules, scope, and module state are persisted incrementally
-- [ ] AC 3: Crash-safe write pattern is used
-- [ ] AC 4: Recovery integrity check runs on project load and reports corruption clearly
-- [ ] AC 5: Project file version is stored and migration strategy handles older versions
+- [x] AC 1: A project file is created on first launch and loaded on subsequent launches
+- [x] AC 2: Traffic history, rules, scope, and module state are persisted incrementally
+- [x] AC 3: Crash-safe write pattern is used
+- [x] AC 4: Recovery integrity check runs on project load and reports corruption clearly
+- [x] AC 5: Project file version is stored and migration strategy handles older versions
 
 h2. Technical Notes
 - src/main/db/project-store.js
 - SQLite3 is already in dependencies
+- WAL + synchronous=FULL enabled for crash-safe writes
+- Integrity validated via PRAGMA quick_check on open
+- Integration tests added in src/main/__tests__/project-store.test.js
 
 h2. Definition of Done
-- [ ] Unit tests passed
-- [ ] Code reviewed
-- [ ] QA verified in Staging
-- [ ] Documentation updated",Highest,"sentinel,platform,pending,m1,persistence","Platform",To Do
+- [x] Unit tests passed
+- [x] Code reviewed
+- [x] QA verified in Staging
+- [x] Documentation updated",Highest,"sentinel,platform,completed,m1,persistence","Platform",Done
 Story,"[M1/Platform]: As a developer, I want CA certificate generation and lifecycle management so that the proxy can perform TLS interception.","h2. User Story Statement
 As a developer
 I want the app to generate, store, and rotate a local CA certificate
@@ -285,7 +288,7 @@ So that the proxy can perform TLS MITM and analysts can install the CA into thei
 h2. Context / Background
 src/main/certs/ca-manager.js is a stub. TLS interception is a hard dependency of Milestone 2.
 
-Related Issues: SENT-011, SENT-014
+Related Issues: SEN-011, SEN-014
 
 h2. Acceptance Criteria
 - [ ] AC 1: A CA key pair is generated on first run and persisted securely
@@ -311,7 +314,7 @@ So that I can inspect and manipulate web application traffic for security testin
 h2. Context / Background
 Core Sentinel MVP capability. src/main/proxy/intercept-engine.js has empty pause, forward, drop, edit stubs. Depends on M1 persistence and CA.
 
-Related Issues: SENT-011, SENT-012, SENT-013, SENT-015
+Related Issues: SEN-011, SEN-012, SEN-013, SEN-015
 
 h2. Acceptance Criteria
 - [ ] AC 1: HTTP/1.1 traffic flowing through the configured proxy port is intercepted
@@ -340,7 +343,7 @@ So that I can revisit any captured request without it scrolling off screen
 h2. Context / Background
 history-log.js is a stub. Depends on project persistence and proxy engine.
 
-Related Issues: SENT-014
+Related Issues: SEN-014
 
 h2. Acceptance Criteria
 - [ ] AC 1: Every proxied request/response pair is written to the history store
@@ -365,7 +368,7 @@ So that I can iteratively test inputs and observe responses without resetting br
 h2. Context / Background
 repeater-service.js is a stub. Depends on history.
 
-Related Issues: SENT-015
+Related Issues: SEN-015
 
 h2. Acceptance Criteria
 - [ ] AC 1: Any history item can be sent to a new Repeater tab
@@ -390,7 +393,7 @@ So that I can efficiently enumerate and identify vulnerable input parameters
 h2. Context / Background
 intruder-engine.js is a stub. One of the most complex modules and depends on history and repeater primitives.
 
-Related Issues: SENT-016
+Related Issues: SEN-016
 
 h2. Acceptance Criteria
 - [ ] AC 1: Analyst can mark one or more positions in a request template
@@ -416,7 +419,7 @@ So that I stay within authorised target scope and avoid testing out-of-scope ass
 h2. Context / Background
 target-mapper.js is a stub. Burp import and HackerOne CSV ingestion were added as explicit planning items.
 
-Related Issues: SENT-014
+Related Issues: SEN-014
 
 h2. Acceptance Criteria
 - [ ] AC 1: Analyst can add or remove scope entries by host, domain, IP, or CIDR range
@@ -444,7 +447,7 @@ So that I can quickly decode obfuscated values or construct encoded payloads for
 h2. Context / Background
 decoder-service.js is a stub. Standalone utility with minimal server-side dependencies.
 
-Related Issues: SENT-011
+Related Issues: SEN-011
 
 h2. Acceptance Criteria
 - [ ] AC 1: Decoder supports Base64 encode and decode, URL encode and decode, HTML entity encode and decode, Hex, and GZIP
@@ -469,7 +472,7 @@ So that I can browse, authenticate, and capture traffic without external browser
 h2. Context / Background
 embedded-browser-service.js is a stub. Depends on a running proxy.
 
-Related Issues: SENT-014
+Related Issues: SEN-014
 
 h2. Acceptance Criteria
 - [ ] AC 1: Embedded browser opens within the EmbeddedBrowserPanel
@@ -494,7 +497,7 @@ So that I get automated vulnerability signals without replaying every request ma
 h2. Context / Background
 scanner-engine.js is a stub. Depends on history and scope enforcement.
 
-Related Issues: SENT-015, SENT-018
+Related Issues: SEN-015, SEN-018
 
 h2. Acceptance Criteria
 - [ ] AC 1: Passive scanner runs automatically on all history items and flags security header issues, information disclosure, and cookie attribute deficiencies
@@ -520,7 +523,7 @@ So that I can confirm blind SSRF, blind XSS, and blind XXE without relying on re
 h2. Context / Background
 oob-service.js is a stub. Advanced capability and depends on scanner.
 
-Related Issues: SENT-021
+Related Issues: SEN-021
 
 h2. Acceptance Criteria
 - [ ] AC 1: Unique OOB payload URLs are generated per probe
@@ -544,7 +547,7 @@ So that I can identify weak session token generation without manual statistical 
 h2. Context / Background
 sequencer-service.js is a stub. Depends on history and repeater for token collection.
 
-Related Issues: SENT-016
+Related Issues: SEN-016
 
 h2. Acceptance Criteria
 - [ ] AC 1: Analyst can select a token field from a captured response
@@ -569,7 +572,7 @@ So that Sentinel can be extended with custom workflows without modifying core co
 h2. Context / Background
 extension-host.js is a stub. Milestone 8 follows core module stabilization.
 
-Related Issues: SENT-011
+Related Issues: SEN-011
 
 h2. Acceptance Criteria
 - [ ] AC 1: Extensions are loaded from a designated directory and listed in ExtensionsPanel
@@ -595,7 +598,7 @@ So that I can automate repetitive testing workflows without modifying the core a
 h2. Context / Background
 Custom-script automation was added to the plan as part of M8. Depends on extension host for the runtime infrastructure.
 
-Related Issues: SENT-024
+Related Issues: SEN-024
 
 h2. Acceptance Criteria
 - [ ] AC 1: Analyst can write and save scripts attached to one or more trigger types
@@ -621,7 +624,7 @@ So that Sentinel itself is not a vector for privilege escalation or code injecti
 h2. Context / Background
 preload.js currently only exposes electronInfo. The full set of channels will grow across milestones and a final hardening pass is needed before release.
 
-Related Issues: SENT-011, SENT-014
+Related Issues: SEN-011, SEN-014
 
 h2. Acceptance Criteria
 - [ ] AC 1: All IPC channels are enumerated and each has a documented security rationale
