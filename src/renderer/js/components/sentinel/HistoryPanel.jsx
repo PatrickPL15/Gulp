@@ -224,13 +224,30 @@ function HistoryPanel() {
 				throw new Error('Selected history item has no request payload.');
 			}
 
+			const request = item.request;
+			const scheme = request.tls ? 'https' : 'http';
+			const authority = request.host || (request.headers && request.headers.host) || 'localhost';
+			const originalUrl = request.url || `${scheme}://${authority}${request.path || '/'}`;
+			const separator = originalUrl.includes('?') ? '&' : '?';
+			const templateUrl = `${originalUrl}${separator}attack=§injection§`;
+
 			const configured = await sentinel.intruder.configure({
 				config: {
-					method: item.request.method,
-					path: item.request.path,
-					headers: item.request.headers,
-					body: item.request.body,
-					payloads: ['${injection}'],
+					requestTemplate: {
+						method: request.method,
+						url: templateUrl,
+						headers: request.headers,
+						body: request.body,
+					},
+					attackType: 'sniper',
+					positions: [
+						{
+							source: {
+								type: 'dictionary',
+								items: ['test', 'admin', "' or 1=1 --"],
+							},
+						},
+					],
 				},
 			});
 

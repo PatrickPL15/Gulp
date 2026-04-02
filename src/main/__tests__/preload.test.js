@@ -193,11 +193,13 @@ describe('Preload Bridge - all invoke channels', () => {
     intruder.configure({ config: { mode: 'sniper' } });
     intruder.start({ configId: 'cfg-1' });
     intruder.stop({ attackId: 'atk-1' });
+    intruder.list();
     intruder.results({ attackId: 'atk-1', page: 0, pageSize: 25 });
 
     expect(ipcInvoke).toHaveBeenCalledWith('intruder:configure', { config: { mode: 'sniper' } });
     expect(ipcInvoke).toHaveBeenCalledWith('intruder:start', { configId: 'cfg-1' });
     expect(ipcInvoke).toHaveBeenCalledWith('intruder:stop', { attackId: 'atk-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('intruder:list', {});
     expect(ipcInvoke).toHaveBeenCalledWith('intruder:results', { attackId: 'atk-1', page: 0, pageSize: 25 });
   });
 

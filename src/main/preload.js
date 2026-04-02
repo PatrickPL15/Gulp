@@ -75,6 +75,7 @@ contextBridge.exposeInMainWorld('sentinel', {
     configure:  (args)  => invoke('intruder:configure', args),
     start:      (args)  => invoke('intruder:start', args),
     stop:       (args)  => invoke('intruder:stop', args),
+    list:       ()      => invoke('intruder:list', {}),
     results:    (args)  => invoke('intruder:results', args),
     onProgress: (fn)    => onPush('intruder:progress', fn),
   },

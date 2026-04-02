@@ -6,8 +6,8 @@ Desktop security-workbench foundation built with Electron (main process), React 
 - Electron + renderer scaffold is running from built output (`dist/main/index.js`).
 - Chakra UI integration is in place with theme config in `src/renderer/js/theme.js`.
 - Vitest test setup exists (`test`, `test:ui`, `test:coverage` scripts).
-- Sentinel M1-M2 core capabilities are implemented: CA lifecycle, intercepting proxy, rules, persistent history, and history handoff into repeater/intruder workflows.
-- Latest validation snapshot: 15 test suites / 141 tests passing, plus successful `npm run build`.
+- Sentinel M1-M4 capabilities are implemented: CA lifecycle, intercepting proxy, rules, persistent history, Repeater response viewers, and Intruder payload attacks.
+- Latest milestone validation snapshot: 6 focused M4 suites / 114 tests passing, plus successful `npx gulp build`.
 - Sentinel roadmap and checklist are tracked in:
    - `APP_COMPLETION_AND_TEST_CHECKLIST.md`
    - `SENTINEL_IMPLEMENTATION_PLAN.md`
@@ -49,8 +49,8 @@ Desktop security-workbench foundation built with Electron (main process), React 
 │  │  │  ├─ history-log.js                 (persistent queryable traffic history)
 │  │  │  ├─ protocol-support.js            (HTTP/1.1 proxy runtime)
 │  │  │  ├─ rules-engine.js                (match/replace rule execution)
-│  │  │  ├─ repeater-service.js            (history handoff bridge)
-│  │  │  ├─ intruder-engine.js             (history handoff bridge)
+│  │  │  ├─ repeater-service.js            (editable resend workflow + per-send history)
+│  │  │  ├─ intruder-engine.js             (payload attack runtime + progress/results)
 │  │  │  ├─ target-mapper.js               (TODO scaffold)
 │  │  │  ├─ scanner-engine.js              (TODO scaffold)
 │  │  │  ├─ oob-service.js                 (TODO scaffold)
@@ -74,8 +74,8 @@ Desktop security-workbench foundation built with Electron (main process), React 
 │              ├─ DashboardShell.jsx       (dashboard shell + CA guidance summary)
 │              ├─ ProxyPanel.jsx           (intercept queue control and request editing)
 │              ├─ HistoryPanel.jsx         (paginated filterable history + tool handoff)
-│              ├─ RepeaterPanel.jsx        (TODO scaffold)
-│              ├─ IntruderPanel.jsx        (TODO scaffold)
+│              ├─ RepeaterPanel.jsx        (response viewers + compare workflow)
+│              ├─ IntruderPanel.jsx        (marker-based attack editor + live results)
 │              ├─ TargetMapPanel.jsx       (TODO scaffold)
 │              ├─ ScannerPanel.jsx         (TODO scaffold)
 │              ├─ OobPanel.jsx             (TODO scaffold)
@@ -124,7 +124,8 @@ npm run dev
 
 ## Testing Snapshot
 - Test framework is Vitest with jsdom and Testing Library.
-- Current run status: 15 suites / 141 tests passing.
+- Current milestone validation: 6 focused M4 suites / 114 tests passing, plus successful Gulp build.
+- A full-suite run currently reports 267/268 passing with one unrelated `project-store` cleanup failure on Windows.
 - Coverage/report strategy is documented in `TEST_COVERAGE.md`.
 
 ## TODO Scope (Sentinel)

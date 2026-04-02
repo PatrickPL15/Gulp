@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import http from 'node:http';
 
 const { createProjectStore } = require('../../db/project-store');
 const { createHistoryLog } = require('../history-log');
@@ -15,6 +16,27 @@ function removeSqliteArtifacts(dbPath) {
       fs.unlinkSync(file);
     }
   }
+}
+
+function startUpstreamServer(handler) {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer(handler);
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => resolve(server));
+  });
+}
+
+async function waitForAttack(engine, attackId, timeoutMs = 3000) {
+  const startedAt = Date.now();
+  while ((Date.now() - startedAt) < timeoutMs) {
+    const listed = await engine.list();
+    const attack = listed.items.find(item => item.id === attackId);
+    if (attack && attack.status !== 'running') {
+      return attack;
+    }
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  throw new Error(`Timed out waiting for attack ${attackId}`);
 }
 
 describe('SEN-15 history persistence and tool handoff', () => {
@@ -153,6 +175,13 @@ describe('SEN-15 history persistence and tool handoff', () => {
     const historyLog = createHistoryLog();
     const repeater = createRepeaterService();
     const intruder = createIntruderEngine();
+    const server = await startUpstreamServer((req, res) => {
+      const url = new URL(req.url, 'http://127.0.0.1');
+      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end(`resource:${url.searchParams.get('attack') || 'none'}`);
+    });
+    cleanupTasks.push(() => new Promise(resolve => server.close(resolve)));
+    const port = server.address().port;
 
     const item = await historyLog.logTraffic({
       id: 'handoff-item',
@@ -160,9 +189,10 @@ describe('SEN-15 history persistence and tool handoff', () => {
       timestamp: Date.now(),
       request: {
         method: 'GET',
-        host: 'handoff.test',
+        url: `http://127.0.0.1:${port}/resource`,
+        host: `127.0.0.1:${port}`,
         path: '/resource',
-        headers: { host: 'handoff.test' },
+        headers: { host: `127.0.0.1:${port}` },
         body: null,
       },
       response: { statusCode: 200 },
@@ -177,14 +207,24 @@ describe('SEN-15 history persistence and tool handoff', () => {
 
     const configured = await intruder.configure({
       config: {
-        method: loaded.request.method,
-        path: loaded.request.path,
-        headers: loaded.request.headers,
-        body: loaded.request.body,
-        payloads: ['${test}'],
+        requestTemplate: {
+          method: loaded.request.method,
+          url: `http://127.0.0.1:${port}/resource?attack=§test§`,
+          headers: loaded.request.headers,
+          body: loaded.request.body,
+        },
+        positions: [
+          {
+            source: {
+              type: 'dictionary',
+              items: ['alpha'],
+            },
+          },
+        ],
       },
     });
     const started = await intruder.start({ configId: configured.configId });
+    await waitForAttack(intruder, started.attackId);
     const results = await intruder.results({ attackId: started.attackId, page: 0, pageSize: 10 });
 
     expect(results.total).toBe(1);
