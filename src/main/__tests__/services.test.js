@@ -1,24 +1,24 @@
 import { describe, it, expect } from 'vitest';
+import path from 'node:path';
 
-describe('Sentinel Database and Cert Services Coverage', () => {
-  describe('Database Services', () => {
-    it('should verify project-store module exists', () => {
-      const moduleName = 'project-store';
-      expect(moduleName).toBe('project-store');
-      expect(typeof moduleName).toBe('string');
+const DB_DIR   = path.resolve(__dirname, '../db');
+const CERT_DIR = path.resolve(__dirname, '../certs');
+
+describe('Sentinel Database and Certificate Services', () => {
+  describe('project-store module', () => {
+    it('loads without throwing', () => {
+      expect(() => require(path.join(DB_DIR, 'project-store'))).not.toThrow();
     });
 
-    it('should verify project-store is a TODO stub', () => {
-      const moduleName = 'project-store';
-      expect(moduleName).toBe('project-store');
+    it('exports an object with expected API surface', () => {
+      const mod = require(path.join(DB_DIR, 'project-store'));
+      expect(typeof mod).toBe('object');
+      expect(mod).not.toBeNull();
     });
-  });
 
-  describe('Certificate Services', () => {
-    it('should verify ca-manager module exists', () => {
-      const moduleName = 'ca-manager';
-      expect(moduleName).toBe('ca-manager');
-      expect(typeof moduleName).toBe('string');
+    it('exports ProjectStore class', () => {
+      const mod = require(path.join(DB_DIR, 'project-store'));
+      expect(typeof mod.ProjectStore).toBe('function');
     });
 
     it('should verify ca-manager exposes lifecycle API', () => {
@@ -32,29 +32,40 @@ describe('Sentinel Database and Cert Services Coverage', () => {
       expect(typeof caManager.rotateCa).toBe('function');
       expect(typeof caManager.getTrustInstallGuidance).toBe('function');
     });
+
+    it('exports singleton convenience functions', () => {
+      const mod = require(path.join(DB_DIR, 'project-store'));
+      expect(typeof mod.openProject).toBe('function');
+      expect(typeof mod.closeProject).toBe('function');
+      expect(typeof mod.checkpointProject).toBe('function');
+      expect(typeof mod.getProjectMeta).toBe('function');
+      expect(typeof mod.upsertTrafficItem).toBe('function');
+      expect(typeof mod.queryTraffic).toBe('function');
+      expect(typeof mod.replaceRules).toBe('function');
+      expect(typeof mod.replaceScopeRules).toBe('function');
+      expect(typeof mod.setModuleState).toBe('function');
+    });
+
+    it('exports schema constants and helpers', () => {
+      const mod = require(path.join(DB_DIR, 'project-store'));
+      expect(typeof mod.CURRENT_VERSION).toBe('number');
+      expect(mod.CURRENT_VERSION).toBeGreaterThanOrEqual(1);
+      expect(typeof mod.runMigrations).toBe('function');
+      expect(typeof mod.rowToProjectMeta).toBe('function');
+      expect(Array.isArray(mod.MIGRATIONS)).toBe(true);
+      expect(Array.isArray(mod.DDL_V1)).toBe(true);
+    });
   });
 
-  it('should have all Sentinel service modules properly structured', () => {
-    const modules = {
-      database: ['project-store'],
-      certificates: ['ca-manager']
-    };
+  describe('ca-manager module', () => {
+    it('loads without throwing', () => {
+      expect(() => require(path.join(CERT_DIR, 'ca-manager'))).not.toThrow();
+    });
 
-    expect(Object.keys(modules).length).toBe(2);
-    expect(modules.database).toContain('project-store');
-    expect(modules.certificates).toContain('ca-manager');
-  });
-
-  it('should verify service module count', () => {
-    const allServices = [
-      'project-store',
-      'ca-manager'
-    ];
-
-    expect(allServices.length).toBe(2);
-    allServices.forEach(service => {
-      expect(service).toBeDefined();
-      expect(typeof service).toBe('string');
+    it('exports an object', () => {
+      const mod = require(path.join(CERT_DIR, 'ca-manager'));
+      expect(typeof mod).toBe('object');
+      expect(mod).not.toBeNull();
     });
   });
 });

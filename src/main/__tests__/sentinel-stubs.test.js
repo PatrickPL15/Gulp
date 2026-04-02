@@ -1,84 +1,56 @@
 import { describe, it, expect } from 'vitest';
+import path from 'node:path';
+
+const PROXY_DIR = path.resolve(__dirname, '../proxy');
+const DB_DIR    = path.resolve(__dirname, '../db');
+const CERT_DIR  = path.resolve(__dirname, '../certs');
 
 describe('Sentinel Service Stubs', () => {
   describe('Proxy Services', () => {
-    it('should have intercept-engine TODO defined', () => {
-      const module = 'intercept-engine';
-      expect(module).toBe('intercept-engine');
+    const proxyModules = [
+      'intercept-engine',
+      'history-log',
+      'protocol-support',
+      'rules-engine',
+      'repeater-service',
+      'intruder-engine',
+      'target-mapper',
+      'scanner-engine',
+      'oob-service',
+      'sequencer-service',
+      'decoder-service',
+      'extension-host',
+      'embedded-browser-service',
+    ];
+
+    proxyModules.forEach((mod) => {
+      it(`${mod} loads and exports an object`, () => {
+        const loaded = require(path.join(PROXY_DIR, mod));
+        expect(typeof loaded).toBe('object');
+        expect(loaded).not.toBeNull();
+      });
     });
 
-    it('should have history-log TODO defined', () => {
-      const module = 'history-log';
-      expect(module).toBe('history-log');
-    });
-
-    it('should have protocol-support TODO defined', () => {
-      const module = 'protocol-support';
-      expect(module).toBe('protocol-support');
-    });
-
-    it('should have rules-engine TODO defined', () => {
-      const module = 'rules-engine';
-      expect(module).toBe('rules-engine');
-    });
-
-    it('should have repeater-service TODO defined', () => {
-      const module = 'repeater-service';
-      expect(module).toBe('repeater-service');
-    });
-
-    it('should have intruder-engine TODO defined', () => {
-      const module = 'intruder-engine';
-      expect(module).toBe('intruder-engine');
-    });
-
-    it('should have target-mapper TODO defined', () => {
-      const module = 'target-mapper';
-      expect(module).toBe('target-mapper');
-    });
-
-    it('should have scanner-engine TODO defined', () => {
-      const module = 'scanner-engine';
-      expect(module).toBe('scanner-engine');
-    });
-
-    it('should have oob-service TODO defined', () => {
-      const module = 'oob-service';
-      expect(module).toBe('oob-service');
-    });
-
-    it('should have sequencer-service TODO defined', () => {
-      const module = 'sequencer-service';
-      expect(module).toBe('sequencer-service');
-    });
-
-    it('should have decoder-service TODO defined', () => {
-      const module = 'decoder-service';
-      expect(module).toBe('decoder-service');
-    });
-
-    it('should have extension-host TODO defined', () => {
-      const module = 'extension-host';
-      expect(module).toBe('extension-host');
-    });
-
-    it('should have embedded-browser-service TODO defined', () => {
-      const module = 'embedded-browser-service';
-      expect(module).toBe('embedded-browser-service');
+    it('all 13 proxy service modules are loadable', () => {
+      expect(proxyModules.length).toBe(13);
+      proxyModules.forEach((mod) => {
+        expect(() => require(path.join(PROXY_DIR, mod))).not.toThrow();
+      });
     });
   });
 
   describe('Database Services', () => {
-    it('should have project-store TODO defined', () => {
-      const module = 'project-store';
-      expect(module).toBe('project-store');
+    it('project-store loads and exports a ProjectStore class', () => {
+      const mod = require(path.join(DB_DIR, 'project-store'));
+      expect(typeof mod.ProjectStore).toBe('function');
     });
   });
 
   describe('Certificate Services', () => {
-    it('should have ca-manager TODO defined', () => {
-      const module = 'ca-manager';
-      expect(module).toBe('ca-manager');
+    it('ca-manager loads and exports an object', () => {
+      const mod = require(path.join(CERT_DIR, 'ca-manager'));
+      expect(typeof mod).toBe('object');
+      expect(mod).not.toBeNull();
     });
   });
 });

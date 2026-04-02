@@ -37,6 +37,21 @@ describe('contracts/traffic-model', () => {
     expect(tm.WsOpcode.BINARY).toBe(0x2);
   });
 
+  it('exports WsOpcode enum with all RFC 6455 values', () => {
+    expect(tm.WsOpcode.CONTINUATION).toBe(0x0);
+    expect(tm.WsOpcode.TEXT).toBe(0x1);
+    expect(tm.WsOpcode.BINARY).toBe(0x2);
+    expect(tm.WsOpcode.CLOSE).toBe(0x8);
+    expect(tm.WsOpcode.PING).toBe(0x9);
+    expect(tm.WsOpcode.PONG).toBe(0xA);
+  });
+
+  it('exports HttpProtocol with correct string values', () => {
+    expect(tm.HttpProtocol.HTTP_1_0).toBe('HTTP/1.0');
+    expect(tm.HttpProtocol.HTTP_1_1).toBe('HTTP/1.1');
+    expect(tm.HttpProtocol.HTTP_2).toBe('HTTP/2');
+  });
+
   it('exports TrafficKind enum', () => {
     expect(tm.TrafficKind.HTTP).toBe('http');
     expect(tm.TrafficKind.WEBSOCKET).toBe('websocket');
@@ -118,6 +133,12 @@ describe('contracts/traffic-model', () => {
       expect(item.response).toBeNull();
       expect(item.wsEvent).toBeNull();
     });
+
+    it('has all top-level TrafficItem fields', () => {
+      expect(typeof item.id).toBe('string');
+      expect(typeof item.timestamp).toBe('number');
+      expect(item.kind).toBe('http');
+    });
   });
 
   describe('createWsTrafficItem()', () => {
@@ -128,6 +149,12 @@ describe('contracts/traffic-model', () => {
       expect(item.wsEvent).toMatchObject({ direction: 'c2s' });
       expect(item.request).toBeNull();
       expect(item.response).toBeNull();
+    });
+
+    it('has all top-level TrafficItem fields', () => {
+      expect(typeof item.id).toBe('string');
+      expect(typeof item.timestamp).toBe('number');
+      expect(item.kind).toBe('websocket');
     });
   });
 });
@@ -199,6 +226,42 @@ describe('contracts/ipc-contract', () => {
       const matched = contract.getChannelsForService(svc);
       expect(matched.length, `service "${svc}" has no channels`).toBeGreaterThan(0);
     }
+  });
+
+  it('getChannelsForService() returns empty array for unknown service', () => {
+    expect(contract.getChannelsForService('nonexistent')).toEqual([]);
+  });
+
+  it('invoke and push channels cover all directions', () => {
+    const invoke = contract.getInvokeChannels();
+    const push   = contract.getPushChannels();
+    // There must be both invoke and push channels in the contract
+    expect(invoke.length).toBeGreaterThan(0);
+    expect(push.length).toBeGreaterThan(0);
+    // Together they should account for every channel
+    expect(invoke.length + push.length).toBe(contract.CHANNELS.length);
+  });
+
+  it('push channels include expected real-time events', () => {
+    const pushNames = contract.getPushChannels().map(c => c.channel);
+    expect(pushNames).toContain('history:push');
+    expect(pushNames).toContain('proxy:intercept:request');
+    expect(pushNames).toContain('proxy:intercept:response');
+    expect(pushNames).toContain('intruder:progress');
+    expect(pushNames).toContain('scanner:progress');
+    expect(pushNames).toContain('oob:hit');
+  });
+
+  it('invoke channels include all CRUD-style service operations', () => {
+    const invokeNames = contract.getInvokeChannels().map(c => c.channel);
+    expect(invokeNames).toContain('project:new');
+    expect(invokeNames).toContain('project:open');
+    expect(invokeNames).toContain('project:save');
+    expect(invokeNames).toContain('project:close');
+    expect(invokeNames).toContain('project:meta');
+    expect(invokeNames).toContain('ca:get');
+    expect(invokeNames).toContain('ca:export');
+    expect(invokeNames).toContain('ca:rotate');
   });
 
   it('validates preload invoke channels against contract direction', () => {
@@ -275,6 +338,44 @@ describe('contracts/db-schema', () => {
 
   it('exports runMigrations as a function', () => {
     expect(typeof schema.runMigrations).toBe('function');
+  });
+
+  it('migration up() uses exec-only adapter contract (no prepare/transaction)', () => {
+    for (const m of schema.MIGRATIONS) {
+      const statements = [];
+      const adapter = {
+        exec(sql) { statements.push(sql); },
+      };
+      // Should not throw on the exec-only adapter
+      expect(() => m.up(adapter)).not.toThrow();
+      // All emitted statements must be non-empty strings
+      expect(statements.length).toBeGreaterThan(0);
+      statements.forEach(sql => {
+        expect(typeof sql).toBe('string');
+        expect(sql.trim().length).toBeGreaterThan(0);
+      });
+    }
+  });
+
+  it('migration up() emits DDL_V1 statements on 0→1 migration', () => {
+    const migration = schema.MIGRATIONS.find(m => m.fromVersion === 0 && m.toVersion === 1);
+    expect(migration).toBeDefined();
+
+    const emitted = [];
+    migration.up({ exec: sql => emitted.push(sql) });
+
+    // At minimum all DDL_V1 entries should appear
+    expect(emitted.length).toBeGreaterThanOrEqual(schema.DDL_V1.length);
+    // First emitted statement should contain CREATE TABLE IF NOT EXISTS project_meta
+    const hasMeta = emitted.some(s => s.includes('project_meta'));
+    expect(hasMeta).toBe(true);
+  });
+
+  it('rowToProjectMeta() maps numeric timestamps correctly', () => {
+    const row = { id: 'abc', name: 'X', created_at: 0, updated_at: 9999, schema_ver: 1 };
+    const meta = schema.rowToProjectMeta(row);
+    expect(meta.createdAt).toBe(0);
+    expect(meta.updatedAt).toBe(9999);
   });
 
   it('exports rowToProjectMeta as a function that maps DB rows', () => {

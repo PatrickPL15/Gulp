@@ -128,3 +128,282 @@ describe('Preload Bridge API Surface', () => {
     });
   });
 });
+
+describe('Preload Bridge - all invoke channels', () => {
+  it('proxy namespace: all invoke methods use correct channels', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { proxy } = exposed.sentinel;
+
+    proxy.start({ port: 9090 });
+    proxy.stop();
+    proxy.status();
+    proxy.intercept.toggle({ enabled: true });
+    proxy.intercept.forward({ requestId: 'req-1' });
+    proxy.intercept.drop({ requestId: 'req-1' });
+
+    expect(ipcInvoke).toHaveBeenCalledWith('proxy:start', { port: 9090 });
+    expect(ipcInvoke).toHaveBeenCalledWith('proxy:stop', {});
+    expect(ipcInvoke).toHaveBeenCalledWith('proxy:status', {});
+    expect(ipcInvoke).toHaveBeenCalledWith('proxy:intercept:toggle', { enabled: true });
+    expect(ipcInvoke).toHaveBeenCalledWith('proxy:intercept:forward', { requestId: 'req-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('proxy:intercept:drop', { requestId: 'req-1' });
+  });
+
+  it('history namespace: all invoke methods use correct channels', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { history } = exposed.sentinel;
+
+    history.query({ page: 0, pageSize: 10 });
+    history.get({ id: 'item-1' });
+    history.clear();
+
+    expect(ipcInvoke).toHaveBeenCalledWith('history:query', { page: 0, pageSize: 10 });
+    expect(ipcInvoke).toHaveBeenCalledWith('history:get', { id: 'item-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('history:clear', {});
+  });
+
+  it('rules namespace: all invoke methods use correct channels', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { rules } = exposed.sentinel;
+
+    rules.list();
+    rules.save({ rules: [{ id: 'r1' }] });
+
+    expect(ipcInvoke).toHaveBeenCalledWith('rules:list', {});
+    expect(ipcInvoke).toHaveBeenCalledWith('rules:save', { rules: [{ id: 'r1' }] });
+  });
+
+  it('repeater namespace: all invoke methods use correct channels', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { repeater } = exposed.sentinel;
+
+    repeater.send({ request: { method: 'GET', url: 'https://example.com/' } });
+    repeater.historyList();
+
+    expect(ipcInvoke).toHaveBeenCalledWith('repeater:send', { request: { method: 'GET', url: 'https://example.com/' } });
+    expect(ipcInvoke).toHaveBeenCalledWith('repeater:history:list', {});
+  });
+
+  it('intruder namespace: all invoke methods use correct channels', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { intruder } = exposed.sentinel;
+
+    intruder.configure({ config: { mode: 'sniper' } });
+    intruder.start({ configId: 'cfg-1' });
+    intruder.stop({ attackId: 'atk-1' });
+    intruder.results({ attackId: 'atk-1', page: 0, pageSize: 25 });
+
+    expect(ipcInvoke).toHaveBeenCalledWith('intruder:configure', { config: { mode: 'sniper' } });
+    expect(ipcInvoke).toHaveBeenCalledWith('intruder:start', { configId: 'cfg-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('intruder:stop', { attackId: 'atk-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('intruder:results', { attackId: 'atk-1', page: 0, pageSize: 25 });
+  });
+
+  it('target and scope namespaces use correct channels', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { target, scope } = exposed.sentinel;
+
+    target.sitemap();
+    scope.get();
+    scope.set({ rules: [{ host: 'x.com' }] });
+    scope.importBurp({ filePath: '/tmp/burp-project.xml' });
+    scope.importCsv({ filePath: '/tmp/scope.csv', format: 'hackerone' });
+
+    expect(ipcInvoke).toHaveBeenCalledWith('target:sitemap', {});
+    expect(ipcInvoke).toHaveBeenCalledWith('scope:get', {});
+    expect(ipcInvoke).toHaveBeenCalledWith('scope:set', { rules: [{ host: 'x.com' }] });
+    expect(ipcInvoke).toHaveBeenCalledWith('scope:import:burp', { filePath: '/tmp/burp-project.xml' });
+    expect(ipcInvoke).toHaveBeenCalledWith('scope:import:csv', { filePath: '/tmp/scope.csv', format: 'hackerone' });
+  });
+
+  it('scanner namespace: all invoke methods use correct channels', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { scanner } = exposed.sentinel;
+
+    scanner.start({ targets: ['https://example.com'], config: {} });
+    scanner.stop({ scanId: 'scan-1' });
+    scanner.results({ scanId: 'scan-1', page: 0, pageSize: 25 });
+
+    expect(ipcInvoke).toHaveBeenCalledWith('scanner:start', { targets: ['https://example.com'], config: {} });
+    expect(ipcInvoke).toHaveBeenCalledWith('scanner:stop', { scanId: 'scan-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('scanner:results', { scanId: 'scan-1', page: 0, pageSize: 25 });
+  });
+
+  it('decoder namespace uses correct channel', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { decoder } = exposed.sentinel;
+
+    decoder.process({ input: 'aGVsbG8=', operations: [{ op: 'base64:decode' }] });
+
+    expect(ipcInvoke).toHaveBeenCalledWith('decoder:process', { input: 'aGVsbG8=', operations: [{ op: 'base64:decode' }] });
+  });
+
+  it('oob namespace: all invoke methods use correct channels', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { oob } = exposed.sentinel;
+
+    oob.createPayload({ type: 'dns' });
+    oob.listHits({ id: 'p1' });
+
+    expect(ipcInvoke).toHaveBeenCalledWith('oob:payload:create', { type: 'dns' });
+    expect(ipcInvoke).toHaveBeenCalledWith('oob:hits:list', { id: 'p1' });
+  });
+
+  it('sequencer namespace: all invoke methods use correct channels', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { sequencer } = exposed.sentinel;
+
+    sequencer.captureStart({ config: { requestId: 'req-1' } });
+    sequencer.captureStop({ sessionId: 'sess-1' });
+    sequencer.analyze({ sessionId: 'sess-1' });
+
+    expect(ipcInvoke).toHaveBeenCalledWith('sequencer:capture:start', { config: { requestId: 'req-1' } });
+    expect(ipcInvoke).toHaveBeenCalledWith('sequencer:capture:stop', { sessionId: 'sess-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('sequencer:analyze', { sessionId: 'sess-1' });
+  });
+
+  it('extensions namespace: all invoke methods use correct channels', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { extensions } = exposed.sentinel;
+
+    extensions.list();
+    extensions.install({ packagePath: '/tmp/ext.zip' });
+    extensions.uninstall({ id: 'ext-1' });
+    extensions.toggle({ id: 'ext-1', enabled: false });
+
+    expect(ipcInvoke).toHaveBeenCalledWith('extensions:list', {});
+    expect(ipcInvoke).toHaveBeenCalledWith('extensions:install', { packagePath: '/tmp/ext.zip' });
+    expect(ipcInvoke).toHaveBeenCalledWith('extensions:uninstall', { id: 'ext-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('extensions:toggle', { id: 'ext-1', enabled: false });
+  });
+
+  it('project namespace: all invoke methods use correct channels', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { project } = exposed.sentinel;
+
+    project.new({ name: 'New Project', filePath: '/tmp/project.db' });
+    project.open({ filePath: '/tmp/proj.db' });
+    project.save();
+    project.close();
+    project.meta();
+
+    expect(ipcInvoke).toHaveBeenCalledWith('project:new', { name: 'New Project', filePath: '/tmp/project.db' });
+    expect(ipcInvoke).toHaveBeenCalledWith('project:open', { filePath: '/tmp/proj.db' });
+    expect(ipcInvoke).toHaveBeenCalledWith('project:save', {});
+    expect(ipcInvoke).toHaveBeenCalledWith('project:close', {});
+    expect(ipcInvoke).toHaveBeenCalledWith('project:meta', {});
+  });
+
+  it('ca namespace: all invoke methods use correct channels', () => {
+    const { exposed, ipcInvoke } = executePreload();
+    const { ca } = exposed.sentinel;
+
+    ca.get();
+    ca.export({ destPath: '/tmp/ca.pem' });
+    ca.rotate();
+
+    expect(ipcInvoke).toHaveBeenCalledWith('ca:get', {});
+    expect(ipcInvoke).toHaveBeenCalledWith('ca:export', { destPath: '/tmp/ca.pem' });
+    expect(ipcInvoke).toHaveBeenCalledWith('ca:rotate', {});
+  });
+});
+
+describe('Preload Bridge - all push channels', () => {
+  it('proxy intercept onRequest registers a push listener and delivers events', () => {
+    const { exposed, ipcOn, ipcRemoveListener } = executePreload();
+    const handler = vi.fn();
+
+    const unsub = exposed.sentinel.proxy.intercept.onRequest(handler);
+
+    expect(ipcOn).toHaveBeenCalledWith('proxy:intercept:request', expect.any(Function));
+    const wrapped = ipcOn.mock.calls[0][1];
+    wrapped({}, { id: 'req-1', method: 'POST' });
+    expect(handler).toHaveBeenCalledWith({ id: 'req-1', method: 'POST' });
+
+    unsub();
+    expect(ipcRemoveListener).toHaveBeenCalledWith('proxy:intercept:request', wrapped);
+  });
+
+  it('proxy intercept onResponse registers a push listener and delivers events', () => {
+    const { exposed, ipcOn, ipcRemoveListener } = executePreload();
+    const handler = vi.fn();
+
+    const unsub = exposed.sentinel.proxy.intercept.onResponse(handler);
+
+    expect(ipcOn).toHaveBeenCalledWith('proxy:intercept:response', expect.any(Function));
+    const wrapped = ipcOn.mock.calls[0][1];
+    wrapped({}, { id: 'res-1', statusCode: 200 });
+    expect(handler).toHaveBeenCalledWith({ id: 'res-1', statusCode: 200 });
+
+    unsub();
+    expect(ipcRemoveListener).toHaveBeenCalledWith('proxy:intercept:response', wrapped);
+  });
+
+  it('intruder onProgress registers a push listener and delivers progress events', () => {
+    const { exposed, ipcOn, ipcRemoveListener } = executePreload();
+    const handler = vi.fn();
+
+    const unsub = exposed.sentinel.intruder.onProgress(handler);
+
+    expect(ipcOn).toHaveBeenCalledWith('intruder:progress', expect.any(Function));
+    const wrapped = ipcOn.mock.calls[0][1];
+    wrapped({}, { attackId: 'atk-1', sent: 50, total: 100, lastResult: null });
+    expect(handler).toHaveBeenCalledWith({ attackId: 'atk-1', sent: 50, total: 100, lastResult: null });
+
+    unsub();
+    expect(ipcRemoveListener).toHaveBeenCalledWith('intruder:progress', wrapped);
+  });
+
+  it('scanner onProgress registers a push listener and delivers progress events', () => {
+    const { exposed, ipcOn, ipcRemoveListener } = executePreload();
+    const handler = vi.fn();
+
+    const unsub = exposed.sentinel.scanner.onProgress(handler);
+
+    expect(ipcOn).toHaveBeenCalledWith('scanner:progress', expect.any(Function));
+    const wrapped = ipcOn.mock.calls[0][1];
+    wrapped({}, { scanId: 'scan-1', pct: 10 });
+    expect(handler).toHaveBeenCalledWith({ scanId: 'scan-1', pct: 10 });
+
+    unsub();
+    expect(ipcRemoveListener).toHaveBeenCalledWith('scanner:progress', wrapped);
+  });
+
+  it('oob onHit registers a push listener and delivers hit events', () => {
+    const { exposed, ipcOn, ipcRemoveListener } = executePreload();
+    const handler = vi.fn();
+
+    const unsub = exposed.sentinel.oob.onHit(handler);
+
+    expect(ipcOn).toHaveBeenCalledWith('oob:hit', expect.any(Function));
+    const wrapped = ipcOn.mock.calls[0][1];
+    wrapped({}, { payloadId: 'p1', source: '1.2.3.4' });
+    expect(handler).toHaveBeenCalledWith({ payloadId: 'p1', source: '1.2.3.4' });
+
+    unsub();
+    expect(ipcRemoveListener).toHaveBeenCalledWith('oob:hit', wrapped);
+  });
+
+  it('multiple simultaneous push subscribers are independent', () => {
+    const { exposed, ipcOn, ipcRemoveListener } = executePreload();
+    const handlerA = vi.fn();
+    const handlerB = vi.fn();
+
+    const unsubA = exposed.sentinel.history.onPush(handlerA);
+    const unsubB = exposed.sentinel.history.onPush(handlerB);
+
+    const wrappedA = ipcOn.mock.calls[0][1];
+    const wrappedB = ipcOn.mock.calls[1][1];
+
+    wrappedA({}, { id: 'item-1' });
+    wrappedB({}, { id: 'item-2' });
+
+    expect(handlerA).toHaveBeenCalledWith({ id: 'item-1' });
+    expect(handlerB).toHaveBeenCalledWith({ id: 'item-2' });
+
+    unsubA();
+    expect(ipcRemoveListener).toHaveBeenCalledWith('history:push', wrappedA);
+    unsubB();
+    expect(ipcRemoveListener).toHaveBeenCalledWith('history:push', wrappedB);
+  });
+});

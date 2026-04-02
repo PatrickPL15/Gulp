@@ -22,6 +22,7 @@ const TargetMapPanel = require('./sentinel/TargetMapPanel');
 const ScannerPanel = require('./sentinel/ScannerPanel');
 const DecoderPanel = require('./sentinel/DecoderPanel');
 const ExtensionsPanel = require('./sentinel/ExtensionsPanel');
+const { modules, moduleDescriptions } = require('./app-constants');
 
 const panelStatusFields = {
   Dashboard: [
@@ -78,30 +79,6 @@ const defaultPanelStatus = {
   Scanner: { findings: 0, activeScans: 0, lastScanTarget: '\u2014' },
   Decoder: { encodingType: 'URL', chainLength: 1 },
   Extensions: { loadedCount: 0, activeCount: 0 }
-};
-
-const modules = [
-  'Dashboard',
-  'Proxy',
-  'History',
-  'Repeater',
-  'Intruder',
-  'Target',
-  'Scanner',
-  'Decoder',
-  'Extensions'
-];
-
-const moduleDescriptions = {
-  Dashboard: 'Program overview, findings summary, and workflow shortcuts.',
-  Proxy: 'Intercept, inspect, and forward HTTP/S traffic.',
-  History: 'Search and filter previously captured traffic.',
-  Repeater: 'Modify and replay requests for manual testing.',
-  Intruder: 'Run payload attacks with baseline anomaly analysis.',
-  Target: 'Manage scope and navigate discovered surface area.',
-  Scanner: 'Run passive/active checks and review findings.',
-  Decoder: 'Encode/decode payloads and inspect transformed values.',
-  Extensions: 'Manage custom tools and extension-provided workflows.'
 };
 
 const modulePanels = {
