@@ -93,6 +93,10 @@ function registerProxyHandlers() {
     return repeaterService.send(args);
   });
 
+  ipcMain.handle('repeater:get', async (_event, args = {}) => {
+    return repeaterService.getEntry(args.id);
+  });
+
   ipcMain.handle('repeater:history:list', async () => {
     return repeaterService.listHistory();
   });

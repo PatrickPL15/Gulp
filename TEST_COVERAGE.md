@@ -19,7 +19,6 @@ The following are intentionally excluded because they remain architectural place
 - `src/main/proxy/decoder-service.js`
 - `src/main/proxy/extension-host.js`
 - `src/main/proxy/embedded-browser-service.js`
-- `src/renderer/js/components/sentinel/RepeaterPanel.jsx`
 - `src/renderer/js/components/sentinel/IntruderPanel.jsx`
 - `src/renderer/js/components/sentinel/TargetMapPanel.jsx`
 - `src/renderer/js/components/sentinel/ScannerPanel.jsx`
@@ -38,9 +37,9 @@ These will accumulate real logic during Sentinel implementation (Milestone 0+).
   - *(Electron/React bootstrap code requires integration tests)*
 
 ## Test Metrics
-- **Test Files**: 15 suites
-- **Total Tests**: 141 passing
-- **Recent additions**: SEN-014 and SEN-015 proxy/history lifecycle coverage
+- **Test Files**: 16 suites
+- **Total Tests**: 150 passing
+- **Recent additions**: SEN-016 Repeater integration tests (9 tests) covering: real HTTP send, binary rawBodyBase64, entry/sends model, listHistory lightweight payload, failure isolation, and forwardRequest export
 - **Average (measured files)**: >80%
 
 ## Running Tests
@@ -53,8 +52,8 @@ npm run test:coverage   # Coverage report
 ```
 
 ## Future Coverage Targets
-1. Sentinel Milestone 3+: Expand Repeater and Intruder behavior assertions (request replay + result modeling)
-2. Sentinel Milestone 4-6: Add module-level tests for target map/scope, scanner, and decoder flows
+1. Sentinel Milestone 4+: Expand Intruder behavior assertions (attack launch, results model, anomaly scoring)
+2. Sentinel Milestone 5-6: Add module-level tests for target map/scope, scanner, and decoder flows
 3. Post-MVP: Full feature parity → 90%+ target (with integration tests)
 
 ---

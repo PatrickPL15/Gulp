@@ -13,7 +13,7 @@
  *   - payload:  shape of the argument object sent with the call.
  *   - response: shape of the resolved value (invoke channels only).
  *
- * Schema version: 3
+ * Schema version: 4
  */
 
 'use strict';
@@ -161,16 +161,23 @@ const CHANNELS = [
   {
     channel:   'repeater:send',
     direction: 'invoke',
-    payload:   '{ request: HttpRequest }',
+    payload:   '{ request: HttpRequest, entryId?: string }',
     response:  '{ response: HttpResponse, entry: RepeaterEntry }',
-    notes:     'Sends a manually crafted request and returns the response.',
+    notes:     'Sends a request. Creates a new entry when entryId is omitted; appends a send to an existing entry otherwise.',
+  },
+  {
+    channel:   'repeater:get',
+    direction: 'invoke',
+    payload:   '{ id: string }',
+    response:  'RepeaterEntry | null',
+    notes:     'Returns a single repeater entry with its full send history.',
   },
   {
     channel:   'repeater:history:list',
     direction: 'invoke',
     payload:   '{}',
     response:  '{ items: RepeaterEntry[] }',
-    notes:     'Lists all repeater history entries for the current session.',
+    notes:     'Lists all repeater entries (without sends arrays) for the sidebar.',
   },
 
   // -------------------------------------------------------------------------
@@ -495,7 +502,7 @@ function getPushChannels() {
 // ---------------------------------------------------------------------------
 
 module.exports = {
-  SCHEMA_VERSION: 3,
+  SCHEMA_VERSION: 4,
   CHANNELS,
   getChannel,
   getChannelsForService,
