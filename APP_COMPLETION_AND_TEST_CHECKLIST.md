@@ -199,3 +199,35 @@ Use this checklist to finish implementation and validate the Electron + Gulp + R
 3. `src/renderer/js/main.jsx`: app provider wiring and top-level router/shell mount.
 4. `src/renderer/js/components/sentinel/*.jsx`: add import UI flow (file picker, column mapping, dry-run preview, and conflict resolution) for Burp config and CSV scope import.
 5. `src/renderer/js/components/sentinel/*.jsx`: add automation script management UI (create/edit/test scripts, assign triggers, and view execution logs).
+
+## 10) Workbench UI Directive Checklist (2026-04-02)
+
+### Layout Engine (Stage 1)
+1. Shell root uses fixed viewport (`h="100vh"`) and no body scrolling (`overflow="hidden"`).
+2. Activity bar exists as slim left nav with Proxy, Scanner, Repeater actions.
+3. Workspace supports multiple tabs via Chakra Tabs (`variant="enclosed"`).
+4. Sidebars/panes are collapsible and restore state across module switches.
+5. Bottom status bar reports engine state, active scans/tasks, and memory usage.
+
+### High-Performance Logging (Stage 2)
+1. Proxy/history list uses virtualization (`@tanstack/react-table` + `@tanstack/react-virtual` or `react-window`).
+2. Table density is compact (`fontFamily="mono"`, `fontSize="xs"`, `py={1}`, `px={2}` for key cells).
+3. Master-detail behavior updates inspector without full list re-render.
+4. Validate smooth interaction with datasets at or above 10,000 requests.
+
+### Inspector Upgrade (Stage 3)
+1. Raw inspector uses `@monaco-editor/react` with HTTP/JSON/HTML highlighting.
+2. Inspector has sub-tabs: Headers, Raw, and Preview/Hex.
+3. "Send to Repeater" pushes selected request into shared app state and opens repeater tab.
+
+### IPC Streaming and State Management (Stage 4)
+1. High-frequency events are streamed via preload subscriptions (`ipcRenderer.on`).
+2. Renderer applies buffered/throttled state flush (100-200ms target; 150ms default).
+3. Avoid unbounded top-level arrays in React state for proxy/scanner feeds.
+
+### Theming and UX (Stage 5)
+1. Default mode is dark.
+2. Severity palette exists: critical `red.600`, high `orange.500`, medium `yellow.400`, low `blue.400`, info `gray.400`.
+3. Global border radius is `sm` or none.
+4. Surface colors use deep neutral hierarchy (`gray.900` base, `gray.800` elevated).
+5. Command palette (`Ctrl+K`) is available for module navigation.

@@ -251,3 +251,58 @@ Approximate total: 45-67 engineering days.
 
 ## Suggested Next Implementation Slice
 Start with Milestone 0 + Milestone 1 together to establish contracts, persistence, and CA lifecycle first. This minimizes rework for all later modules and enables safe incremental shipping of MVP proxy features.
+
+## Workbench UI Directive Integration (2026-04-02)
+This section captures the approved renderer architecture direction for upcoming milestones.
+
+### Core Architectural Goals
+- Fixed viewport management: desktop workbench feel (no body scroll).
+- Data virtualization for large collections (proxy logs, site map nodes, findings).
+- High information density via compact rows and monospaced traffic fields.
+- IPC efficiency through main-process streaming with renderer-side buffering/throttling.
+
+### Stage 1: Layout Engine (Workbench Shell)
+Goals:
+- Refactor shell to fixed viewport (`h="100vh"`, `overflow="hidden"`).
+- Add slim left activity bar (Proxy, Scanner, Repeater).
+- Add tabbed workspace (Chakra Tabs `variant="enclosed"`) for concurrent tasks.
+- Add collapsible sidebars to maximize log inspection area.
+- Add bottom status bar showing engine state, active scans/tasks, memory usage.
+
+### Stage 2: High-Performance Proxy Logging
+Goals:
+- Handle 10,000+ rows without frame drops.
+
+Requirements:
+- Use `@tanstack/react-table` with `@tanstack/react-virtual` (or `react-window`).
+- Use compact table styling (`fontFamily="mono"`, `fontSize="xs"`, `py={1}`, `px={2}` for dense cells).
+- Implement master-detail split where row selection updates inspector panel without list re-render.
+
+### Stage 3: Request/Response Inspector Upgrade
+Goals:
+- Professional tabbed inspector with protocol-aware rendering.
+
+Requirements:
+- Use `@monaco-editor/react` for Raw mode syntax highlighting (HTTP/JSON/HTML).
+- Sub-tabs: Headers, Raw, Preview/Hex.
+- Add "Send to Repeater" action that pushes selected request to shared global state and opens a new repeater tab.
+
+### Stage 4: IPC and Backend Streaming
+Goals:
+- Keep renderer responsive under high traffic/scan throughput.
+
+Requirements:
+- Keep heavy work in main process and stream events to renderer (`ipcRenderer.on`).
+- Add buffered/throttled renderer updates (100-200ms flush cadence, target 150ms default).
+- Avoid top-level state patterns that store unbounded log arrays.
+
+### Stage 5: UI/UX Polish and Semantic Theming
+Goals:
+- Industrial security-tool visual language.
+
+Requirements:
+- Force dark mode by default.
+- Add semantic severity colors: critical `red.600`, high `orange.500`, medium `yellow.400`, low `blue.400`, info `gray.400`.
+- Reduce border radius globally (`sm` or none).
+- Use deep neutrals for surfaces (`gray.900` background, `gray.800` elevated cards/panels).
+- Add command palette (`Ctrl+K`) for module navigation.

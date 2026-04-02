@@ -21,3 +21,5 @@ gulp
 - **Error Handling:** Use `plumber` or other error handling plugins to prevent crashes on errors.
 
 ## Append-Only Updates
+- 2026-04-02: When introducing workbench UI tooling (`@tanstack/react-table`, `@tanstack/react-virtual`/`react-window`, `@monaco-editor/react`), validate renderer bundling compatibility with current esbuild setup before merging.
+- 2026-04-02: Keep new renderer dependencies in `dependencies` when required at runtime, and ensure watch/build continues to emit runnable `dist/renderer/js/app.js` without manual dist edits.

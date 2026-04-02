@@ -97,3 +97,14 @@
 ## Session Summaries
 - For longer threads (3+ back-and-forth exchanges on one task), include a short 5-bullet progress summary when useful.
 - Offer to append durable patterns or lessons learned to the instruction files above.
+
+## Append-Only Directive Update (2026-04-02): Workbench UI and Performance
+- Treat upcoming renderer work as a desktop "Workbench" shell, not a document page.
+- Enforce fixed viewport shells (`h="100vh"`, `overflow="hidden"`) with collapsible panes.
+- Favor activity-bar plus tabbed workspace architecture for concurrent module workflows.
+- For large data surfaces, require virtualization and compact dense table styling.
+- Use master-detail interaction patterns to avoid full-table re-render on row selection.
+- Prefer main-process streaming of high-volume events and renderer-side buffered/throttled updates (100-200ms).
+- Avoid unbounded top-level `useState` arrays for proxy/scanner feeds.
+- Apply dark-first Chakra theming with semantic severity colors and reduced border radius.
+- Include command palette navigation (`Ctrl+K`) in UX polish scope.
