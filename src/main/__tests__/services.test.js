@@ -21,9 +21,16 @@ describe('Sentinel Database and Cert Services Coverage', () => {
       expect(typeof moduleName).toBe('string');
     });
 
-    it('should verify ca-manager is a TODO stub', () => {
-      const moduleName = 'ca-manager';
-      expect(moduleName).toBe('ca-manager');
+    it('should verify ca-manager exposes lifecycle API', () => {
+      const caManager = require('../certs/ca-manager');
+
+      expect(caManager).toBeTruthy();
+      expect(typeof caManager.ensureCaArtifacts).toBe('function');
+      expect(typeof caManager.getCaCertificatePem).toBe('function');
+      expect(typeof caManager.exportCaCertificate).toBe('function');
+      expect(typeof caManager.getLeafCertificate).toBe('function');
+      expect(typeof caManager.rotateCa).toBe('function');
+      expect(typeof caManager.getTrustInstallGuidance).toBe('function');
     });
   });
 

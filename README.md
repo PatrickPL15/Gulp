@@ -40,7 +40,7 @@ Desktop security-workbench foundation built with Electron (main process), React 
 │  │  ├─ index.js
 │  │  ├─ preload.js
 │  │  ├─ certs/
-│  │  │  └─ ca-manager.js                  (TODO scaffold)
+│  │  │  └─ ca-manager.js                  (CA lifecycle service)
 │  │  ├─ db/
 │  │  │  └─ project-store.js               (TODO scaffold)
 │  │  ├─ proxy/

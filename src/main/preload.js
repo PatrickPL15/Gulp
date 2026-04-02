@@ -134,9 +134,10 @@ contextBridge.exposeInMainWorld('sentinel', {
 
   // --- CA certificate ---------------------------------------------------
   ca: {
-    get:    ()          => invoke('ca:get', {}),
-    export: (args)      => invoke('ca:export', args),
-    rotate: ()          => invoke('ca:rotate', {}),
+    get:           ()    => invoke('ca:get', {}),
+    export:        (args)=> invoke('ca:export', args),
+    rotate:        ()    => invoke('ca:rotate', {}),
+    trustGuidance: ()    => invoke('ca:trust:guidance', {}),
   },
 });
 
