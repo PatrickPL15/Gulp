@@ -105,12 +105,12 @@ async function runMigrations(db) {
         },
         prepare() {
           throw new Error(
-            `Migration ${migration.fromVersion}->${migration.toVersion} uses prepare(), unsupported in sqlite3 adapter`
+            `Migration ${migration.fromVersion}->${migration.toVersion} uses prepare(), but migration contract is exec()-only`
           );
         },
         transaction() {
           throw new Error(
-            `Migration ${migration.fromVersion}->${migration.toVersion} uses transaction(), unsupported in sqlite3 adapter`
+            `Migration ${migration.fromVersion}->${migration.toVersion} uses transaction(), but migration contract is exec()-only`
           );
         },
       };
@@ -120,11 +120,29 @@ async function runMigrations(db) {
         await execAsync(db, sql);
       }
 
-      await runAsync(
+      const schemaUpdate = await runAsync(
         db,
         'UPDATE project_meta SET schema_ver = ?, updated_at = ? WHERE id = ?',
         [migration.toVersion, Date.now(), 'default']
       );
+
+      if (!schemaUpdate || schemaUpdate.changes === 0) {
+        const repair = await runAsync(
+          db,
+          `INSERT INTO project_meta (id, name, created_at, updated_at, schema_ver)
+           VALUES (?, ?, ?, ?, ?)`,
+          ['default', 'Unnamed Project', Date.now(), Date.now(), migration.toVersion]
+        );
+
+        if (!repair || repair.changes === 0) {
+          const error = new Error(
+            `Migration ${migration.fromVersion}->${migration.toVersion} could not persist schema version: project_meta default row missing`
+          );
+          error.code = 'PROJECT_DB_META_MISSING';
+          throw error;
+        }
+      }
+
       await execAsync(db, 'COMMIT;');
       currentVer = migration.toVersion;
     } catch (error) {
