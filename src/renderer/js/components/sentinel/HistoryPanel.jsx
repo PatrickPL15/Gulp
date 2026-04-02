@@ -25,6 +25,49 @@ function HistoryPanel() {
 		statusCode: '',
 	});
 	const loadHistoryRef = React.useRef(null);
+	const refreshTimerRef = React.useRef(null);
+	const refreshPendingRef = React.useRef(false);
+	const activeFilterRef = React.useRef({});
+	const pageRef = React.useRef(0);
+	const pageSizeRef = React.useRef(10);
+
+	function buildQueryFilter(rawFilters) {
+		const hostValue = String(rawFilters.host || '').trim();
+		const pathValue = String(rawFilters.path || '').trim();
+		const methodValue = String(rawFilters.method || '').trim().toUpperCase();
+		const statusCodeValue = String(rawFilters.statusCode || '').trim();
+		const parsedStatus = statusCodeValue ? Number(statusCodeValue) : null;
+
+		return {
+			host: hostValue || undefined,
+			path: pathValue || undefined,
+			method: methodValue || undefined,
+			statusCode: Number.isFinite(parsedStatus) ? parsedStatus : undefined,
+		};
+	}
+
+	function matchesActiveFilters(item, filter) {
+		const request = item && item.request ? item.request : {};
+		const response = item && item.response ? item.response : {};
+
+		if (filter.method && String(request.method || '').toUpperCase() !== String(filter.method).toUpperCase()) {
+			return false;
+		}
+
+		if (filter.host && !String(request.host || '').toLowerCase().includes(String(filter.host).toLowerCase())) {
+			return false;
+		}
+
+		if (filter.path && !String(request.path || '').startsWith(String(filter.path))) {
+			return false;
+		}
+
+		if (typeof filter.statusCode === 'number' && response.statusCode !== filter.statusCode) {
+			return false;
+		}
+
+		return true;
+	}
 
 	const loadHistory = React.useCallback(async (nextPage = 0) => {
 		const sentinel = window.sentinel;
@@ -37,14 +80,7 @@ function HistoryPanel() {
 		setNoticeText('');
 		setLoading(true);
 		try {
-			const statusCodeValue = String(filters.statusCode || '').trim();
-			const parsedStatus = statusCodeValue ? Number(statusCodeValue) : null;
-			const queryFilter = {
-				host: filters.host || undefined,
-				path: filters.path || undefined,
-				method: filters.method ? String(filters.method).toUpperCase() : undefined,
-				statusCode: Number.isFinite(parsedStatus) ? parsedStatus : undefined,
-			};
+			const queryFilter = buildQueryFilter(filters);
 
 			const result = await sentinel.history.query({
 				page: nextPage,
@@ -67,6 +103,12 @@ function HistoryPanel() {
 	}, [loadHistory]);
 
 	React.useEffect(() => {
+		activeFilterRef.current = buildQueryFilter(filters);
+		pageRef.current = page;
+		pageSizeRef.current = pageSize;
+	}, [filters, page, pageSize]);
+
+	React.useEffect(() => {
 		let cancelled = false;
 		const sentinel = window.sentinel;
 		if (!sentinel || !sentinel.history) {
@@ -78,17 +120,52 @@ function HistoryPanel() {
 			loadHistoryRef.current(0);
 		}
 
+		const scheduleRefresh = () => {
+			refreshPendingRef.current = true;
+			if (refreshTimerRef.current) {
+				return;
+			}
+
+			refreshTimerRef.current = setTimeout(() => {
+				refreshTimerRef.current = null;
+				if (cancelled || !refreshPendingRef.current) {
+					return;
+				}
+
+				refreshPendingRef.current = false;
+				if (loadHistoryRef.current) {
+					loadHistoryRef.current(0);
+				}
+			}, 150);
+		};
+
 		const unsubscribe = sentinel.history.onPush((item) => {
 			if (cancelled || !item) {
 				return;
 			}
-			if (loadHistoryRef.current) {
-				loadHistoryRef.current(0);
+
+			if (pageRef.current === 0 && matchesActiveFilters(item, activeFilterRef.current)) {
+				setItems(prev => {
+					const exists = prev.some(existing => existing && existing.id === item.id);
+					const nextItems = [item, ...prev.filter(existing => existing && existing.id !== item.id)]
+						.slice(0, pageSizeRef.current);
+					if (!exists) {
+						setTotal(prevTotal => prevTotal + 1);
+					}
+					return nextItems;
+				});
 			}
+
+			scheduleRefresh();
 		});
 
 		return () => {
 			cancelled = true;
+			refreshPendingRef.current = false;
+			if (refreshTimerRef.current) {
+				clearTimeout(refreshTimerRef.current);
+				refreshTimerRef.current = null;
+			}
 			if (typeof unsubscribe === 'function') {
 				unsubscribe();
 			}

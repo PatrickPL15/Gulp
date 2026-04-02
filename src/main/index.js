@@ -121,6 +121,10 @@ function registerProxyHandlers() {
     sendToRenderer('proxy:intercept:response', payload.response);
   });
 
+  interceptEngine.on('forward-error', payload => {
+    sendToRenderer('proxy:intercept:error', payload);
+  });
+
   historyLog.on('push', item => {
     sendToRenderer('history:push', item);
   });

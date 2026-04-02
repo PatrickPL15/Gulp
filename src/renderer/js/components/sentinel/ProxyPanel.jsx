@@ -65,6 +65,16 @@ function ProxyPanel() {
 			setSelectedId(prev => (prev === response.requestId ? '' : prev));
 		});
 
+		const unsubscribeError = sentinel.proxy.intercept.onError((payload) => {
+			if (cancelled || !payload) {
+				return;
+			}
+
+			const requestId = payload.requestId || '';
+			const message = payload.error || 'Unable to forward selected request.';
+			setErrorText(requestId ? `Forward failed for ${requestId}: ${message}` : message);
+		});
+
 		return () => {
 			cancelled = true;
 			if (typeof unsubscribe === 'function') {
@@ -72,6 +82,9 @@ function ProxyPanel() {
 			}
 			if (typeof unsubscribeResponse === 'function') {
 				unsubscribeResponse();
+			}
+			if (typeof unsubscribeError === 'function') {
+				unsubscribeError();
 			}
 		};
 	}, []);

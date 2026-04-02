@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('sentinel', {
       drop:    (args)  => invoke('proxy:intercept:drop', args),
       onRequest:  (fn) => onPush('proxy:intercept:request', fn),
       onResponse: (fn) => onPush('proxy:intercept:response', fn),
+      onError:    (fn) => onPush('proxy:intercept:error', fn),
     },
   },
 

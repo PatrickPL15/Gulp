@@ -62,6 +62,26 @@ function requestBinaryViaProxy(proxyPort, targetUrl, payload) {
   });
 }
 
+function requestOriginFormViaProxy(proxyPort, hostHeader, requestPath) {
+  return new Promise((resolve, reject) => {
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port: proxyPort,
+      method: 'GET',
+      path: requestPath,
+      headers: {
+        host: hostHeader,
+      },
+    }, async (res) => {
+      const body = await readResponseBody(res);
+      resolve({ statusCode: res.statusCode, body });
+    });
+
+    req.on('error', reject);
+    req.end();
+  });
+}
+
 describe('SEN-14 proxy core', () => {
   const cleanup = [];
 
@@ -133,6 +153,33 @@ describe('SEN-14 proxy core', () => {
     expect(forwardedCount).toBe(0);
   });
 
+  it('keeps queued request on forward failure and emits forward-error', async () => {
+    const interceptEngine = createInterceptEngine({ interceptEnabled: true });
+
+    const events = [];
+    interceptEngine.on('forward-error', payload => {
+      events.push(payload);
+    });
+
+    interceptEngine.captureRequest({
+      id: 'req-fail',
+      method: 'GET',
+      host: 'fail.test',
+      path: '/fail',
+      headers: {},
+      body: null,
+    }, async () => {
+      throw new Error('upstream unavailable');
+    });
+
+    await expect(interceptEngine.forward('req-fail')).rejects.toThrow('upstream unavailable');
+    expect(interceptEngine.getQueue()).toHaveLength(1);
+    expect(interceptEngine.getQueue()[0].id).toBe('req-fail');
+    expect(events).toHaveLength(1);
+    expect(events[0].requestId).toBe('req-fail');
+    expect(events[0].error).toContain('upstream unavailable');
+  });
+
   it('global pause holds requests and resume forwards all when interception is disabled', async () => {
     const interceptEngine = createInterceptEngine({ interceptEnabled: false });
     interceptEngine.pause();
@@ -170,6 +217,45 @@ describe('SEN-14 proxy core', () => {
 
     expect(forwardedIds).toEqual(['pause-1', 'pause-2']);
     expect(interceptEngine.getQueue()).toHaveLength(0);
+  });
+
+  it('resumeQueued continues after failures and returns a summary', async () => {
+    const interceptEngine = createInterceptEngine({ interceptEnabled: true });
+
+    const failCapture = interceptEngine.captureRequest({
+      id: 'resume-fail',
+      method: 'GET',
+      host: 'resume.test',
+      path: '/fail',
+      headers: {},
+      body: null,
+    }, async () => {
+      throw new Error('boom');
+    });
+
+    const okCapture = interceptEngine.captureRequest({
+      id: 'resume-ok',
+      method: 'GET',
+      host: 'resume.test',
+      path: '/ok',
+      headers: {},
+      body: null,
+    }, async () => ({ statusCode: 200 }));
+
+    const summary = await interceptEngine.resumeQueued();
+    expect(summary).toEqual({
+      attempted: 2,
+      succeeded: 1,
+      failed: 1,
+      failures: ['resume-fail'],
+    });
+
+    const okResult = await okCapture;
+    expect(okResult.action).toBe('forwarded');
+    expect(interceptEngine.getQueue().map(item => item.id)).toEqual(['resume-fail']);
+
+    interceptEngine.drop('resume-fail');
+    await failCapture;
   });
 
   it('logs traffic history and supports filter/query semantics', async () => {
@@ -343,6 +429,41 @@ describe('SEN-14 proxy core', () => {
     expect(upstreamBodyHex).toBe(payload.toString('hex'));
   });
 
+  it('stores binary upstream response with null body and accurate bodyLength', async () => {
+    const binaryResponse = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0xff, 0x01, 0x02]);
+    const upstreamServer = http.createServer((req, res) => {
+      res.writeHead(200, { 'content-type': 'application/octet-stream' });
+      res.end(binaryResponse);
+    });
+
+    await new Promise(resolve => upstreamServer.listen(0, '127.0.0.1', resolve));
+    const upstreamPort = upstreamServer.address().port;
+    cleanup.push(async () => {
+      await new Promise(resolve => upstreamServer.close(resolve));
+    });
+
+    const rulesEngine = createRulesEngine([]);
+    const historyLog = createHistoryLog();
+    const interceptEngine = createInterceptEngine({ rulesEngine, interceptEnabled: false });
+    const protocolSupport = createProtocolSupport({ rulesEngine, historyLog, interceptEngine });
+
+    const started = await protocolSupport.start({ port: 0 });
+    cleanup.push(async () => {
+      await protocolSupport.stop();
+    });
+
+    const targetUrl = `http://127.0.0.1:${upstreamPort}/bin-response`;
+    const proxied = await requestViaProxy(started.port, targetUrl);
+    expect(proxied.statusCode).toBe(200);
+
+    await delay(20);
+    const traffic = await historyLog.query({ page: 0, pageSize: 10, filter: {} });
+    expect(traffic.total).toBe(1);
+    expect(traffic.items[0].response.contentType).toBe('application/octet-stream');
+    expect(traffic.items[0].response.body).toBeNull();
+    expect(traffic.items[0].response.bodyLength).toBe(binaryResponse.length);
+  });
+
   it('recomputes content-length when forwarded body differs from original headers', async () => {
     let observedContentLength = '';
     let observedTransferEncoding = '';
@@ -383,5 +504,75 @@ describe('SEN-14 proxy core', () => {
     expect(observedBody).toBe('edited-body');
     expect(observedContentLength).toBe(String(Buffer.byteLength('edited-body', 'utf8')));
     expect(observedTransferEncoding).toBe('');
+  });
+
+  it('routes origin-form requests using explicit Host header port', async () => {
+    const upstreamServer = http.createServer((req, res) => {
+      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end(`origin:${req.url}`);
+    });
+
+    await new Promise(resolve => upstreamServer.listen(0, '127.0.0.1', resolve));
+    const upstreamPort = upstreamServer.address().port;
+    cleanup.push(async () => {
+      await new Promise(resolve => upstreamServer.close(resolve));
+    });
+
+    const protocolSupport = createProtocolSupport({
+      rulesEngine: createRulesEngine([]),
+      historyLog: createHistoryLog(),
+      interceptEngine: createInterceptEngine({ interceptEnabled: false }),
+    });
+
+    const started = await protocolSupport.start({ port: 0 });
+    cleanup.push(async () => {
+      await protocolSupport.stop();
+    });
+
+    const proxied = await requestOriginFormViaProxy(
+      started.port,
+      `127.0.0.1:${upstreamPort}`,
+      '/origin-form?mode=host-header'
+    );
+
+    expect(proxied.statusCode).toBe(200);
+    expect(proxied.body).toBe('origin:/origin-form?mode=host-header');
+  });
+
+  it('applies non-idempotent append rule exactly once in proxy pipeline', async () => {
+    const upstreamServer = http.createServer((req, res) => {
+      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end(`path:${req.url}`);
+    });
+
+    await new Promise(resolve => upstreamServer.listen(0, '127.0.0.1', resolve));
+    const upstreamPort = upstreamServer.address().port;
+    cleanup.push(async () => {
+      await new Promise(resolve => upstreamServer.close(resolve));
+    });
+
+    const rulesEngine = createRulesEngine([
+      {
+        id: 'append-once',
+        priority: 1,
+        enabled: true,
+        match: { host: '127.0.0.1' },
+        actions: [{ type: 'append', target: 'url', value: '&once=1' }],
+      },
+    ]);
+    const historyLog = createHistoryLog();
+    const interceptEngine = createInterceptEngine({ rulesEngine, interceptEnabled: false });
+    const protocolSupport = createProtocolSupport({ rulesEngine, historyLog, interceptEngine });
+
+    const started = await protocolSupport.start({ port: 0 });
+    cleanup.push(async () => {
+      await protocolSupport.stop();
+    });
+
+    const targetUrl = `http://127.0.0.1:${upstreamPort}/double-check?x=1`;
+    const proxied = await requestViaProxy(started.port, targetUrl);
+
+    expect(proxied.statusCode).toBe(200);
+    expect(proxied.body).toBe('path:/double-check?x=1&once=1');
   });
 });

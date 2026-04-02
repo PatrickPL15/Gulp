@@ -139,15 +139,20 @@ class InterceptEngine extends EventEmitter {
     const queued = editedRequest ? mergeRequestEdits(pending.request, editedRequest) : pending.request;
     const finalRequest = this.applyRules(queued);
 
-    this.removeFromQueue(requestId);
-
     try {
       const response = await pending.forwarder(finalRequest);
+      this.removeFromQueue(requestId);
       pending.resolve({ action: 'forwarded', request: finalRequest, response });
       this.emit('forwarded', { request: clone(finalRequest), response: clone(response) });
       return { ok: true, request: clone(finalRequest), response: clone(response) };
     } catch (error) {
-      pending.reject(error);
+      pending.request = clone(finalRequest);
+      this.emit('forward-error', {
+        requestId,
+        request: clone(finalRequest),
+        error: error && error.message ? error.message : 'Forward failed',
+      });
+      this.emit('queue', this.getQueue());
       throw error;
     }
   }
@@ -166,12 +171,30 @@ class InterceptEngine extends EventEmitter {
 
   async resumeQueued() {
     const ids = [...this.queueOrder];
+    const summary = {
+      attempted: 0,
+      succeeded: 0,
+      failed: 0,
+      failures: [],
+    };
+
     for (const requestId of ids) {
       if (!this.pendingById.has(requestId)) {
         continue;
       }
-      await this.forward(requestId);
+
+      summary.attempted += 1;
+      try {
+        await this.forward(requestId);
+        summary.succeeded += 1;
+      } catch {
+        summary.failed += 1;
+        summary.failures.push(requestId);
+        // Keep remaining queued requests eligible for resume attempts.
+      }
     }
+
+    return summary;
   }
 
   applyRules(request) {

@@ -51,15 +51,69 @@ function readBody(req) {
 	});
 }
 
+function parseHostAndPort(hostHeader = '', protocol = 'http:') {
+	const raw = String(hostHeader || '').trim();
+	const defaultPort = protocol === 'https:' ? 443 : 80;
+
+	if (!raw) {
+		return { host: 'localhost', port: defaultPort };
+	}
+
+	if (raw.startsWith('[')) {
+		const end = raw.indexOf(']');
+		if (end > 0) {
+			const host = raw.slice(1, end);
+			const rest = raw.slice(end + 1);
+			if (rest.startsWith(':')) {
+				const port = Number(rest.slice(1));
+				if (Number.isInteger(port) && port > 0 && port <= 65535) {
+					return { host, port };
+				}
+			}
+			return { host, port: defaultPort };
+		}
+	}
+
+	const colonCount = (raw.match(/:/g) || []).length;
+	if (colonCount === 1) {
+		const separator = raw.lastIndexOf(':');
+		const host = raw.slice(0, separator);
+		const port = Number(raw.slice(separator + 1));
+		if (host && Number.isInteger(port) && port > 0 && port <= 65535) {
+			return { host, port };
+		}
+	}
+
+	return { host: raw, port: defaultPort };
+}
+
+function formatAuthority(host, port, protocol = 'http:') {
+	const defaultPort = protocol === 'https:' ? 443 : 80;
+	let name = String(host || 'localhost');
+
+	if (name.includes(':') && !name.startsWith('[') && !name.endsWith(']')) {
+		name = `[${name}]`;
+	}
+
+	if (Number.isInteger(port) && port > 0 && port !== defaultPort) {
+		return `${name}:${port}`;
+	}
+
+	return name;
+}
+
 function resolveTargetUrl(request) {
 	if (request.url && /^https?:\/\//i.test(request.url)) {
 		return new URL(request.url);
 	}
 
-	const host = request.host || (request.headers && request.headers.host) || 'localhost';
-	const path = request.path || '/';
 	const protocol = request.tls ? 'https:' : 'http:';
-	return new URL(`${protocol}//${host}${path}`);
+	const parsedHost = parseHostAndPort(request.headers && request.headers.host, protocol);
+	const host = request.host || parsedHost.host;
+	const port = request.port || parsedHost.port;
+	const authority = formatAuthority(host, port, protocol);
+	const path = request.path || '/';
+	return new URL(`${protocol}//${authority}${path}`);
 }
 
 class ProtocolSupport {
@@ -171,14 +225,15 @@ class ProtocolSupport {
 		const rawBodyBase64 = bodyBuffer.length > 0 ? bodyBuffer.toString('base64') : null;
 
 		const target = /^https?:\/\//i.test(req.url || '') ? new URL(req.url) : null;
+		const parsedHost = parseHostAndPort(normalizedHeaders.host || '', 'http:');
 		const requestModel = {
 			id: randomUUID(),
 			connectionId,
 			timestamp,
 			method: (req.method || 'GET').toUpperCase(),
 			url: target ? target.toString() : (req.url || '/'),
-			host: target ? target.hostname : String(req.headers.host || '').split(':')[0],
-			port: target ? Number(target.port || (target.protocol === 'https:' ? 443 : 80)) : 80,
+			host: target ? target.hostname : parsedHost.host,
+			port: target ? Number(target.port || (target.protocol === 'https:' ? 443 : 80)) : parsedHost.port,
 			path: target ? `${target.pathname || '/'}${target.search || ''}` : (req.url || '/'),
 			queryString: target ? (target.search || '').replace(/^\?/, '') : '',
 			headers: normalizedHeaders,
@@ -192,10 +247,7 @@ class ProtocolSupport {
 		};
 
 		const result = await this.interceptEngine.captureRequest(requestModel, async forwardedRequest => {
-			const applied = this.rulesEngine && typeof this.rulesEngine.applyToRequest === 'function'
-				? this.rulesEngine.applyToRequest(forwardedRequest)
-				: forwardedRequest;
-			return this.forwardHttpRequest(applied);
+			return this.forwardHttpRequest(forwardedRequest);
 		});
 
 		if (result.action === 'dropped') {
@@ -267,6 +319,9 @@ class ProtocolSupport {
 				upstreamRes.on('end', () => {
 					const rawBody = Buffer.concat(chunks);
 					const contentType = String(upstreamRes.headers['content-type'] || '').split(';')[0] || '';
+					const decodedBody = isTextualContentType(contentType)
+						? rawBody.toString('utf8')
+						: null;
 					const timestamp = Date.now();
 					const response = {
 						id: randomUUID(),
@@ -277,7 +332,7 @@ class ProtocolSupport {
 						statusMessage: upstreamRes.statusMessage || 'Bad Gateway',
 						headers: normalizeHeaders(upstreamRes.headers),
 						contentType,
-						body: rawBody.toString('utf8'),
+						body: decodedBody,
 						bodyLength: rawBody.length,
 						timings: {
 							sendStart: 0,
