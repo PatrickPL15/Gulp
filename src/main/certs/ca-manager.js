@@ -316,6 +316,14 @@ class CaManager {
 			throw new Error('exportCaCertificate(destPath) requires a destination path');
 		}
 
+		if (!path.isAbsolute(destPath)) {
+			throw new Error('exportCaCertificate(destPath) must be an absolute path');
+		}
+
+		if (destPath.includes('..')) {
+			throw new Error('exportCaCertificate(destPath) must not contain path traversal sequences');
+		}
+
 		const cert = this.getCaCertificatePem();
 		ensureDir(path.dirname(destPath));
 		writeUtf8Atomic(destPath, cert, 0o644);
@@ -362,10 +370,10 @@ class CaManager {
 	}
 
 	rotateCa() {
+		this.ensureCaArtifacts();
+
 		const currentMeta = this._meta || {};
 		const nextGeneration = (currentMeta.generation || 1) + 1;
-
-		this.ensureCaArtifacts();
 
 		let invalidatedLeafCount = 0;
 		if (fs.existsSync(this.leafDir)) {

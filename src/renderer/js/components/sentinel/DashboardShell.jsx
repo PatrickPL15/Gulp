@@ -46,6 +46,11 @@ function DashboardShell() {
 								{index + 1}. {step}
 							</Text>
 						))}
+						{guidance.steps.length > 2 ? (
+							<Text fontSize='sm' color='fg.muted' mt={1}>
+								+{guidance.steps.length - 2} more steps — see full guidance in documentation.
+							</Text>
+						) : null}
 					</Box>
 				) : null}
 			</VStack>

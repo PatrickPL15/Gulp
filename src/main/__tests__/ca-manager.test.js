@@ -51,6 +51,23 @@ describe('ca-manager (SEN-013)', () => {
     expect(fs.readFileSync(exportPath, 'utf8')).toContain('BEGIN CERTIFICATE');
   });
 
+  it('rejects relative paths in exportCaCertificate', () => {
+    manager.ensureCaArtifacts();
+
+    expect(() => {
+      manager.exportCaCertificate('relative/path/cert.pem');
+    }).toThrow('must be an absolute path');
+  });
+
+  it('rejects path traversal in exportCaCertificate', () => {
+    manager.ensureCaArtifacts();
+
+    const traversalPath = `${tempDir}/subdir/../../escaped.pem`;
+    expect(() => {
+      manager.exportCaCertificate(traversalPath);
+    }).toThrow('must not contain path traversal');
+  });
+
   it('generates per-host leaf certs on demand and caches them', () => {
     manager.ensureCaArtifacts();
 

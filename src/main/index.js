@@ -1,9 +1,7 @@
 const electron = require('electron');
-const { app, BrowserWindow } = electron;
+const { app, BrowserWindow, ipcMain } = electron;
 const path = require('path');
 const caManager = require('./certs/ca-manager');
-
-const ipcMain = electron.ipcMain || { handle() {} };
 
 function registerCaHandlers() {
   ipcMain.handle('ca:get', async () => {
