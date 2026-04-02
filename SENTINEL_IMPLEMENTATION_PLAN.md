@@ -14,11 +14,15 @@ Deliver the Sentinel Web Security Suite in milestone order with a stable, testab
   - Marker-based template editing (`§value§`) with dictionary file, brute-force charset, and sequential numeric payload sources.
   - Sniper, pitchfork, and cluster-bomb attack profiles with real-time `intruder:progress` events and sortable/anomaly-aware results.
   - History handoff and IntruderPanel share the same runtime attack list; backend/UI coverage added with 11 new SEN-017 tests.
-- Remaining milestones (5+) focus on scope/scanner modules and advanced tooling.
+- Milestone 5 is complete: Target Mapping + Scope Enforcement (SEN-018) is implemented and tested.
+  - Scope rules support host/domain/IP/CIDR include/exclude entries with persistence and reload.
+  - Burp XML/JSON and HackerOne CSV imports are parsed, validated, and applied via IPC.
+  - Site map tree generation marks in-scope/out-of-scope nodes; rules/intruder/scanner honor scope checks.
+- Remaining milestones (6+) focus on decoder/browser, advanced scanner/OOB/sequencer, and hardening.
 
 ## Assumptions
 - Existing Electron + Gulp + React + Chakra foundation remains in place.
-- Advanced feature stubs and TODO files remain under `src/main/proxy/` and `src/renderer/js/components/sentinel/` for milestones 5+.
+- Advanced feature stubs and TODO files remain under `src/main/proxy/` and `src/renderer/js/components/sentinel/` for milestones 6+.
 - Estimates below are for one experienced full-stack engineer and represent implementation effort only (not external audits).
 
 ## Priority Order

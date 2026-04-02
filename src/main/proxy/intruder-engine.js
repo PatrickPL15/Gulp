@@ -370,9 +370,15 @@ class IntruderEngine extends EventEmitter {
 	constructor(options = {}) {
 		super();
 		this.forwardRequest = options.forwardRequest || forwardRequest;
+		this.scopeEvaluator = typeof options.scopeEvaluator === 'function' ? options.scopeEvaluator : null;
 		this.configById = new Map();
 		this.attackById = new Map();
 		this.resultsByAttackId = new Map();
+	}
+
+	setScopeEvaluator(evaluator) {
+		this.scopeEvaluator = typeof evaluator === 'function' ? evaluator : null;
+		return { ok: true };
 	}
 
 	async configure({ config } = {}) {
@@ -427,6 +433,26 @@ class IntruderEngine extends EventEmitter {
 			const request = applyAssignmentsToRequest(config.requestTemplate, config.positions, variant.assignments);
 			const startedAt = Date.now();
 			let result;
+
+			if (this.scopeEvaluator && !this.scopeEvaluator(request)) {
+				result = {
+					id: randomUUID(),
+					attackId,
+					position: index,
+					payload: variant.payloadSummary,
+					payloads: clone(variant.assignments),
+					statusCode: 0,
+					length: 0,
+					duration: 0,
+					isAnomalous: false,
+					anomalyReasons: ['out-of-scope'],
+					data: {
+						requestSummary: summarizeRequest(request),
+						skipped: true,
+						reason: 'out-of-scope',
+					},
+				};
+			} else {
 
 			try {
 				const response = config.simulateOnly
@@ -496,6 +522,7 @@ class IntruderEngine extends EventEmitter {
 						error: error.message,
 					},
 				};
+			}
 			}
 
 			const results = this.resultsByAttackId.get(attackId) || [];

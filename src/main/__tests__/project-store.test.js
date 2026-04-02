@@ -143,6 +143,7 @@ describe('project-store (SEN-012)', () => {
     // Opening a second path should not throw
     const opened = await projectStore.openProject(dbPath2, { projectName: 'Second' });
     expect(opened.project.name).toBe('Second');
+    await projectStore.closeProject();
     cleanupSqliteArtifacts(dbPath2);
   });
 

@@ -412,6 +412,15 @@ class ProjectStore {
     }
   }
 
+  async listScopeRules() {
+    this.ensureOpen();
+    const rows = await allAsync(
+      this.db,
+      'SELECT data FROM scope_rules ORDER BY kind ASC, host ASC, path ASC'
+    );
+    return rows.map(row => JSON.parse(row.data));
+  }
+
   async setModuleState(moduleName, state) {
     this.ensureOpen();
     await runAsync(
@@ -448,6 +457,7 @@ module.exports = {
   clearTrafficHistory: () => defaultStore.clearTrafficHistory(),
   listRules: () => defaultStore.listRules(),
   replaceRules: rules => defaultStore.replaceRules(rules),
+  listScopeRules: () => defaultStore.listScopeRules(),
   replaceScopeRules: rules => defaultStore.replaceScopeRules(rules),
   setModuleState: (moduleName, state) => defaultStore.setModuleState(moduleName, state),
 };
