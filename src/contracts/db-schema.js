@@ -8,8 +8,9 @@
  * Rules:
  *   1. CURRENT_VERSION is the only integer requiring a bump when schema changes.
  *   2. Every migration MUST be append-only — never mutate or remove earlier entries.
- *   3. Migration `up` functions receive a `db` (better-sqlite3 Database instance)
- *      and run synchronously inside a transaction.
+ *   3. Migration `up` functions receive a minimal migration adapter that supports
+ *      `db.exec(sql)` only. Migrations must be DDL/SQL-statement driven and
+ *      must not call `prepare()` or `transaction()`.
  *   4. All DDL uses IF NOT EXISTS / ADD COLUMN to remain idempotent.
  *
  * Schema version: 1
@@ -165,11 +166,16 @@ const DDL_V1 = [
 // ---------------------------------------------------------------------------
 
 /**
+ * @typedef {object} MigrationExecAdapter
+ * @property {(sql: string) => void} exec - Appends a SQL statement to the migration batch.
+ */
+
+/**
  * @typedef {object} Migration
  * @property {number}   fromVersion - Schema version this migration upgrades FROM.
  * @property {number}   toVersion   - Schema version this migration upgrades TO.
  * @property {string}   description - Human-readable summary of the change.
- * @property {Function} up          - Synchronous function receiving (db: Database) that applies the migration.
+ * @property {(db: MigrationExecAdapter) => void} up - Migration body using exec-only adapter.
  */
 
 /** @type {Migration[]} */

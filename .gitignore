@@ -1,11 +1,9 @@
-/.github
+ 
 /.vscode
 /node_modules
 /dist
 
 # Instruction and guide documents
-/APP_COMPLETION_AND_TEST_CHECKLIST.md
-/SENTINEL_IMPLEMENTATION_PLAN.md
 *GUIDE*.md
 *guide*.md
 *CHECKLIST*.md
@@ -20,6 +18,4 @@
 
 # CSV exports and backlog snapshots
 *.csv
-APP_COMPLETION_AND_TEST_CHECKLIST.md
-SENTINEL_IMPLEMENTATION_PLAN.md
 SENTINEL_EPICS.md

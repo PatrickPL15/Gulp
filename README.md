@@ -112,9 +112,12 @@ npm run dev
 ```
 
 ## Scripts
+- `npm run clean` -> Remove generated `dist/` output
+- `npm run build` -> Build renderer and main artifacts into `dist/`
 - `npm run dev` -> Gulp watch pipeline
 - `npm run start` -> Electron runtime
 - `npm test` -> Vitest
+- `npm run test:build` -> Clean + build + run post-build `dist/` validation smoke tests
 - `npm run test:ui` -> Vitest UI
 - `npm run test:coverage` -> Coverage run
 
@@ -135,6 +138,7 @@ The following capability groups are planned and tracked in checklist/plan docs:
 8. Burp Suite project configuration import.
 9. CSV ingestion for external scope/config exports (for example HackerOne).
 10. Custom-script action automation (triggered workflows with sandbox/audit controls).
+11. Build validation layer testing for generated `dist/` artifacts (kept separate from source unit test execution).
 
 ## Planned Changes (Roadmap Highlights)
 - Milestone 0-1: contract baseline, persistence, CA lifecycle, service bootstrap.
