@@ -331,6 +331,21 @@ class ProjectStore {
     };
   }
 
+  async getTrafficItem(id) {
+    this.ensureOpen();
+    if (!id) {
+      return null;
+    }
+
+    const row = await getAsync(
+      this.db,
+      'SELECT data FROM traffic_history WHERE id = ? LIMIT 1',
+      [id]
+    );
+
+    return row ? JSON.parse(row.data) : null;
+  }
+
   async replaceRules(rules = []) {
     this.ensureOpen();
     await execAsync(this.db, 'BEGIN IMMEDIATE TRANSACTION;');
@@ -413,6 +428,7 @@ module.exports = {
   getProjectMeta: () => defaultStore.getProjectMeta(),
   upsertTrafficItem: item => defaultStore.upsertTrafficItem(item),
   queryTraffic: args => defaultStore.queryTraffic(args),
+  getTrafficItem: id => defaultStore.getTrafficItem(id),
   replaceRules: rules => defaultStore.replaceRules(rules),
   replaceScopeRules: rules => defaultStore.replaceScopeRules(rules),
   setModuleState: (moduleName, state) => defaultStore.setModuleState(moduleName, state),
