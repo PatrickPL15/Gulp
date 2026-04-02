@@ -2,8 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-
-const { createCaManager } = require('../certs/ca-manager');
+import { createCaManager } from '../certs/ca-manager';
 
 describe('ca-manager (SEN-013)', () => {
   let tempDir;

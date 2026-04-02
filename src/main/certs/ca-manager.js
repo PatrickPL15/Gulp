@@ -362,10 +362,9 @@ class CaManager {
 	}
 
 	rotateCa() {
-		const currentMeta = this._meta || {};
-		const nextGeneration = (currentMeta.generation || 1) + 1;
-
 		this.ensureCaArtifacts();
+
+		const nextGeneration = this._meta.generation + 1;
 
 		let invalidatedLeafCount = 0;
 		if (fs.existsSync(this.leafDir)) {
