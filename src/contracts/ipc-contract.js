@@ -432,6 +432,13 @@ const CHANNELS = [
     response:  '{ ok: boolean }',
     notes:     'Regenerates the CA key pair; invalidates all cached leaf certs.',
   },
+  {
+    channel:   'ca:trust:guidance',
+    direction: 'invoke',
+    payload:   '{}',
+    response:  '{ guidance: { platform: string, title: string, steps: string[] } }',
+    notes:     'Returns OS-specific trust-store installation guidance for the current CA.',
+  },
 ];
 
 // ---------------------------------------------------------------------------
