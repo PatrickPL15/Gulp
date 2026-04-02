@@ -117,9 +117,10 @@ describe('project-store (SEN-012)', () => {
 
   it('open() rejects with an error when filePath is not a string', async () => {
     const store = projectStore.createProjectStore();
-    await expect(store.open(null)).rejects.toThrow();
-    await expect(store.open('')).rejects.toThrow();
-    await expect(store.open(42)).rejects.toThrow();
+    const expectedMsg = 'open(filePath) requires a valid path string';
+    await expect(store.open(null)).rejects.toThrow(expectedMsg);
+    await expect(store.open('')).rejects.toThrow(expectedMsg);
+    await expect(store.open(42)).rejects.toThrow(expectedMsg);
   });
 
   it('open() creates parent directories recursively', async () => {
