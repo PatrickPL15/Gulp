@@ -205,6 +205,13 @@ const CHANNELS = [
     notes:     'Gracefully stops a running attack.',
   },
   {
+    channel:   'intruder:list',
+    direction: 'invoke',
+    payload:   '{}',
+    response:  '{ items: IntruderAttack[] }',
+    notes:     'Lists recent intruder attacks with status and progress metadata.',
+  },
+  {
     channel:   'intruder:results',
     direction: 'invoke',
     payload:   '{ attackId: string, page: number, pageSize: number }',
@@ -502,7 +509,7 @@ function getPushChannels() {
 // ---------------------------------------------------------------------------
 
 module.exports = {
-  SCHEMA_VERSION: 4,
+  SCHEMA_VERSION: 5,
   CHANNELS,
   getChannel,
   getChannelsForService,

@@ -113,6 +113,10 @@ function registerProxyHandlers() {
     return intruderEngine.stop(args);
   });
 
+  ipcMain.handle('intruder:list', async () => {
+    return intruderEngine.list();
+  });
+
   ipcMain.handle('intruder:results', async (_event, args = {}) => {
     return intruderEngine.results(args);
   });
@@ -131,6 +135,10 @@ function registerProxyHandlers() {
 
   historyLog.on('push', item => {
     sendToRenderer('history:push', item);
+  });
+
+  intruderEngine.on('progress', payload => {
+    sendToRenderer('intruder:progress', payload);
   });
 }
 

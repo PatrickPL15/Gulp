@@ -9,6 +9,7 @@ const paths = {
   js: 'src/renderer/js/**/*.{js,jsx}',
   jsEntry: 'src/renderer/js/main.jsx',
   main: 'src/main/**/*',
+  contracts: 'src/contracts/**/*',
   dist: 'dist'
 };
 
@@ -48,14 +49,20 @@ function copyMain() {
     .pipe(gulp.dest(`${paths.dist}/main`));
 }
 
+function copyContracts() {
+  return gulp.src(paths.contracts)
+    .pipe(gulp.dest(`${paths.dist}/contracts`));
+}
+
 function watchFiles() {
   gulp.watch(paths.html, copyHtml);
   gulp.watch(paths.scss, compileSass);
   gulp.watch(paths.js, bundleJs);
   gulp.watch(paths.main, copyMain);
+  gulp.watch(paths.contracts, copyContracts);
 }
 
-const build = gulp.series(cleanDist, gulp.parallel(copyHtml, compileSass, bundleJs, copyMain));
+const build = gulp.series(cleanDist, gulp.parallel(copyHtml, compileSass, bundleJs, copyMain, copyContracts));
 
 exports.clean = cleanDist;
 exports.watch = watchFiles;
