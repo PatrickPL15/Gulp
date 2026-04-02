@@ -78,21 +78,55 @@ async function runMigrations(db) {
 
   const row = await getAsync(db, 'SELECT schema_ver FROM project_meta WHERE id = ?', ['default']);
   let currentVer = row ? row.schema_ver : 0;
+  const orderedMigrations = [...MIGRATIONS].sort(
+    (a, b) => (a.fromVersion - b.fromVersion) || (a.toVersion - b.toVersion)
+  );
 
-  if (currentVer === 0) {
+  while (currentVer < CURRENT_VERSION) {
+    const migration = orderedMigrations.find(m => m.fromVersion === currentVer);
+    if (!migration) {
+      throw new Error(`Missing migration path from schema version ${currentVer} to ${CURRENT_VERSION}`);
+    }
+    if (typeof migration.up !== 'function') {
+      throw new Error(`Migration ${migration.fromVersion}->${migration.toVersion} has no up() function`);
+    }
+
     await execAsync(db, 'BEGIN IMMEDIATE TRANSACTION;');
     try {
-      for (const ddl of DDL_V1) {
-        await execAsync(db, ddl);
+      const statements = [];
+      const migrationDb = {
+        exec(sql) {
+          if (typeof sql !== 'string' || !sql.trim()) {
+            throw new Error(
+              `Migration ${migration.fromVersion}->${migration.toVersion} emitted invalid SQL`
+            );
+          }
+          statements.push(sql);
+        },
+        prepare() {
+          throw new Error(
+            `Migration ${migration.fromVersion}->${migration.toVersion} uses prepare(), unsupported in sqlite3 adapter`
+          );
+        },
+        transaction() {
+          throw new Error(
+            `Migration ${migration.fromVersion}->${migration.toVersion} uses transaction(), unsupported in sqlite3 adapter`
+          );
+        },
+      };
+
+      migration.up(migrationDb);
+      for (const sql of statements) {
+        await execAsync(db, sql);
       }
+
       await runAsync(
         db,
-        `INSERT OR IGNORE INTO project_meta (id, name, created_at, updated_at, schema_ver)
-         VALUES (?, ?, ?, ?, ?)`,
-        ['default', 'Unnamed Project', Date.now(), Date.now(), CURRENT_VERSION]
+        'UPDATE project_meta SET schema_ver = ?, updated_at = ? WHERE id = ?',
+        [migration.toVersion, Date.now(), 'default']
       );
       await execAsync(db, 'COMMIT;');
-      currentVer = CURRENT_VERSION;
+      currentVer = migration.toVersion;
     } catch (error) {
       await execAsync(db, 'ROLLBACK;');
       throw error;
@@ -128,26 +162,43 @@ class ProjectStore {
     }
 
     ensureParentDir(filePath);
-    this.db = await openDatabase(filePath);
-    this.filePath = filePath;
+    const db = await openDatabase(filePath);
 
-    await configureCrashSafety(this.db);
-    await integrityCheck(this.db);
-    const schemaVer = await runMigrations(this.db);
+    try {
+      await configureCrashSafety(db);
+      await integrityCheck(db);
+      const schemaVer = await runMigrations(db);
 
-    if (options.projectName) {
-      await runAsync(
-        this.db,
-        'UPDATE project_meta SET name = ?, updated_at = ? WHERE id = ?',
-        [options.projectName, Date.now(), 'default']
+      if (options.projectName) {
+        await runAsync(
+          db,
+          'UPDATE project_meta SET name = ?, updated_at = ? WHERE id = ?',
+          [options.projectName, Date.now(), 'default']
+        );
+      }
+
+      const row = await getAsync(
+        db,
+        'SELECT id, name, created_at, updated_at, schema_ver FROM project_meta WHERE id = ?',
+        ['default']
       );
-    }
 
-    return {
-      filePath: this.filePath,
-      schemaVersion: schemaVer,
-      project: await this.getProjectMeta(),
-    };
+      this.db = db;
+      this.filePath = filePath;
+
+      return {
+        filePath: this.filePath,
+        schemaVersion: schemaVer,
+        project: row ? rowToProjectMeta(row) : null,
+      };
+    } catch (error) {
+      try {
+        await closeAsync(db);
+      } catch {
+        // Ignore close errors while unwinding an open failure.
+      }
+      throw error;
+    }
   }
 
   async close() {
