@@ -9,6 +9,8 @@ const historyLog = require('./proxy/history-log');
 const rulesEngine = require('./proxy/rules-engine');
 const repeaterService = require('./proxy/repeater-service');
 const intruderEngine = require('./proxy/intruder-engine');
+const targetMapper = require('./proxy/target-mapper');
+const scannerEngine = require('./proxy/scanner-engine');
 
 let mainWindowRef = null;
 let shutdownInProgress = null;
@@ -121,6 +123,60 @@ function registerProxyHandlers() {
     return intruderEngine.results(args);
   });
 
+  ipcMain.handle('target:sitemap', async () => {
+    const result = await historyLog.query({ page: 0, pageSize: 5000, filter: {} });
+    return targetMapper.buildSiteMap(result.items || []);
+  });
+
+  ipcMain.handle('scope:get', async () => {
+    return { rules: targetMapper.getScopeRules() };
+  });
+
+  ipcMain.handle('scope:set', async (_event, args = {}) => {
+    const rules = Array.isArray(args.rules) ? args.rules : [];
+    targetMapper.setScopeRules(rules);
+    await projectStore.replaceScopeRules(targetMapper.getScopeRules());
+    return { ok: true };
+  });
+
+  ipcMain.handle('scope:import:burp', async (_event, args = {}) => {
+    if (!args.filePath) {
+      throw new Error('scope:import:burp requires filePath');
+    }
+    const result = targetMapper.importBurpFromFile(args.filePath);
+    await projectStore.replaceScopeRules(result.rules || []);
+    return {
+      ok: true,
+      imported: result.imported,
+      warnings: result.warnings || [],
+    };
+  });
+
+  ipcMain.handle('scope:import:csv', async (_event, args = {}) => {
+    if (!args.filePath) {
+      throw new Error('scope:import:csv requires filePath');
+    }
+    const result = targetMapper.importCsvFromFile(args.filePath, args.format || 'generic');
+    await projectStore.replaceScopeRules(result.rules || []);
+    return {
+      ok: true,
+      imported: result.imported,
+      warnings: result.warnings || [],
+    };
+  });
+
+  ipcMain.handle('scanner:start', async (_event, args = {}) => {
+    return scannerEngine.start(args);
+  });
+
+  ipcMain.handle('scanner:stop', async (_event, args = {}) => {
+    return scannerEngine.stop(args);
+  });
+
+  ipcMain.handle('scanner:results', async (_event, args = {}) => {
+    return scannerEngine.results(args);
+  });
+
   interceptEngine.on('request', request => {
     sendToRenderer('proxy:intercept:request', request);
   });
@@ -140,6 +196,10 @@ function registerProxyHandlers() {
   intruderEngine.on('progress', payload => {
     sendToRenderer('intruder:progress', payload);
   });
+
+  scannerEngine.on('progress', payload => {
+    sendToRenderer('scanner:progress', payload);
+  });
 }
 
 async function openDefaultProjectStore() {
@@ -150,6 +210,25 @@ async function openDefaultProjectStore() {
 
   const persistedRules = await projectStore.listRules();
   rulesEngine.setRules(persistedRules);
+
+  const persistedScopeRules = typeof projectStore.listScopeRules === 'function'
+    ? await projectStore.listScopeRules()
+    : [];
+  targetMapper.setScopeRules(persistedScopeRules || []);
+
+  const scopeEvaluator = requestLike => targetMapper.isInScope(requestLike);
+  if (typeof rulesEngine.setScopeEvaluator === 'function') {
+    rulesEngine.setScopeEvaluator(scopeEvaluator);
+  }
+  if (typeof intruderEngine.setScopeEvaluator === 'function') {
+    intruderEngine.setScopeEvaluator(scopeEvaluator);
+  }
+  if (typeof scannerEngine.setScopeEvaluator === 'function') {
+    scannerEngine.setScopeEvaluator(scopeEvaluator);
+  }
+  if (typeof protocolSupport.setScopeEvaluator === 'function') {
+    protocolSupport.setScopeEvaluator(scopeEvaluator);
+  }
 }
 
 function registerCaHandlers() {

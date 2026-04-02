@@ -162,7 +162,13 @@ function applyAction(request, action = {}) {
 class RulesEngine {
 	constructor(initialRules = []) {
 		this.rules = [];
+		this.scopeEvaluator = null;
 		this.setRules(initialRules);
+	}
+
+	setScopeEvaluator(evaluator) {
+		this.scopeEvaluator = typeof evaluator === 'function' ? evaluator : null;
+		return { ok: true };
 	}
 
 	setRules(rules = []) {
@@ -181,6 +187,10 @@ class RulesEngine {
 
 	applyToRequest(request) {
 		let next = clone(request || {});
+
+		if (this.scopeEvaluator && !this.scopeEvaluator(next)) {
+			return next;
+		}
 
 		for (const rule of this.rules) {
 			if (!matchesRule(rule, next)) {

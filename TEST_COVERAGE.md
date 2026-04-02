@@ -12,14 +12,11 @@ This project enforces **80%+ code coverage** on implementation modules. Coverage
 
 ### Excluded (Remaining TODO Modules)
 The following are intentionally excluded because they remain architectural placeholders:
-- `src/main/proxy/target-mapper.js`
-- `src/main/proxy/scanner-engine.js`
 - `src/main/proxy/oob-service.js`
 - `src/main/proxy/sequencer-service.js`
 - `src/main/proxy/decoder-service.js`
 - `src/main/proxy/extension-host.js`
 - `src/main/proxy/embedded-browser-service.js`
-- `src/renderer/js/components/sentinel/TargetMapPanel.jsx`
 - `src/renderer/js/components/sentinel/ScannerPanel.jsx`
 - `src/renderer/js/components/sentinel/OobPanel.jsx`
 - `src/renderer/js/components/sentinel/SequencerPanel.jsx`
@@ -27,7 +24,7 @@ The following are intentionally excluded because they remain architectural place
 - `src/renderer/js/components/sentinel/ExtensionsPanel.jsx`
 - `src/renderer/js/components/sentinel/EmbeddedBrowserPanel.jsx`
 
-These will accumulate real logic during Sentinel implementation (Milestone 0+).
+These will accumulate real logic during Sentinel implementation (Milestone 6+).
 
 ### Partial Coverage (Integration-Heavy)
 - `src/main/preload.js`: 100% branch/function, 0% statements
@@ -36,8 +33,8 @@ These will accumulate real logic during Sentinel implementation (Milestone 0+).
   - *(Electron/React bootstrap code requires integration tests)*
 
 ## Test Metrics
-- **Test Files**: 18 suites total
-- **Total Tests**: 268 total; M4-focused validation passed 114/114 tests across 6 suites
+- **Test Files**: 19+ suites total (including SEN-018 target/scope coverage)
+- **Total Tests**: Expanded with SEN-018 backend coverage for scope evaluation, import parsing, sitemap generation, and automation scope checks
 - **Recent additions**: SEN-017 Intruder coverage (11 tests) covering real HTTP attacks, dictionary/brute-force/sequential payload generation, sniper/pitchfork/cluster-bomb profiles, progress events, anomaly detection, graceful stop, and panel interaction flows
 - **Average (measured files)**: >80%
 
@@ -51,7 +48,7 @@ npm run test:coverage   # Coverage report
 ```
 
 ## Future Coverage Targets
-1. Sentinel Milestone 5-6: Add module-level tests for target map/scope, scanner, and decoder flows
+1. Sentinel Milestone 6: Add deeper scanner and decoder module-level tests beyond M5 baseline scope enforcement
 2. Add full Electron integration coverage for live IPC event delivery from `src/main/index.js` into renderer panels.
 3. Post-MVP: Full feature parity → 90%+ target (with integration tests)
 

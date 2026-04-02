@@ -221,8 +221,14 @@ class ProtocolSupport {
 		this.interceptEngine = options.interceptEngine || interceptEngineModule;
 		this.historyLog = options.historyLog || historyLogModule;
 		this.rulesEngine = options.rulesEngine || rulesEngineModule;
+		this.scopeEvaluator = typeof options.scopeEvaluator === 'function' ? options.scopeEvaluator : null;
 		this.server = null;
 		this.port = 0;
+	}
+
+	setScopeEvaluator(evaluator) {
+		this.scopeEvaluator = typeof evaluator === 'function' ? evaluator : null;
+		return { ok: true };
 	}
 
 	async start({ port = 8080 } = {}) {
@@ -343,7 +349,12 @@ class ProtocolSupport {
 			tls: false,
 			tags: [],
 			comment: '',
-			inScope: false,
+			inScope: this.scopeEvaluator ? this.scopeEvaluator({
+				protocol: target ? target.protocol.replace(':', '') : 'http',
+				host: target ? target.hostname : parsedHost.host,
+				port: target ? Number(target.port || (target.protocol === 'https:' ? 443 : 80)) : parsedHost.port,
+				path: target ? `${target.pathname || '/'}${target.search || ''}` : (req.url || '/'),
+			}) : false,
 		};
 
 		const result = await this.interceptEngine.captureRequest(requestModel, async forwardedRequest => {
