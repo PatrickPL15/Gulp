@@ -45,7 +45,7 @@ const config = defineConfig({
         'bg.canvas': { value: '{colors.workbench.900}' },
         'bg.panel': { value: '#111821' },
         'bg.surface': { value: '#1a2531' },
-        'bg.subtle': { value: '#263443' },
+        'bg.subtle': { value: '#202d3a' },
         'bg.elevated': { value: '#0b1118' },
         'fg.default': { value: '#edf2f7' },
         'fg.muted': { value: '#b4c2cf' },
@@ -69,5 +69,6 @@ const config = defineConfig({
 });
 
 const system = createSystem(defaultConfig, config);
+system.rawConfig = config;
 
 module.exports = system;

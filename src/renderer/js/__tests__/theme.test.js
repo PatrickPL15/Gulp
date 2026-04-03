@@ -33,15 +33,11 @@ describe('Theme Configuration', () => {
   });
 
   it('should define workbench semantic tokens', () => {
-    const semanticTokens = {
-      'bg.canvas': '{colors.workbench.900}',
-      'bg.panel': '#111821',
-      'bg.subtle': '#202d3a'
-    };
+    const semanticColors = themeSystem.rawConfig.theme.semanticTokens.colors;
 
-    expect(semanticTokens['bg.canvas']).toBe('{colors.workbench.900}');
-    expect(semanticTokens['bg.panel']).toBe('#111821');
-    expect(semanticTokens['bg.subtle']).toBe('#202d3a');
+    expect(semanticColors['bg.canvas'].value).toBe('{colors.workbench.900}');
+    expect(semanticColors['bg.panel'].value).toBe('#111821');
+    expect(semanticColors['bg.subtle'].value).toBe('#202d3a');
   });
 
   it('should provide valid workbench color references', () => {

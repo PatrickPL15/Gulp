@@ -45,6 +45,7 @@
     "@tanstack/react-table": "^8.21.3",
     "framer-motion": "^12.10.5",
     "http-mitm-proxy": "^1.1.0",
+    "monaco-editor": "^0.55.1",
     "node-forge": "^1.4.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

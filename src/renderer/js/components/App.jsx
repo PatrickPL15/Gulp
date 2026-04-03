@@ -536,11 +536,23 @@ function App() {
       </Flex>
 
       {commandPaletteOpen ? (
-        <Flex position='fixed' inset='0' bg='rgba(5, 10, 16, 0.65)' align='flex-start' justify='center' pt='16' zIndex='1000'>
-          <Box w='560px' maxW='calc(100vw - 32px)' borderWidth='1px' borderColor='border.default' borderRadius='sm' bg='bg.panel' p='3'>
+        <Flex position='fixed' inset='0' bg='rgba(5, 10, 16, 0.65)' align='flex-start' justify='center' pt='16' zIndex='1000' role='presentation'>
+          <Box
+            w='560px'
+            maxW='calc(100vw - 32px)'
+            borderWidth='1px'
+            borderColor='border.default'
+            borderRadius='sm'
+            bg='bg.panel'
+            p='3'
+            role='dialog'
+            aria-modal='true'
+            aria-label='Command palette'
+          >
             <Input
               autoFocus
               placeholder='Jump to module...'
+              aria-label='Search modules'
               value={commandQuery}
               onChange={(event) => setCommandQuery(event.target.value)}
               mb='3'

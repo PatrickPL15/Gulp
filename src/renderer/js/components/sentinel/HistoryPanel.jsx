@@ -206,6 +206,7 @@ function HistoryPanel() {
 	const refreshTimerRef = React.useRef(null);
 	const refreshPendingRef = React.useRef(false);
 	const bufferedItemsRef = React.useRef([]);
+	const knownIdsRef = React.useRef(new Set());
 	const activeFilterRef = React.useRef({});
 	const pageRef = React.useRef(0);
 	const pageSizeRef = React.useRef(250);
@@ -267,7 +268,12 @@ function HistoryPanel() {
 				filter: queryFilter,
 			});
 
-			setItems(Array.isArray(result.items) ? result.items : []);
+			const loadedItems = Array.isArray(result.items) ? result.items : [];
+			if (nextPage === 0) {
+				bufferedItemsRef.current = [];
+			}
+			knownIdsRef.current = new Set(loadedItems.map(item => item?.id).filter(Boolean));
+			setItems(loadedItems);
 			setTotal(Number(result.total) || 0);
 			setPage(Number(result.page) || 0);
 		} catch {
@@ -353,10 +359,16 @@ function HistoryPanel() {
 				const pendingItems = bufferedItemsRef.current.splice(0);
 				if (pageRef.current === 0 && pendingItems.length > 0) {
 					setItems(prev => {
-						const merged = [...pendingItems, ...prev].filter((item, index, array) => {
-							return array.findIndex(candidate => candidate && item && candidate.id === item.id) === index;
+						const mergedById = new Map();
+						[pendingItems, prev].forEach(collection => {
+							collection.forEach(item => {
+								if (!item || mergedById.has(item.id)) {
+									return;
+								}
+								mergedById.set(item.id, item);
+							});
 						});
-						return merged.slice(0, pageSizeRef.current);
+						return Array.from(mergedById.values()).slice(0, pageSizeRef.current);
 					});
 				}
 
@@ -373,8 +385,10 @@ function HistoryPanel() {
 			}
 
 			if (pageRef.current === 0 && matchesActiveFilters(item, activeFilterRef.current)) {
-				if (!bufferedItemsRef.current.some(existing => existing && existing.id === item.id)) {
+				const isInBuffer = bufferedItemsRef.current.some(existing => existing && existing.id === item.id);
+				if (!isInBuffer && !knownIdsRef.current.has(item.id)) {
 					bufferedItemsRef.current.unshift(item);
+					knownIdsRef.current.add(item.id);
 					setTotal(prevTotal => prevTotal + 1);
 				}
 			}
