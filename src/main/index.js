@@ -14,6 +14,7 @@ const scannerEngine = require('./proxy/scanner-engine');
 const oobService = require('./proxy/oob-service');
 const sequencerService = require('./proxy/sequencer-service');
 const decoderService = require('./proxy/decoder-service');
+const extensionHost = require('./proxy/extension-host');
 const embeddedBrowserService = require('./proxy/embedded-browser-service');
 
 let mainWindowRef = null;
@@ -155,6 +156,10 @@ function registerProxyHandlers() {
     const rules = Array.isArray(args.rules) ? args.rules : [];
     targetMapper.setScopeRules(rules);
     await projectStore.replaceScopeRules(targetMapper.getScopeRules());
+    extensionHost.emitEvent('scope.transition', {
+      rulesCount: rules.length,
+      rules,
+    });
     return { ok: true };
   });
 
@@ -253,7 +258,15 @@ function registerProxyHandlers() {
   });
 
   interceptEngine.on('request', request => {
+    const eventPayload = {
+      request,
+      requestId: request && request.id ? request.id : '',
+    };
+
     sendToRenderer('proxy:intercept:request', request);
+    setImmediate(() => {
+      extensionHost.emitEvent('proxy.intercept', eventPayload);
+    });
   });
 
   interceptEngine.on('forwarded', payload => {
@@ -277,6 +290,15 @@ function registerProxyHandlers() {
 
   scannerEngine.on('progress', payload => {
     sendToRenderer('scanner:progress', payload);
+    if (payload && payload.finding) {
+      const findingPayload = {
+        finding: payload.finding,
+        scanId: payload.scanId || '',
+      };
+      setImmediate(() => {
+        extensionHost.emitEvent('scanner.finding', findingPayload);
+      });
+    }
   });
 
   oobService.on('hit', payload => {
@@ -384,10 +406,22 @@ function registerProjectHandlers() {
 }
 
 function registerExtensionHandlers() {
-  ipcMain.handle('extensions:list', async () => ({ extensions: [] }));
-  ipcMain.handle('extensions:install', async () => ({ ok: false, id: '' }));
-  ipcMain.handle('extensions:uninstall', async () => ({ ok: false }));
-  ipcMain.handle('extensions:toggle', async () => ({ ok: false }));
+  ipcMain.handle('extensions:list', async () => {
+    const result = extensionHost.list();
+    return { extensions: Array.isArray(result && result.extensions) ? result.extensions : [] };
+  });
+
+  ipcMain.handle('extensions:install', async (_event, args = {}) => {
+    return extensionHost.install(args);
+  });
+
+  ipcMain.handle('extensions:uninstall', async (_event, args = {}) => {
+    return extensionHost.uninstall(args);
+  });
+
+  ipcMain.handle('extensions:toggle', async (_event, args = {}) => {
+    return extensionHost.toggle(args);
+  });
 }
 
 function registerCaHandlers() {
@@ -451,6 +485,10 @@ async function shutdownServices() {
 }
 
 app.whenReady().then(() => {
+  extensionHost.configure({
+    extensionsDir: path.join(app.getPath('userData'), 'extensions'),
+  });
+
   embeddedBrowserService.setProxyAdapters({
     getProxyStatus: async () => protocolSupport.getStatus(),
     startProxy: async (args = {}) => protocolSupport.start(args),

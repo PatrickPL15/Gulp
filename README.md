@@ -56,7 +56,7 @@ Desktop security-workbench foundation built with Electron (main process), React 
 │  │  │  ├─ oob-service.js                 (payload listener and callback correlation service)
 │  │  │  ├─ sequencer-service.js           (token capture, entropy analysis, and CSV export)
 │  │  │  ├─ decoder-service.js             (chained transform engine with reversible execution)
-│  │  │  ├─ extension-host.js              (TODO scaffold)
+│  │  │  ├─ extension-host.js              (sandboxed extension + script automation runtime)
 │  │  │  └─ embedded-browser-service.js    (proxy-routed in-app browser session service)
 │  │  └─ __tests__/
 │  └─ renderer/
@@ -81,7 +81,7 @@ Desktop security-workbench foundation built with Electron (main process), React 
 │              ├─ OobPanel.jsx             (payload generation and callback correlation panel)
 │              ├─ SequencerPanel.jsx       (capture/analyze/export entropy workflow panel)
 │              ├─ DecoderPanel.jsx         (chain editor with intermediate output and reverse mode)
-│              ├─ ExtensionsPanel.jsx      (TODO scaffold)
+│              ├─ ExtensionsPanel.jsx      (extension install/toggle/remove + audit log panel)
 │              ├─ EmbeddedBrowserPanel.jsx (session/address bar panel with embedded response preview)
 │              └─ __tests__/
 └─ dist/ (generated)
@@ -124,13 +124,13 @@ npm run dev
 
 ## Testing Snapshot
 - Test framework is Vitest with jsdom and Testing Library.
-- Current full validation: 24 test files / 292 tests passing, plus successful Gulp build.
-- Current targeted backend and renderer suites pass, including SEN-018 through SEN-023 and project-store stability checks.
+- Current full validation: 25 test files / 297 tests passing, plus successful Gulp build.
+- Current targeted backend and renderer suites pass, including SEN-018 through SEN-024 and project-store stability checks.
 - Post-build runtime validation (`npm run test:build`) also passes (3/3 dist smoke tests).
 - Coverage/report strategy is documented in `TEST_COVERAGE.md`.
 
 ## Sentinel Scope Status
-M1 through M7 capabilities are complete and implemented in this branch, including:
+M1 through M8 capabilities are complete and implemented in this branch, including:
 
 1. Core proxy pipeline (intercept, edit, forward, rules, history).
 2. Manual tools (Repeater response viewers and request replay workflows).
@@ -139,11 +139,12 @@ M1 through M7 capabilities are complete and implemented in this branch, includin
 5. Decoder and embedded browser integration.
 6. Advanced scanner/OOB/sequencer workflows.
 7. Build validation layer testing for generated `dist/` artifacts.
+8. Extension host, script automation runtime, and IPC/renderer hardening.
 
-Remaining planned scope is M8+:
+Remaining planned scope is M9+:
 
-1. Extension host and hardening.
-2. Custom-script action automation (triggered workflows with sandbox/audit controls).
+1. Workbench shell modernization (fixed viewport + activity bar + tabs + status bar).
+2. High-density virtualized proxy/history surfaces and buffered streaming UX polish.
 
 ## Planned Changes (Roadmap Highlights)
 - Milestone 0-1: contract baseline, persistence, CA lifecycle, service bootstrap.
