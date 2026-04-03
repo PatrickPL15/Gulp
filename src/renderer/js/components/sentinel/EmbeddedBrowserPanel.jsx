@@ -128,7 +128,7 @@ function EmbeddedBrowserPanel() {
         setPreviewDoc(buildSafePreviewDoc('Binary/empty response preview unavailable.'));
       }
 
-      setStatusText(`Navigated via proxy ${response && response.proxy ? response.proxy.port : 'unknown'}.`);
+      setStatusText(`Navigated via proxy port ${response && response.proxy ? response.proxy.port : 'unknown'}.`);
     } catch (error) {
       setErrorText(error && error.message ? error.message : 'Navigation failed.');
     }

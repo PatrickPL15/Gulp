@@ -6,6 +6,9 @@ SEN-014 Rules engine
 
 'use strict';
 
+const MAX_REGEX_LENGTH = 512;
+const SAFE_FLAGS_PATTERN = /^[imsu]{0,4}$/;
+
 function clone(value) {
 	return JSON.parse(JSON.stringify(value));
 }
@@ -159,6 +162,44 @@ function applyAction(request, action = {}) {
 	return next;
 }
 
+function isRegexConditionSafe(condition) {
+	if (!condition || typeof condition !== 'object' || condition.operator !== 'regex') {
+		return true;
+	}
+	const pattern = asString(condition.value);
+	const flags = asString(condition.flags || 'i');
+	if (pattern.length > MAX_REGEX_LENGTH) {
+		return false;
+	}
+	if (!SAFE_FLAGS_PATTERN.test(flags)) {
+		return false;
+	}
+	try {
+		// eslint-disable-next-line no-new
+		new RegExp(pattern, flags);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function validateRuleConditions(rule) {
+	const match = rule && rule.match ? rule.match : {};
+	const fieldConditions = [match.host, match.path, match.url, match.body].filter(Boolean);
+	for (const cond of fieldConditions) {
+		if (!isRegexConditionSafe(cond)) {
+			return false;
+		}
+	}
+	const headerConditions = Object.values(match.headers || {});
+	for (const cond of headerConditions) {
+		if (!isRegexConditionSafe(cond)) {
+			return false;
+		}
+	}
+	return true;
+}
+
 class RulesEngine {
 	constructor(initialRules = []) {
 		this.rules = [];
@@ -175,9 +216,22 @@ class RulesEngine {
 		if (!Array.isArray(rules)) {
 			throw new Error('setRules requires an array of rule definitions');
 		}
-		this.rules = rules
+		const accepted = [];
+		const rejected = [];
+		for (const rule of rules) {
+			(validateRuleConditions(rule) ? accepted : rejected).push(rule);
+		}
+		this.rules = accepted
 			.map(rule => clone(rule))
 			.sort((a, b) => (a.priority || 0) - (b.priority || 0));
+		if (rejected.length > 0) {
+			return {
+				ok: false,
+				count: this.rules.length,
+				rejectedCount: rejected.length,
+				reason: 'invalid_regex_condition',
+			};
+		}
 		return { ok: true, count: this.rules.length };
 	}
 
