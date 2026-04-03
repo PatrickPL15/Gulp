@@ -6,12 +6,16 @@
   "scripts": {
     "clean": "gulp clean",
     "build": "gulp build",
+    "build:metadata": "node scripts/versioning/write-build-metadata.js",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "test:build": "npm run clean && npm run build && vitest --run --config vitest.build.config.js",
     "dev": "gulp watch",
-    "start": "electron ."
+    "start": "electron .",
+    "semver:check": "node scripts/versioning/semver-check.js",
+    "version:verify": "npm run semver:check && npm run build:metadata",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "",
@@ -31,6 +35,7 @@
     "gulp-clean": "^0.4.0",
     "gulp-esbuild": "^0.14.1",
     "gulp-sass": "^6.0.1",
+    "husky": "^9.1.7",
     "identity-obj-proxy": "^3.0.0",
     "jest-environment-jsdom": "^30.3.0",
     "jsdom": "^26.1.0",

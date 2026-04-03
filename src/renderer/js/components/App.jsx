@@ -25,8 +25,10 @@ const {
   FiCode,
   FiMonitor,
   FiPackage,
+  FiSettings,
   FiChevronsLeft,
-  FiChevronsRight
+  FiChevronsRight,
+  FiChevronRight
 } = require('react-icons/fi');
 const DashboardShell = require('./sentinel/DashboardShell');
 const ProxyPanel = require('./sentinel/ProxyPanel');
@@ -40,6 +42,7 @@ const SequencerPanel = require('./sentinel/SequencerPanel');
 const DecoderPanel = require('./sentinel/DecoderPanel');
 const EmbeddedBrowserPanel = require('./sentinel/EmbeddedBrowserPanel');
 const ExtensionsPanel = require('./sentinel/ExtensionsPanel');
+const { getOverlayScrim } = require('./sentinel/theme-utils');
 const { modules, moduleDescriptions } = require('./app-constants');
 
 const panelStatusFields = {
@@ -147,6 +150,218 @@ const moduleIcons = {
   Extensions: FiPackage
 };
 
+const lightThemeOptions = [
+  {
+    id: 'light-paper',
+    label: 'Paper Grid',
+    colors: {
+      bgCanvas: '#f4f7fb',
+      bgPanel: '#ffffff',
+      bgSurface: '#edf2f8',
+      bgSubtle: '#e4ebf4',
+      bgElevated: '#e8eef6',
+      fgDefault: '#16212e',
+      fgMuted: '#33465c',
+      borderDefault: '#91a5bb',
+      borderSubtle: '#7f96ae'
+    },
+    text: {
+      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
+      fontWeight: 550,
+      letterSpacing: '0.01em'
+    }
+  },
+  {
+    id: 'light-ivory',
+    label: 'Ivory Ledger',
+    colors: {
+      bgCanvas: '#f8f5ee',
+      bgPanel: '#fffdf7',
+      bgSurface: '#f1ebdf',
+      bgSubtle: '#e8dfcf',
+      bgElevated: '#f4efe4',
+      fgDefault: '#211a12',
+      fgMuted: '#4a3d30',
+      borderDefault: '#b49d82',
+      borderSubtle: '#9f8568'
+    },
+    text: {
+      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
+      fontWeight: 560,
+      letterSpacing: '0.008em'
+    }
+  },
+  {
+    id: 'light-cloud',
+    label: 'Cloud Console',
+    colors: {
+      bgCanvas: '#f1f4f8',
+      bgPanel: '#fdfefe',
+      bgSurface: '#e8eef5',
+      bgSubtle: '#dce5f0',
+      bgElevated: '#e4ebf3',
+      fgDefault: '#11263b',
+      fgMuted: '#314d68',
+      borderDefault: '#89a6c5',
+      borderSubtle: '#7696b8'
+    },
+    text: {
+      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
+      fontWeight: 550,
+      letterSpacing: '0.012em'
+    }
+  },
+  {
+    id: 'light-terminal',
+    label: 'Terminal Daylight',
+    colors: {
+      bgCanvas: '#f6f8fa',
+      bgPanel: '#ffffff',
+      bgSurface: '#eef2f6',
+      bgSubtle: '#e3e9f0',
+      bgElevated: '#e8eef4',
+      fgDefault: '#0f202f',
+      fgMuted: '#30495f',
+      borderDefault: '#8fa5bd',
+      borderSubtle: '#7a92ac'
+    },
+    text: {
+      fontFamily: "'IBM Plex Mono', 'Consolas', 'Courier New', monospace",
+      fontWeight: 500,
+      letterSpacing: '0.004em'
+    }
+  },
+  {
+    id: 'light-lab',
+    label: 'Lab Neutral',
+    colors: {
+      bgCanvas: '#f3f3f3',
+      bgPanel: '#fcfcfc',
+      bgSurface: '#ebebeb',
+      bgSubtle: '#dfdfdf',
+      bgElevated: '#e6e6e6',
+      fgDefault: '#1a1d22',
+      fgMuted: '#3d4652',
+      borderDefault: '#98a5b4',
+      borderSubtle: '#8493a4'
+    },
+    text: {
+      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
+      fontWeight: 560,
+      letterSpacing: '0.01em'
+    }
+  }
+];
+
+const darkThemeOptions = [
+  {
+    id: 'dark-steel',
+    label: 'Steel Midnight',
+    colors: {
+      bgCanvas: '#0e141c',
+      bgPanel: '#111821',
+      bgSurface: '#1a2531',
+      bgSubtle: '#202d3a',
+      bgElevated: '#0b1118',
+      fgDefault: '#edf2f7',
+      fgMuted: '#d1dbe6',
+      borderDefault: '#3a4f63',
+      borderSubtle: '#4a627a'
+    },
+    text: {
+      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
+      fontWeight: 520,
+      letterSpacing: '0.008em'
+    }
+  },
+  {
+    id: 'dark-carbon',
+    label: 'Carbon Audit',
+    colors: {
+      bgCanvas: '#111114',
+      bgPanel: '#18191d',
+      bgSurface: '#1f2127',
+      bgSubtle: '#272b32',
+      bgElevated: '#141519',
+      fgDefault: '#f4f6fb',
+      fgMuted: '#d5dde8',
+      borderDefault: '#4a5567',
+      borderSubtle: '#5b687d'
+    },
+    text: {
+      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
+      fontWeight: 530,
+      letterSpacing: '0.01em'
+    }
+  },
+  {
+    id: 'dark-ink',
+    label: 'Ink Protocol',
+    colors: {
+      bgCanvas: '#0b1020',
+      bgPanel: '#121a2f',
+      bgSurface: '#1b2640',
+      bgSubtle: '#253353',
+      bgElevated: '#090e1a',
+      fgDefault: '#ebf1ff',
+      fgMuted: '#d0dcfa',
+      borderDefault: '#46608f',
+      borderSubtle: '#5774a6'
+    },
+    text: {
+      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
+      fontWeight: 520,
+      letterSpacing: '0.012em'
+    }
+  },
+  {
+    id: 'dark-graphite',
+    label: 'Graphite Ops',
+    colors: {
+      bgCanvas: '#13171f',
+      bgPanel: '#1a2029',
+      bgSurface: '#222b38',
+      bgSubtle: '#2b3644',
+      bgElevated: '#10141b',
+      fgDefault: '#f1f5fd',
+      fgMuted: '#d0dae8',
+      borderDefault: '#4a5f77',
+      borderSubtle: '#5a718c'
+    },
+    text: {
+      fontFamily: "'IBM Plex Mono', 'Consolas', 'Courier New', monospace",
+      fontWeight: 500,
+      letterSpacing: '0.005em'
+    }
+  },
+  {
+    id: 'dark-emerald',
+    label: 'Emerald Night',
+    colors: {
+      bgCanvas: '#0a1413',
+      bgPanel: '#12201d',
+      bgSurface: '#18302b',
+      bgSubtle: '#1d3c35',
+      bgElevated: '#09110f',
+      fgDefault: '#e9fff8',
+      fgMuted: '#c6efe3',
+      borderDefault: '#3f7a6b',
+      borderSubtle: '#4e8f7e'
+    },
+    text: {
+      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
+      fontWeight: 530,
+      letterSpacing: '0.01em'
+    }
+  }
+];
+
+const allThemeOptions = [...lightThemeOptions, ...darkThemeOptions];
+const themeOptionsById = allThemeOptions.reduce((acc, option) => {
+  acc[option.id] = option;
+  return acc;
+}, {});
+
 function formatMemoryUsageMb() {
   if (typeof performance !== 'undefined' && performance.memory && performance.memory.usedJSHeapSize) {
     return `${Math.round(performance.memory.usedJSHeapSize / (1024 * 1024))} MB`;
@@ -158,23 +373,47 @@ function formatMemoryUsageMb() {
 }
 
 function App() {
-  const [sidebarExpanded, setSidebarExpanded] = React.useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = React.useState(true);
   const [openPanes, setOpenPanes] = React.useState(['Dashboard', 'Proxy']);
   const [activePane, setActivePane] = React.useState('Dashboard');
   const [proxyRunning, setProxyRunning] = React.useState(true);
   const [panelStatus, setPanelStatus] = React.useState(defaultPanelStatus);
   const [contextCollapsed, setContextCollapsed] = React.useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false);
+  const [settingsMenuOpen, setSettingsMenuOpen] = React.useState(false);
+  const [preferencesMenuOpen, setPreferencesMenuOpen] = React.useState(false);
   const [commandQuery, setCommandQuery] = React.useState('');
   const [memoryUsage, setMemoryUsage] = React.useState(formatMemoryUsageMb());
+  const [selectedThemeId, setSelectedThemeId] = React.useState('dark-steel');
   const contextToggleButtonRef = React.useRef(null);
   const contextRailContentRef = React.useRef(null);
   const quickActionButtonRefs = React.useRef([]);
+  const settingsMenuRef = React.useRef(null);
+  const settingsTriggerRef = React.useRef(null);
   const contextRailScrollTopRef = React.useRef(0);
   const lastQuickActionIndexRef = React.useRef(-1);
   const previousContextCollapsedRef = React.useRef(false);
 
   const versions = (window.electronInfo && window.electronInfo.versions) || {};
+  const selectedTheme = themeOptionsById[selectedThemeId] || darkThemeOptions[0];
+
+  React.useEffect(() => {
+    if (typeof document === 'undefined' || !document.documentElement) {
+      return;
+    }
+
+    const rootStyle = document.documentElement.style;
+    rootStyle.setProperty('--sentinel-bg-canvas', selectedTheme.colors.bgCanvas);
+    rootStyle.setProperty('--sentinel-bg-panel', selectedTheme.colors.bgPanel);
+    rootStyle.setProperty('--sentinel-bg-surface', selectedTheme.colors.bgSurface);
+    rootStyle.setProperty('--sentinel-bg-subtle', selectedTheme.colors.bgSubtle);
+    rootStyle.setProperty('--sentinel-bg-elevated', selectedTheme.colors.bgElevated);
+    rootStyle.setProperty('--sentinel-fg-default', selectedTheme.colors.fgDefault);
+    rootStyle.setProperty('--sentinel-fg-muted', selectedTheme.colors.fgMuted);
+    rootStyle.setProperty('--sentinel-border-default', selectedTheme.colors.borderDefault);
+    rootStyle.setProperty('--sentinel-border-subtle', selectedTheme.colors.borderSubtle);
+    document.documentElement.setAttribute('data-sentinel-theme-id', selectedThemeId);
+  }, [selectedTheme, selectedThemeId]);
 
   const addPane = React.useCallback((moduleName) => {
     setOpenPanes((prev) => {
@@ -230,6 +469,42 @@ function App() {
       window.clearInterval(timer);
     };
   }, [addPane]);
+
+  React.useEffect(() => {
+    if (!settingsMenuOpen) {
+      setPreferencesMenuOpen(false);
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (!settingsMenuRef.current) {
+        return;
+      }
+      if (settingsMenuRef.current.contains(event.target)) {
+        return;
+      }
+      if (settingsTriggerRef.current && settingsTriggerRef.current.contains(event.target)) {
+        return;
+      }
+      setSettingsMenuOpen(false);
+      setPreferencesMenuOpen(false);
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setSettingsMenuOpen(false);
+        setPreferencesMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('mousedown', handlePointerDown);
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown);
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [settingsMenuOpen]);
 
   const filteredCommands = modules.filter((moduleName) => {
     const query = String(commandQuery || '').trim().toLowerCase();
@@ -344,7 +619,27 @@ function App() {
   const ActivePanel = modulePanels[activePane] || DashboardShell;
 
   return (
-    <Flex h='100vh' overflow='hidden' bg='bg.canvas' color='fg.default' direction='row'>
+    <Flex
+      h='100vh'
+      overflow='hidden'
+      bg='bg.canvas'
+      color='fg.default'
+      direction='row'
+      fontFamily={selectedTheme.text.fontFamily}
+      fontWeight={selectedTheme.text.fontWeight}
+      letterSpacing={selectedTheme.text.letterSpacing}
+      style={{
+        '--sentinel-bg-canvas': selectedTheme.colors.bgCanvas,
+        '--sentinel-bg-panel': selectedTheme.colors.bgPanel,
+        '--sentinel-bg-surface': selectedTheme.colors.bgSurface,
+        '--sentinel-bg-subtle': selectedTheme.colors.bgSubtle,
+        '--sentinel-bg-elevated': selectedTheme.colors.bgElevated,
+        '--sentinel-fg-default': selectedTheme.colors.fgDefault,
+        '--sentinel-fg-muted': selectedTheme.colors.fgMuted,
+        '--sentinel-border-default': selectedTheme.colors.borderDefault,
+        '--sentinel-border-subtle': selectedTheme.colors.borderSubtle
+      }}
+    >
 
       {/* Left Activity Bar */}
       <VStack
@@ -363,6 +658,8 @@ function App() {
         <Button
           size='sm'
           variant='ghost'
+          color='fg.default'
+          _hover={{ bg: 'bg.subtle', color: 'fg.default' }}
           mx={sidebarExpanded ? '2' : '0'}
           minW='0'
           h='40px'
@@ -384,6 +681,12 @@ function App() {
               <Button
                 size='sm'
                 variant={isActive ? 'solid' : 'ghost'}
+                color={isActive ? 'white' : 'fg.default'}
+                bg={isActive ? 'brand.600' : 'transparent'}
+                _hover={{
+                  bg: isActive ? 'brand.500' : 'bg.subtle',
+                  color: isActive ? 'white' : 'fg.default'
+                }}
                 w={sidebarExpanded ? '100%' : '44px'}
                 h='44px'
                 px={sidebarExpanded ? '3' : '0'}
@@ -422,18 +725,174 @@ function App() {
           <Flex px='4' py='3' justify='space-between' align='center' gap='4'>
             <Box>
               <Heading size='sm'>Sentinel Workspace</Heading>
-              <Text fontSize='sm' color='fg.muted'>Workbench shell for concurrent security workflows.</Text>
+              <Text fontSize='sm' color='fg.default'>Workbench shell for concurrent security workflows.</Text>
             </Box>
             <HStack gap='3' wrap='wrap' justify='flex-end'>
               <Badge colorPalette={proxyRunning ? 'green' : 'orange'}>
                 Proxy {proxyRunning ? 'running' : 'paused'}
               </Badge>
-              <Text fontSize='xs' color='fg.muted'>Project <Code>sentinel-dev</Code></Text>
-              <Text fontSize='xs' color='fg.muted'>Electron <Code>{versions.electron || 'unknown'}</Code></Text>
-              <Button size='xs' variant='outline' onClick={() => setProxyRunning((prev) => !prev)}>
+              <Text fontSize='xs' color={selectedTheme.colors.fgDefault}>Theme <Code color={selectedTheme.colors.fgDefault} bg={selectedTheme.colors.bgSurface} borderWidth='1px' borderColor={selectedTheme.colors.borderDefault}>{selectedTheme.label}</Code></Text>
+              <Text fontSize='xs' color={selectedTheme.colors.fgDefault}>Project <Code color={selectedTheme.colors.fgDefault} bg={selectedTheme.colors.bgSurface} borderWidth='1px' borderColor={selectedTheme.colors.borderDefault}>sentinel-dev</Code></Text>
+              <Text fontSize='xs' color={selectedTheme.colors.fgDefault}>Electron <Code color={selectedTheme.colors.fgDefault} bg={selectedTheme.colors.bgSurface} borderWidth='1px' borderColor={selectedTheme.colors.borderDefault}>{versions.electron || 'unknown'}</Code></Text>
+              <Box position='relative'>
+                <Button
+                  ref={settingsTriggerRef}
+                  size='xs'
+                  variant='outline'
+                  color={selectedTheme.colors.fgDefault}
+                  bg={selectedTheme.colors.bgPanel}
+                  borderColor={selectedTheme.colors.borderDefault}
+                  _hover={{
+                    bg: selectedTheme.colors.bgSubtle,
+                    color: selectedTheme.colors.fgDefault,
+                    borderColor: selectedTheme.colors.borderSubtle
+                  }}
+                  onClick={() => setSettingsMenuOpen((prev) => !prev)}
+                  title='Open settings menu'
+                >
+                  <HStack gap='1'>
+                    <FiSettings size={14} />
+                    <Text fontSize='xs'>Settings</Text>
+                  </HStack>
+                </Button>
+                {settingsMenuOpen ? (
+                  <Box
+                    ref={settingsMenuRef}
+                    position='absolute'
+                    top='calc(100% + 8px)'
+                    right='0'
+                    minW='340px'
+                    borderWidth='1px'
+                    borderColor={selectedTheme.colors.borderDefault}
+                    borderRadius='sm'
+                    bg={selectedTheme.colors.bgPanel}
+                    boxShadow='0 18px 34px rgba(0, 0, 0, 0.35)'
+                    p='2'
+                    zIndex='1200'
+                  >
+                    <Button
+                      size='sm'
+                      variant='ghost'
+                      color={selectedTheme.colors.fgDefault}
+                      _hover={{ bg: selectedTheme.colors.bgSubtle, color: selectedTheme.colors.fgDefault }}
+                      justifyContent='space-between'
+                      w='100%'
+                      onClick={() => setPreferencesMenuOpen((prev) => !prev)}
+                    >
+                      <Text fontSize='sm'>Preferences</Text>
+                      <FiChevronRight size={14} />
+                    </Button>
+                    {preferencesMenuOpen ? (
+                      <Box mt='2' borderTopWidth='1px' borderColor={selectedTheme.colors.borderSubtle} pt='2'>
+                        <Text px='2' pb='2' fontSize='xs' color={selectedTheme.colors.fgDefault} textTransform='uppercase' letterSpacing='wider'>
+                          Theme Options
+                        </Text>
+                        <Stack gap='2'>
+                          <Box>
+                            <Text px='2' pb='1' fontSize='xs' color={selectedTheme.colors.fgDefault}>Dark Themes</Text>
+                            <Stack gap='1'>
+                              {darkThemeOptions.map((option) => (
+                                <Button
+                                  key={option.id}
+                                  size='sm'
+                                  variant={selectedThemeId === option.id ? 'solid' : 'ghost'}
+                                  color={selectedThemeId === option.id ? 'white' : 'fg.default'}
+                                  bg={selectedThemeId === option.id ? 'brand.600' : 'transparent'}
+                                  _hover={{
+                                    bg: selectedThemeId === option.id ? 'brand.500' : 'bg.subtle',
+                                    color: selectedThemeId === option.id ? 'white' : 'fg.default'
+                                  }}
+                                  justifyContent='space-between'
+                                  onClick={() => {
+                                    setSelectedThemeId(option.id);
+                                    setSettingsMenuOpen(false);
+                                    setPreferencesMenuOpen(false);
+                                  }}
+                                >
+                                  <Text fontSize='sm'>{option.label}</Text>
+                                  <Code
+                                    fontSize='xs'
+                                    color={selectedThemeId === option.id ? 'white' : selectedTheme.colors.fgDefault}
+                                    bg={selectedThemeId === option.id ? 'transparent' : selectedTheme.colors.bgSurface}
+                                    borderWidth='1px'
+                                    borderColor={selectedThemeId === option.id ? 'transparent' : selectedTheme.colors.borderDefault}
+                                  >
+                                    {option.id}
+                                  </Code>
+                                </Button>
+                              ))}
+                            </Stack>
+                          </Box>
+                          <Box>
+                            <Text px='2' pb='1' fontSize='xs' color={selectedTheme.colors.fgDefault}>Light Themes</Text>
+                            <Stack gap='1'>
+                              {lightThemeOptions.map((option) => (
+                                <Button
+                                  key={option.id}
+                                  size='sm'
+                                  variant={selectedThemeId === option.id ? 'solid' : 'ghost'}
+                                  color={selectedThemeId === option.id ? 'white' : 'fg.default'}
+                                  bg={selectedThemeId === option.id ? 'brand.600' : 'transparent'}
+                                  _hover={{
+                                    bg: selectedThemeId === option.id ? 'brand.500' : 'bg.subtle',
+                                    color: selectedThemeId === option.id ? 'white' : 'fg.default'
+                                  }}
+                                  justifyContent='space-between'
+                                  onClick={() => {
+                                    setSelectedThemeId(option.id);
+                                    setSettingsMenuOpen(false);
+                                    setPreferencesMenuOpen(false);
+                                  }}
+                                >
+                                  <Text fontSize='sm'>{option.label}</Text>
+                                  <Code
+                                    fontSize='xs'
+                                    color={selectedThemeId === option.id ? 'white' : selectedTheme.colors.fgDefault}
+                                    bg={selectedThemeId === option.id ? 'transparent' : selectedTheme.colors.bgSurface}
+                                    borderWidth='1px'
+                                    borderColor={selectedThemeId === option.id ? 'transparent' : selectedTheme.colors.borderDefault}
+                                  >
+                                    {option.id}
+                                  </Code>
+                                </Button>
+                              ))}
+                            </Stack>
+                          </Box>
+                        </Stack>
+                      </Box>
+                    ) : null}
+                  </Box>
+                ) : null}
+              </Box>
+              <Button
+                size='xs'
+                variant='outline'
+                color={selectedTheme.colors.fgDefault}
+                bg={selectedTheme.colors.bgPanel}
+                borderColor={selectedTheme.colors.borderDefault}
+                _hover={{
+                  bg: selectedTheme.colors.bgSubtle,
+                  color: selectedTheme.colors.fgDefault,
+                  borderColor: selectedTheme.colors.borderSubtle
+                }}
+                onClick={() => setProxyRunning((prev) => !prev)}
+              >
                 {proxyRunning ? 'Pause' : 'Resume'}
               </Button>
-              <Button size='xs' variant='outline' onClick={() => setCommandPaletteOpen(true)} title='Command palette'>
+              <Button
+                size='xs'
+                variant='outline'
+                color={selectedTheme.colors.fgDefault}
+                bg={selectedTheme.colors.bgPanel}
+                borderColor={selectedTheme.colors.borderDefault}
+                _hover={{
+                  bg: selectedTheme.colors.bgSubtle,
+                  color: selectedTheme.colors.fgDefault,
+                  borderColor: selectedTheme.colors.borderSubtle
+                }}
+                onClick={() => setCommandPaletteOpen(true)}
+                title='Command palette'
+              >
                 Ctrl+K
               </Button>
             </HStack>
@@ -460,14 +919,27 @@ function App() {
                 </HStack>
               ))}
             </HStack>
-            <Button ref={contextToggleButtonRef} size='xs' variant='outline' onClick={() => setContextCollapsed((prev) => !prev)}>
+            <Button
+              ref={contextToggleButtonRef}
+              size='xs'
+              variant='outline'
+              color={selectedTheme.colors.fgDefault}
+              bg={selectedTheme.colors.bgPanel}
+              borderColor={selectedTheme.colors.borderDefault}
+              _hover={{
+                bg: selectedTheme.colors.bgSubtle,
+                color: selectedTheme.colors.fgDefault,
+                borderColor: selectedTheme.colors.borderSubtle
+              }}
+              onClick={() => setContextCollapsed((prev) => !prev)}
+            >
               {contextCollapsed ? 'Show Context' : 'Hide Context'}
             </Button>
           </Flex>
 
           <Flex flex='1' overflow='hidden' p='3' gap='3'>
             <Box flex='1' minW='0' h='100%' borderWidth='1px' borderColor='border.subtle' borderRadius='sm' bg='bg.surface' overflow='hidden'>
-              <ActivePanel />
+              <ActivePanel themeId={selectedThemeId} />
             </Box>
 
             <Box
@@ -481,17 +953,24 @@ function App() {
               aria-hidden={contextCollapsed}
             >
               <VStack ref={contextRailContentRef} w='320px' minW='320px' align='stretch' gap='3' overflowY='auto' overflowX='hidden' pr='1'>
-                <Box p='4' borderWidth='1px' borderColor='border.subtle' borderRadius='sm' bg='bg.panel'>
-                  <Text fontWeight='semibold' mb='2'>Active Context</Text>
-                  <Text fontSize='sm' mb='2'>Pane <Code>{activePane}</Code></Text>
+                <Box p='4' borderWidth='1px' borderColor={selectedTheme.colors.borderSubtle} borderRadius='sm' bg={selectedTheme.colors.bgPanel}>
+                  <Text fontWeight='semibold' mb='2' color={selectedTheme.colors.fgDefault}>Active Context</Text>
+                  <Text fontSize='sm' mb='2' color={selectedTheme.colors.fgDefault}>
+                    Pane
+                    {' '}
+                    <Code color={selectedTheme.colors.fgDefault} bg={selectedTheme.colors.bgSurface} borderWidth='1px' borderColor={selectedTheme.colors.borderDefault}>{activePane}</Code>
+                  </Text>
                   {(panelStatusFields[activePane] || []).map((field) => (
-                    <Text key={field.key} fontSize='sm' fontFamily='mono'>
-                      {field.label}: <Code>{String((panelStatus[activePane] || {})[field.key] ?? '\u2014')}</Code>
+                    <Text key={field.key} fontSize='sm' fontFamily='mono' color={selectedTheme.colors.fgDefault}>
+                      {field.label}:{' '}
+                      <Code color={selectedTheme.colors.fgDefault} bg={selectedTheme.colors.bgSurface} borderWidth='1px' borderColor={selectedTheme.colors.borderDefault}>
+                        {String((panelStatus[activePane] || {})[field.key] ?? '\u2014')}
+                      </Code>
                     </Text>
                   ))}
                 </Box>
-                <Box p='4' borderWidth='1px' borderColor='border.subtle' borderRadius='sm' bg='bg.panel'>
-                  <Text fontWeight='semibold' mb='2'>Quick Actions</Text>
+                <Box p='4' borderWidth='1px' borderColor={selectedTheme.colors.borderSubtle} borderRadius='sm' bg={selectedTheme.colors.bgPanel}>
+                  <Text fontWeight='semibold' mb='2' color={selectedTheme.colors.fgDefault}>Quick Actions</Text>
                   <Stack gap='2'>
                     {contextQuickActions.map((action, index) => (
                       <Button
@@ -502,6 +981,15 @@ function App() {
                         size='sm'
                         justifyContent='flex-start'
                         variant='ghost'
+                        color={selectedTheme.colors.fgDefault}
+                        borderWidth='1px'
+                        borderColor={selectedTheme.colors.borderDefault}
+                        bg={selectedTheme.colors.bgSurface}
+                        _hover={{
+                          bg: selectedTheme.colors.bgSubtle,
+                          color: selectedTheme.colors.fgDefault,
+                          borderColor: selectedTheme.colors.borderSubtle
+                        }}
                         onClick={action.run}
                         onFocus={() => {
                           lastQuickActionIndexRef.current = index;
@@ -509,8 +997,8 @@ function App() {
                         onKeyDown={(event) => handleQuickActionKeyDown(event, index)}
                       >
                         <Box textAlign='left'>
-                          <Text fontSize='sm'>{action.label}</Text>
-                          <Text fontSize='xs' color='fg.muted'>{action.description}</Text>
+                          <Text fontSize='sm' color={selectedTheme.colors.fgDefault}>{action.label}</Text>
+                          <Text fontSize='xs' color={selectedTheme.colors.fgMuted}>{action.description}</Text>
                         </Box>
                       </Button>
                     ))}
@@ -536,7 +1024,7 @@ function App() {
       </Flex>
 
       {commandPaletteOpen ? (
-        <Flex position='fixed' inset='0' bg='rgba(5, 10, 16, 0.65)' align='flex-start' justify='center' pt='16' zIndex='1000' role='presentation'>
+        <Flex position='fixed' inset='0' bg={getOverlayScrim(selectedThemeId)} align='flex-start' justify='center' pt='16' zIndex='1000' role='presentation'>
           <Box
             w='560px'
             maxW='calc(100vw - 32px)'

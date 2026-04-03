@@ -10,6 +10,7 @@ const {
   Text,
   VStack,
 } = require('@chakra-ui/react');
+const { getStatusTextColor } = require('./theme-utils');
 
 function escapeHtml(text) {
   return String(text || '')
@@ -37,7 +38,7 @@ function buildSafePreviewDoc(text) {
   ].join('');
 }
 
-function EmbeddedBrowserPanel() {
+function EmbeddedBrowserPanel({ themeId }) {
   const [sessions, setSessions] = React.useState([]);
   const [activeSessionId, setActiveSessionId] = React.useState('');
   const [address, setAddress] = React.useState('https://example.com');
@@ -195,8 +196,8 @@ function EmbeddedBrowserPanel() {
           </Box>
         </Box>
 
-        {statusText ? <Text color='green.300' fontSize='sm'>{statusText}</Text> : null}
-        {errorText ? <Text color='red.300' fontSize='sm'>{errorText}</Text> : null}
+        {statusText ? <Text color={getStatusTextColor('success', themeId)} fontSize='sm'>{statusText}</Text> : null}
+        {errorText ? <Text color={getStatusTextColor('error', themeId)} fontSize='sm'>{errorText}</Text> : null}
       </VStack>
     </Box>
   );

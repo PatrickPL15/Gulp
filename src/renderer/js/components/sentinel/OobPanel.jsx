@@ -10,8 +10,9 @@ const {
   Text,
   VStack,
 } = require('@chakra-ui/react');
+const { getStatusTextColor } = require('./theme-utils');
 
-function OobPanel() {
+function OobPanel({ themeId }) {
   const sentinel = typeof window !== 'undefined' ? window.sentinel : null;
   const [payloadType, setPayloadType] = React.useState('http');
   const [sourceRequestId, setSourceRequestId] = React.useState('');
@@ -151,8 +152,8 @@ function OobPanel() {
           ))}
         </Box>
 
-        <Text fontSize='sm' color='fg.muted'>{statusText}</Text>
-        {errorText ? <Text color='red.300' fontSize='sm'>{errorText}</Text> : null}
+        <Text fontSize='sm' color={getStatusTextColor('info', themeId)}>{statusText}</Text>
+        {errorText ? <Text color={getStatusTextColor('error', themeId)} fontSize='sm'>{errorText}</Text> : null}
       </VStack>
     </Box>
   );

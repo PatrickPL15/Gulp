@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+set -e
+
+npm run semver:check
+npm run build:metadata
+git add src/contracts/build-info.json

@@ -5,6 +5,7 @@ const clean = require('gulp-clean');
 
 const paths = {
   html: 'src/renderer/index.html',
+  docs: 'END_USER_GUIDE.md',
   scss: 'src/renderer/scss/**/*.scss',
   js: 'src/renderer/js/**/*.{js,jsx}',
   jsEntry: 'src/renderer/js/main.jsx',
@@ -20,6 +21,11 @@ function cleanDist() {
 
 function copyHtml() {
   return gulp.src(paths.html)
+    .pipe(gulp.dest(`${paths.dist}/renderer`));
+}
+
+function copyDocs() {
+  return gulp.src(paths.docs)
     .pipe(gulp.dest(`${paths.dist}/renderer`));
 }
 
@@ -56,13 +62,14 @@ function copyContracts() {
 
 function watchFiles() {
   gulp.watch(paths.html, copyHtml);
+  gulp.watch(paths.docs, copyDocs);
   gulp.watch(paths.scss, compileSass);
   gulp.watch(paths.js, bundleJs);
   gulp.watch(paths.main, copyMain);
   gulp.watch(paths.contracts, copyContracts);
 }
 
-const build = gulp.series(cleanDist, gulp.parallel(copyHtml, compileSass, bundleJs, copyMain, copyContracts));
+const build = gulp.series(cleanDist, gulp.parallel(copyHtml, copyDocs, compileSass, bundleJs, copyMain, copyContracts));
 
 exports.clean = cleanDist;
 exports.watch = watchFiles;

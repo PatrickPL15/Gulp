@@ -12,6 +12,7 @@ const {
   Text,
   Textarea,
 } = require('@chakra-ui/react');
+const { getStatusTextColor } = require('./theme-utils');
 
 function splitCsvList(value) {
   return String(value || '')
@@ -20,7 +21,7 @@ function splitCsvList(value) {
     .filter(Boolean);
 }
 
-function ExtensionsPanel() {
+function ExtensionsPanel({ themeId }) {
   const [extensions, setExtensions] = React.useState([]);
   const [auditLog, setAuditLog] = React.useState([]);
   const [extensionsDir, setExtensionsDir] = React.useState('');
@@ -143,7 +144,7 @@ function ExtensionsPanel() {
       </Text>
 
       {errorText ? (
-        <Text fontSize='sm' color='red.400'>{errorText}</Text>
+        <Text fontSize='sm' color={getStatusTextColor('error', themeId)}>{errorText}</Text>
       ) : null}
 
       <Box borderWidth='1px' borderRadius='md' p='3'>

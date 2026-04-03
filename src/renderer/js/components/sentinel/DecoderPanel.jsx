@@ -10,6 +10,7 @@ const {
   Textarea,
   VStack,
 } = require('@chakra-ui/react');
+const { getStatusTextColor } = require('./theme-utils');
 
 const availableOps = [
   'base64:encode',
@@ -33,7 +34,7 @@ function createOperationEntry(op, idCounterRef) {
   };
 }
 
-function DecoderPanel() {
+function DecoderPanel({ themeId }) {
   const operationIdCounterRef = React.useRef(1);
   const [input, setInput] = React.useState('');
   const [operations, setOperations] = React.useState(() => [createOperationEntry('base64:decode', operationIdCounterRef)]);
@@ -155,7 +156,7 @@ function DecoderPanel() {
           ))}
         </Box>
 
-        {errorText ? <Text color='red.300' fontSize='sm'>{errorText}</Text> : null}
+        {errorText ? <Text color={getStatusTextColor('error', themeId)} fontSize='sm'>{errorText}</Text> : null}
       </VStack>
     </Box>
   );
