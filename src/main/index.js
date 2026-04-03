@@ -351,8 +351,11 @@ function registerProjectHandlers() {
       return { ok: false, id: '' };
     }
     const result = await projectStore.openProject(filePath, { projectName: String(args.name || '') });
+    if (!result.project) {
+      return { ok: false, id: '' };
+    }
     await loadProjectState();
-    return { ok: true, id: result.project ? result.project.id : '' };
+    return { ok: true, id: result.project.id };
   });
 
   ipcMain.handle('project:open', async (_event, args = {}) => {
@@ -361,8 +364,9 @@ function registerProjectHandlers() {
       return { ok: false, project: null };
     }
     const result = await projectStore.openProject(filePath, {});
+    const project = result.project || null;
     await loadProjectState();
-    return { ok: true, project: result.project || null };
+    return { ok: Boolean(project), project };
   });
 
   ipcMain.handle('project:save', async () => {

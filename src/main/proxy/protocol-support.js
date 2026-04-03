@@ -153,7 +153,7 @@ async function forwardRequest(request) {
 		.filter(Boolean);
 	const hopByHopNames = [
 		'connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization',
-		'te', 'trailers', 'upgrade', ...perConnectionHeaders,
+		'te', 'trailer', 'upgrade', ...perConnectionHeaders,
 	];
 	for (const name of hopByHopNames) {
 		delete headers[name];

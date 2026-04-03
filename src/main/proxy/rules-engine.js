@@ -216,10 +216,19 @@ class RulesEngine {
 		if (!Array.isArray(rules)) {
 			throw new Error('setRules requires an array of rule definitions');
 		}
+		const rejected = rules.filter(rule => !validateRuleConditions(rule));
 		this.rules = rules
 			.filter(rule => validateRuleConditions(rule))
 			.map(rule => clone(rule))
 			.sort((a, b) => (a.priority || 0) - (b.priority || 0));
+		if (rejected.length > 0) {
+			return {
+				ok: false,
+				count: this.rules.length,
+				rejectedCount: rejected.length,
+				reason: 'invalid_regex_condition',
+			};
+		}
 		return { ok: true, count: this.rules.length };
 	}
 
