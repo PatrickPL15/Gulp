@@ -39,6 +39,14 @@ function toText(value) {
 	return String(value);
 }
 
+const EXTENSION_ID_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/;
+
+function validateExtensionId(id, label) {
+	if (!EXTENSION_ID_PATTERN.test(id)) {
+		throw new Error(`${label} contains invalid characters. Use only alphanumeric characters, dots, hyphens, and underscores, starting and ending with an alphanumeric character.`);
+	}
+}
+
 function asArray(value) {
 	return Array.isArray(value) ? value : [];
 }
@@ -172,9 +180,7 @@ class ExtensionHost extends EventEmitter {
 		}
 
 		const extensionId = toText(manifest.id).trim();
-		if (!/^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/.test(extensionId)) {
-			throw new Error('Extension manifest id contains invalid characters.');
-		}
+		validateExtensionId(extensionId, 'Extension manifest id');
 
 		const extensionsRoot = path.resolve(this.extensionsDir);
 		const installPath = path.resolve(extensionsRoot, extensionId);
@@ -211,10 +217,7 @@ class ExtensionHost extends EventEmitter {
 		const name = toText(args.name || 'Custom Script').trim() || 'Custom Script';
 		const defaultId = `script.${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.${Date.now()}`;
 		const id = toText(args.id || defaultId).trim();
-		const extensionIdPattern = /^(?!\.{1,2}$)[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
-		if (!extensionIdPattern.test(id)) {
-			throw new Error('Script extension id is invalid. Use only lowercase letters, numbers, dots, hyphens, and underscores.');
-		}
+		validateExtensionId(id, 'Script extension id');
 		const version = toText(args.version || '1.0.0');
 		const permissions = normalizePermissions(args.permissions);
 		const triggers = asArray(args.triggers).map(item => toText(item).trim()).filter(Boolean);

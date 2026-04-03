@@ -407,14 +407,8 @@ function registerProjectHandlers() {
 
 function registerExtensionHandlers() {
   ipcMain.handle('extensions:list', async () => {
-    const result = await extensionHost.list();
-    if (Array.isArray(result)) {
-      return { extensions: result };
-    }
-    if (result && Array.isArray(result.extensions)) {
-      return { extensions: result.extensions };
-    }
-    return { extensions: [] };
+    const result = extensionHost.list();
+    return { extensions: Array.isArray(result && result.extensions) ? result.extensions : [] };
   });
 
   ipcMain.handle('extensions:install', async (_event, args = {}) => {

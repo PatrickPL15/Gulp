@@ -112,7 +112,6 @@ function ExtensionsPanel() {
       if (result && result.ok === false) {
         setErrorText(
           result.error ||
-          result.message ||
           `Failed to ${enabled ? 'enable' : 'disable'} extension.`
         );
         return;
