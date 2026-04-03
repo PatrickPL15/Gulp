@@ -15,7 +15,7 @@
     "start": "electron .",
     "semver:check": "node scripts/versioning/semver-check.js",
     "version:verify": "npm run semver:check && npm run build:metadata",
-    "prepare": "husky"
+    "prepare": "husky install"
   },
   "keywords": [],
   "author": "",
