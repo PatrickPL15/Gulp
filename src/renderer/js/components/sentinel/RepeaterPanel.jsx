@@ -164,7 +164,9 @@ function ResponseViewer({ response }) {
 						sandbox=''
 						srcDoc={renderedHtml}
 						title='Rendered response'
-						style={{ width: '100%', height: '240px', border: '1px solid var(--sentinel-border-default, #34485b)' }}
+						borderWidth='1px'
+						borderColor='border.default'
+						style={{ width: '100%', height: '240px' }}
 					/>
 				) : (
 					<Box
