@@ -4,7 +4,7 @@ const {
   Box,
   Button,
   Code,
-  Heading,
+  Flex,
   HStack,
   Input,
   Text,
@@ -421,19 +421,13 @@ function IntruderPanel() {
   return (
     <Box p='4' borderWidth='1px' borderRadius='md'>
       <VStack align='stretch' spacing={4}>
-        <HStack justify='space-between' align='flex-start' wrap='wrap'>
-          <Box>
-            <Heading size='md'>Intruder</Heading>
-            <Text color='fg.muted' fontSize='sm'>
-              Mark payload positions with <Code>§value§</Code>, choose a payload source per position,
-              and run sniper, pitchfork, or cluster-bomb attacks.
-            </Text>
-          </Box>
-          <HStack>
-            <Button size='xs' variant='outline' onClick={() => loadAttacks().catch(() => {})}>Refresh Attacks</Button>
-            <Button size='xs' variant='outline' colorPalette='red' onClick={stopSelectedAttack} disabled={!selectedAttackId}>Stop Selected</Button>
+        <Flex justify='space-between' align='center' mb='1' pb='3' borderBottomWidth='1px' borderColor='border.default'>
+          <Text fontWeight='medium' fontSize='sm'>Intruder</Text>
+          <HStack gap='2'>
+            <Button size='xs' variant='outline' onClick={() => loadAttacks().catch(() => {})}>Refresh</Button>
+            <Button size='xs' variant='outline' colorPalette='red' onClick={stopSelectedAttack} disabled={!selectedAttackId}>Stop Attack</Button>
           </HStack>
-        </HStack>
+        </Flex>
 
         <HStack align='flex-start' spacing={4} wrap='wrap'>
           <Box minW='220px' flex='0 0 220px'>

@@ -4,7 +4,7 @@ const {
   Box,
   Button,
   Code,
-  Heading,
+  Flex,
   HStack,
   Input,
   Text,
@@ -137,8 +137,13 @@ function EmbeddedBrowserPanel() {
   return (
     <Box p='4' borderWidth='1px' borderRadius='md'>
       <VStack align='stretch' spacing={3}>
-        <Heading size='md'>Embedded Browser</Heading>
-        <Text color='fg.muted'>Create browser sessions and navigate URLs through the Sentinel proxy.</Text>
+        <Flex justify='space-between' align='center' pb='3' borderBottomWidth='1px' borderColor='border.default'>
+          <Text fontWeight='medium' fontSize='sm'>Embedded Browser</Text>
+          <HStack gap='2'>
+            <Button size='xs' variant='outline' onClick={createSession}>New Session</Button>
+            <Button size='xs' variant='outline' onClick={loadSessions}>Refresh</Button>
+          </HStack>
+        </Flex>
 
         <HStack>
           <Button size='sm' onClick={createSession}>New Session</Button>

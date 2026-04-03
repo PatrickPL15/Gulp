@@ -6,6 +6,7 @@ const {
   Flex,
   Grid,
   Heading,
+  HStack,
   Input,
   Stack,
   Text,
@@ -131,8 +132,10 @@ function ExtensionsPanel() {
   return (
     <Stack p='4' borderWidth='1px' borderRadius='md' gap='4'>
       <Flex align='center' justify='space-between'>
-        <Heading size='md'>Extensions</Heading>
-        <Button size='sm' variant='outline' onClick={refresh}>Refresh</Button>
+        <Text fontWeight='medium' fontSize='sm'>Extensions</Text>
+        <HStack gap='2'>
+          <Button size='sm' variant='outline' onClick={refresh}>Reload</Button>
+        </HStack>
       </Flex>
 
       <Text fontSize='sm' color='fg.muted'>

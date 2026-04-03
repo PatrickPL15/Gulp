@@ -13,7 +13,7 @@ const {
 	Box,
 	Button,
 	Code,
-	Heading,
+	Flex,
 	HStack,
 	Input,
 	Select,
@@ -319,6 +319,29 @@ function RepeaterPanel() {
 		}).catch(() => {});
 	}, []);
 
+	React.useEffect(() => {
+		function handleHandoff(event) {
+			const request = event && event.detail ? event.detail.request : null;
+			if (!request) {
+				return;
+			}
+			setSelectedEntryId('');
+			setEditMethod((request.method || 'GET').toUpperCase());
+			setEditUrl(request.url || `${request.scheme || 'http'}://${request.host || 'localhost'}${request.path || '/'}`);
+			setEditHeaders(headersObjectToText(request.headers));
+			setEditBody(request.body || '');
+			setResponse(null);
+			setActiveSends([]);
+			setCompareOpen(false);
+			setErrorText('');
+		}
+
+		window.addEventListener('sentinel:repeater-handoff', handleHandoff);
+		return () => {
+			window.removeEventListener('sentinel:repeater-handoff', handleHandoff);
+		};
+	}, []);
+
 	async function loadEntry(id) {
 		if (!sentinel || !sentinel.repeater) {
 			return;
@@ -392,10 +415,12 @@ function RepeaterPanel() {
 	return (
 		<Box p={4} borderWidth='1px' borderRadius='md'>
 			<VStack align='stretch' spacing={3}>
-				<HStack justify='space-between'>
-					<Heading size='md'>Repeater</Heading>
-					<Button size='xs' variant='outline' onClick={clearEditor}>New</Button>
-				</HStack>
+				<Flex justify='space-between' align='center' mb='3' pb='3' borderBottomWidth='1px' borderColor='border.default'>
+					<Text fontWeight='medium' fontSize='sm'>Repeater</Text>
+					<HStack gap='2'>
+						<Button size='xs' variant='outline' onClick={clearEditor}>New Request</Button>
+					</HStack>
+				</Flex>
 
 				<HStack align='flex-start' spacing={4} wrap='wrap'>
 					{/* Sidebar — entry list */}
