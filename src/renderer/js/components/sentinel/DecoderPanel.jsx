@@ -143,7 +143,7 @@ function DecoderPanel() {
           {steps.length === 0 ? (
             <Text fontSize='sm' color='fg.muted'>Run a chain to see intermediate outputs.</Text>
           ) : steps.map((step, index) => (
-            <Box key={`${step.operation}-${index}`} borderWidth='1px' borderRadius='md' p={2} mb={2}>
+            <Box key={index} borderWidth='1px' borderRadius='md' p={2} mb={2}>
               <Text fontSize='sm'><Code>{step.pass}.{index + 1}</Code> {step.operation}</Text>
               <Text fontSize='xs' color='fg.muted'>Input: <Code>{String(step.input || '').slice(0, 120)}</Code></Text>
               <Text fontSize='xs' color='fg.muted'>Output: <Code>{String(step.output || '').slice(0, 120)}</Code></Text>

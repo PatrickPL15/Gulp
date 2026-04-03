@@ -14,6 +14,8 @@ const interceptEngineModule = require('./intercept-engine');
 const historyLogModule = require('./history-log');
 const rulesEngineModule = require('./rules-engine');
 
+const MAX_REQUEST_BYTES = 25 * 1024 * 1024; // 25 MB
+
 function normalizeHeaders(rawHeaders = {}) {
 	const normalized = {};
 	for (const [name, value] of Object.entries(rawHeaders || {})) {
@@ -45,7 +47,15 @@ function isTextualContentType(contentType = '') {
 function readBody(req) {
 	return new Promise((resolve, reject) => {
 		const chunks = [];
-		req.on('data', chunk => chunks.push(Buffer.from(chunk)));
+		let accumulated = 0;
+		req.on('data', chunk => {
+			accumulated += chunk.length;
+			if (accumulated > MAX_REQUEST_BYTES) {
+				req.destroy(new Error('Request body exceeds 25 MB size limit'));
+				return;
+			}
+			chunks.push(Buffer.from(chunk));
+		});
 		req.on('end', () => resolve(Buffer.concat(chunks)));
 		req.on('error', reject);
 	});
@@ -135,6 +145,19 @@ async function forwardRequest(request) {
 
 	delete headers['proxy-connection'];
 	headers.host = targetUrl.host;
+
+	// Strip hop-by-hop headers (RFC 2616 §13.5.1) so they are not forwarded upstream.
+	const perConnectionHeaders = String(headers['connection'] || '')
+		.split(',')
+		.map(h => h.trim().toLowerCase())
+		.filter(Boolean);
+	const hopByHopNames = [
+		'connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization',
+		'te', 'trailers', 'upgrade', ...perConnectionHeaders,
+	];
+	for (const name of hopByHopNames) {
+		delete headers[name];
+	}
 
 	let bodyBuffer = Buffer.alloc(0);
 	if (typeof request.body === 'string') {

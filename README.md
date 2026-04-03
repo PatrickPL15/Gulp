@@ -124,24 +124,26 @@ npm run dev
 
 ## Testing Snapshot
 - Test framework is Vitest with jsdom and Testing Library.
-- Current milestone validation: 6 focused M4 suites / 114 tests passing, plus successful Gulp build.
+- Current full validation: 24 test files / 292 tests passing, plus successful Gulp build.
 - Current targeted backend and renderer suites pass, including SEN-018 through SEN-023 and project-store stability checks.
+- Post-build runtime validation (`npm run test:build`) also passes (3/3 dist smoke tests).
 - Coverage/report strategy is documented in `TEST_COVERAGE.md`.
 
-## TODO Scope (Sentinel)
-The following capability groups are planned and tracked in checklist/plan docs:
+## Sentinel Scope Status
+M1 through M7 capabilities are complete and implemented in this branch, including:
 
 1. Core proxy pipeline (intercept, edit, forward, rules, history).
-2. Manual tools (Repeater response viewers and deeper editing/replay).
-3. Intruder automation (payload engines + richer result analytics).
-4. Scope and target mapping. (completed in M5)
-5. Advanced scanner/OOB/sequencer workflows. (completed in M7)
-6. Decoder and embedded browser integration. (completed in M6)
-7. Extension host and hardening.
-8. Burp Suite project configuration import.
-9. CSV ingestion for external scope/config exports (for example HackerOne).
-10. Custom-script action automation (triggered workflows with sandbox/audit controls).
-11. Build validation layer testing for generated `dist/` artifacts (kept separate from source unit test execution).
+2. Manual tools (Repeater response viewers and request replay workflows).
+3. Intruder automation (payload engines + result analytics).
+4. Scope and target mapping with Burp/HackerOne import pipelines.
+5. Decoder and embedded browser integration.
+6. Advanced scanner/OOB/sequencer workflows.
+7. Build validation layer testing for generated `dist/` artifacts.
+
+Remaining planned scope is M8+:
+
+1. Extension host and hardening.
+2. Custom-script action automation (triggered workflows with sandbox/audit controls).
 
 ## Planned Changes (Roadmap Highlights)
 - Milestone 0-1: contract baseline, persistence, CA lifecycle, service bootstrap.

@@ -266,6 +266,9 @@ function registerProxyHandlers() {
 
   historyLog.on('push', item => {
     sendToRenderer('history:push', item);
+    scannerEngine.observeTraffic(item).catch(() => {
+      // Ignore passive scan errors to avoid impacting history ingestion.
+    });
   });
 
   intruderEngine.on('progress', payload => {
@@ -279,18 +282,9 @@ function registerProxyHandlers() {
   oobService.on('hit', payload => {
     sendToRenderer('oob:hit', payload);
   });
-
-  historyLog.on('push', item => {
-    scannerEngine.observeTraffic(item).catch(() => {
-      // Ignore passive scan errors to avoid impacting history ingestion.
-    });
-  });
 }
 
-async function openDefaultProjectStore() {
-  const projectsDir = path.join(app.getPath('userData'), 'projects');
-  const defaultProjectPath = path.join(projectsDir, 'default.sentinel.db');
-  await projectStore.openProject(defaultProjectPath, { projectName: 'Default Sentinel Project' });
+async function loadProjectState() {
   historyLog.setProjectStore(projectStore);
 
   const persistedRules = await projectStore.listRules();
@@ -341,6 +335,55 @@ async function openDefaultProjectStore() {
   if (typeof protocolSupport.setScopeEvaluator === 'function') {
     protocolSupport.setScopeEvaluator(scopeEvaluator);
   }
+}
+
+async function openDefaultProjectStore() {
+  const projectsDir = path.join(app.getPath('userData'), 'projects');
+  const defaultProjectPath = path.join(projectsDir, 'default.sentinel.db');
+  await projectStore.openProject(defaultProjectPath, { projectName: 'Default Sentinel Project' });
+  await loadProjectState();
+}
+
+function registerProjectHandlers() {
+  ipcMain.handle('project:new', async (_event, args = {}) => {
+    const filePath = typeof args.filePath === 'string' ? args.filePath.trim() : '';
+    if (!filePath) {
+      return { ok: false, id: '' };
+    }
+    const result = await projectStore.openProject(filePath, { projectName: String(args.name || '') });
+    await loadProjectState();
+    return { ok: true, id: result.project ? result.project.id : '' };
+  });
+
+  ipcMain.handle('project:open', async (_event, args = {}) => {
+    const filePath = typeof args.filePath === 'string' ? args.filePath.trim() : '';
+    if (!filePath) {
+      return { ok: false, project: null };
+    }
+    const result = await projectStore.openProject(filePath, {});
+    await loadProjectState();
+    return { ok: true, project: result.project || null };
+  });
+
+  ipcMain.handle('project:save', async () => {
+    return projectStore.checkpointProject();
+  });
+
+  ipcMain.handle('project:close', async () => {
+    await projectStore.closeProject();
+    return { ok: true };
+  });
+
+  ipcMain.handle('project:meta', async () => {
+    return projectStore.getProjectMeta();
+  });
+}
+
+function registerExtensionHandlers() {
+  ipcMain.handle('extensions:list', async () => ({ extensions: [] }));
+  ipcMain.handle('extensions:install', async () => ({ ok: false, id: '' }));
+  ipcMain.handle('extensions:uninstall', async () => ({ ok: false }));
+  ipcMain.handle('extensions:toggle', async () => ({ ok: false }));
 }
 
 function registerCaHandlers() {
@@ -410,10 +453,13 @@ app.whenReady().then(() => {
   });
 
   caManager.ensureCaArtifacts();
-  openDefaultProjectStore().catch(() => {
-    // If persistence bootstrap fails, keep runtime usable with in-memory history.
+  openDefaultProjectStore().catch((error) => {
+    console.error('[sentinel] Project store failed to open:', error);
+    // Keep runtime usable with in-memory history when persistence is unavailable.
   });
   registerCaHandlers();
+  registerProjectHandlers();
+  registerExtensionHandlers();
   registerProxyHandlers();
   createWindow();
 
