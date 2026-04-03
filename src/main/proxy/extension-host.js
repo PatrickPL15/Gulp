@@ -132,7 +132,7 @@ class ExtensionHost extends EventEmitter {
 				sourceType: ext.sourceType,
 				permissions: ext.permissions,
 				approvedPermissions: ext.approvedPermissions,
-				subscriptions: Array.from(ext.subscriptions.keys()).sort(),
+				subscriptions: Array.from(new Set(ext.subscriptions.values())).sort(),
 				installPath: ext.installPath,
 			})),
 			auditLog: this.auditLog.slice(0, 200),
@@ -171,7 +171,21 @@ class ExtensionHost extends EventEmitter {
 			throw new Error('Extension manifest is missing a valid id.');
 		}
 
-		const installPath = path.join(this.extensionsDir, manifest.id);
+		const extensionId = toText(manifest.id).trim();
+		if (!/^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/.test(extensionId)) {
+			throw new Error('Extension manifest id contains invalid characters.');
+		}
+
+		const extensionsRoot = path.resolve(this.extensionsDir);
+		const installPath = path.resolve(extensionsRoot, extensionId);
+		const installRelativePath = path.relative(extensionsRoot, installPath);
+		if (
+			installRelativePath.startsWith('..') ||
+			path.isAbsolute(installRelativePath)
+		) {
+			throw new Error('Extension manifest id resolves outside the extensions directory.');
+		}
+
 		fs.rmSync(installPath, { recursive: true, force: true });
 		ensureDir(installPath);
 		fs.cpSync(sourceDir, installPath, { recursive: true });
@@ -195,7 +209,12 @@ class ExtensionHost extends EventEmitter {
 
 	buildScriptExtension(args = {}) {
 		const name = toText(args.name || 'Custom Script').trim() || 'Custom Script';
-		const id = toText(args.id || `script.${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.${Date.now()}`);
+		const defaultId = `script.${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.${Date.now()}`;
+		const id = toText(args.id || defaultId).trim();
+		const extensionIdPattern = /^(?!\.{1,2}$)[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
+		if (!extensionIdPattern.test(id)) {
+			throw new Error('Script extension id is invalid. Use only lowercase letters, numbers, dots, hyphens, and underscores.');
+		}
 		const version = toText(args.version || '1.0.0');
 		const permissions = normalizePermissions(args.permissions);
 		const triggers = asArray(args.triggers).map(item => toText(item).trim()).filter(Boolean);
@@ -256,7 +275,12 @@ class ExtensionHost extends EventEmitter {
 		};
 		sandbox.exports = sandbox.module.exports;
 
-		const context = vm.createContext(sandbox);
+		const context = vm.createContext(sandbox, {
+			codeGeneration: {
+				strings: false,
+				wasm: false,
+			},
+		});
 		const subscriptions = new Map();
 		let handlerSeq = 0;
 

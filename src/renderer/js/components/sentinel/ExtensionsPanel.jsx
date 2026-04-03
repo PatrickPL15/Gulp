@@ -87,16 +87,46 @@ function ExtensionsPanel() {
     if (!window.sentinel || !window.sentinel.extensions || typeof window.sentinel.extensions.uninstall !== 'function') {
       return;
     }
-    await window.sentinel.extensions.uninstall({ id });
-    await refresh();
+
+    try {
+      const result = await window.sentinel.extensions.uninstall({ id });
+      if (!result || !result.ok) {
+        setErrorText(result && result.error ? result.error : 'Uninstall failed.');
+        return;
+      }
+
+      setErrorText('');
+      await refresh();
+    } catch (error) {
+      setErrorText(error && error.message ? error.message : 'Uninstall failed.');
+    }
   };
 
   const toggleExtension = async (id, enabled) => {
     if (!window.sentinel || !window.sentinel.extensions || typeof window.sentinel.extensions.toggle !== 'function') {
       return;
     }
-    await window.sentinel.extensions.toggle({ id, enabled });
-    await refresh();
+
+    try {
+      const result = await window.sentinel.extensions.toggle({ id, enabled });
+      if (result && result.ok === false) {
+        setErrorText(
+          result.error ||
+          result.message ||
+          `Failed to ${enabled ? 'enable' : 'disable'} extension.`
+        );
+        return;
+      }
+
+      setErrorText('');
+      await refresh();
+    } catch (error) {
+      setErrorText(
+        error && error.message
+          ? error.message
+          : `Failed to ${enabled ? 'enable' : 'disable'} extension.`
+      );
+    }
   };
 
   return (

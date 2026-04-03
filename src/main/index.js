@@ -258,10 +258,14 @@ function registerProxyHandlers() {
   });
 
   interceptEngine.on('request', request => {
-    sendToRenderer('proxy:intercept:request', request);
-    extensionHost.emitEvent('proxy.intercept', {
+    const eventPayload = {
       request,
       requestId: request && request.id ? request.id : '',
+    };
+
+    sendToRenderer('proxy:intercept:request', request);
+    setImmediate(() => {
+      extensionHost.emitEvent('proxy.intercept', eventPayload);
     });
   });
 
@@ -287,9 +291,12 @@ function registerProxyHandlers() {
   scannerEngine.on('progress', payload => {
     sendToRenderer('scanner:progress', payload);
     if (payload && payload.finding) {
-      extensionHost.emitEvent('scanner.finding', {
+      const findingPayload = {
         finding: payload.finding,
         scanId: payload.scanId || '',
+      };
+      setImmediate(() => {
+        extensionHost.emitEvent('scanner.finding', findingPayload);
       });
     }
   });
@@ -400,7 +407,14 @@ function registerProjectHandlers() {
 
 function registerExtensionHandlers() {
   ipcMain.handle('extensions:list', async () => {
-    return extensionHost.list();
+    const result = await extensionHost.list();
+    if (Array.isArray(result)) {
+      return { extensions: result };
+    }
+    if (result && Array.isArray(result.extensions)) {
+      return { extensions: result.extensions };
+    }
+    return { extensions: [] };
   });
 
   ipcMain.handle('extensions:install', async (_event, args = {}) => {
