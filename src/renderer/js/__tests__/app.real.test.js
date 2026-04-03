@@ -27,7 +27,7 @@ describe('App Root Entry Point', () => {
     const renderTree = {
       ChakraProvider: { children: 'App_component' },
       App: {
-        children: ['Container', 'VStack', 'Heading']
+		children: ['Flex', 'VStack', 'Heading', 'CommandPaletteOverlay']
       }
     };
 
@@ -53,7 +53,7 @@ describe('App Root Entry Point', () => {
 
   it('should provide correct provider props structure', () => {
     const providerProps = {
-      value: { colors: { brand: {} } }
+		value: { colors: { brand: {}, workbench: {} }, semanticTokens: { colors: {} } }
     };
 
     expect(providerProps).toHaveProperty('value');

@@ -4,7 +4,7 @@ const {
   Box,
   Button,
   Code,
-  Heading,
+  Flex,
   HStack,
   Input,
   Text,
@@ -174,8 +174,12 @@ function TargetMapPanel() {
   return (
     <Box p='4' borderWidth='1px' borderRadius='md'>
       <VStack align='stretch' spacing={3}>
-        <Heading size='md'>Target Map</Heading>
-        <Text color='fg.muted'>Manage target scope and inspect discovered in-scope/out-of-scope assets.</Text>
+        <Flex justify='space-between' align='center' pb='3' borderBottomWidth='1px' borderColor='border.default'>
+          <Text fontWeight='medium' fontSize='sm'>Target Map</Text>
+          <HStack gap='2'>
+            <Button size='xs' variant='outline' onClick={loadScope}>Refresh Scope</Button>
+          </HStack>
+        </Flex>
 
         <Box borderWidth='1px' borderRadius='md' p={3}>
           <Text fontWeight='semibold' mb={2}>Add Scope Rule</Text>

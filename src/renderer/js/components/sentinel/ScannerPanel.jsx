@@ -4,7 +4,7 @@ const {
   Box,
   Button,
   Code,
-  Heading,
+  Flex,
   HStack,
   Input,
   Text,
@@ -109,8 +109,13 @@ function ScannerPanel() {
   return (
     <Box p='4' borderWidth='1px' borderRadius='md'>
       <VStack align='stretch' spacing={3}>
-        <Heading size='md'>Scanner</Heading>
-        <Text color='fg.muted'>Run passive and active checks with in-scope enforcement and evidence-backed findings.</Text>
+        <Flex justify='space-between' align='center' pb='3' borderBottomWidth='1px' borderColor='border.default'>
+          <Text fontWeight='medium' fontSize='sm'>Scanner</Text>
+          <HStack gap='2'>
+            <Button size='xs' variant='outline' onClick={startActiveScan}>Active Scan</Button>
+            <Button size='xs' variant='outline' onClick={loadPassiveFindings}>Passive Findings</Button>
+          </HStack>
+        </Flex>
 
         <Box borderWidth='1px' borderRadius='md' p={3}>
           <Text fontWeight='semibold' mb={2}>Active Scan Inputs</Text>

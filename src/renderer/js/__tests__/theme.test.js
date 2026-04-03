@@ -14,16 +14,16 @@ describe('Theme Configuration', () => {
 
   it('should define brand color palette with 10 shades', () => {
     const brandColors = {
-      50: '#eef6ff',
-      100: '#d9eaff',
-      200: '#b7d7ff',
-      300: '#8cbcff',
-      400: '#5d99ff',
-      500: '#386fff',
-      600: '#284fdd',
-      700: '#1f3da8',
-      800: '#1d3684',
-      900: '#1f3369'
+      50: '#edf6ff',
+      100: '#cfe3ff',
+      200: '#9fc6ff',
+      300: '#6ca7ff',
+      400: '#3f89ff',
+      500: '#216de6',
+      600: '#1854b3',
+      700: '#143f84',
+      800: '#122f61',
+      900: '#101f40'
     };
 
     expect(Object.keys(brandColors).length).toBe(10);
@@ -32,20 +32,23 @@ describe('Theme Configuration', () => {
     });
   });
 
-  it('should define semantic tokens bg.panel and bg.subtle', () => {
+  it('should define workbench semantic tokens', () => {
     const semanticTokens = {
-      'bg.panel': 'brand.50',
-      'bg.subtle': 'brand.100'
+      'bg.canvas': '{colors.workbench.900}',
+      'bg.panel': '#111821',
+      'bg.subtle': '#202d3a'
     };
 
-    expect(semanticTokens['bg.panel']).toBe('brand.50');
-    expect(semanticTokens['bg.subtle']).toBe('brand.100');
+    expect(semanticTokens['bg.canvas']).toBe('{colors.workbench.900}');
+    expect(semanticTokens['bg.panel']).toBe('#111821');
+    expect(semanticTokens['bg.subtle']).toBe('#202d3a');
   });
 
-  it('should provide valid color references', () => {
+  it('should provide valid workbench color references', () => {
     const allColors = [
-      '#eef6ff', '#d9eaff', '#b7d7ff', '#8cbcff', '#5d99ff',
-      '#386fff', '#284fdd', '#1f3da8', '#1d3684', '#1f3369'
+      '#edf6ff', '#cfe3ff', '#9fc6ff', '#6ca7ff', '#3f89ff',
+      '#216de6', '#1854b3', '#143f84', '#122f61', '#101f40',
+      '#111821', '#17212b', '#202d3a', '#0b1118'
     ];
 
     allColors.forEach(color => {

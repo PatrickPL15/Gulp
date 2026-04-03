@@ -35,7 +35,6 @@ describe('IntruderPanel real interactions', () => {
     renderWithChakra(React.createElement(IntruderPanel));
 
     expect(screen.getByText('Intruder')).toBeTruthy();
-    expect(screen.getByText(/Mark payload positions with/i)).toBeTruthy();
     await waitFor(() => expect(intruderApi.list).toHaveBeenCalled());
   });
 

@@ -4,7 +4,7 @@ const {
   Box,
   Button,
   Code,
-  Heading,
+  Flex,
   HStack,
   Input,
   Text,
@@ -80,8 +80,13 @@ function OobPanel() {
   return (
     <Box p='4' borderWidth='1px' borderRadius='md'>
       <VStack align='stretch' spacing={3}>
-        <Heading size='md'>OOB</Heading>
-        <Text color='fg.muted'>Generate callback payloads and monitor blind interaction hits linked to source probes.</Text>
+        <Flex justify='space-between' align='center' pb='3' borderBottomWidth='1px' borderColor='border.default'>
+          <Text fontWeight='medium' fontSize='sm'>OOB</Text>
+          <HStack gap='2'>
+            <Button size='xs' variant='outline' onClick={createPayload}>Generate Payload</Button>
+            <Button size='xs' variant='outline' onClick={() => loadHits()}>Refresh Hits</Button>
+          </HStack>
+        </Flex>
 
         <Box borderWidth='1px' borderRadius='md' p={3}>
           <Text fontWeight='semibold' mb={2}>Payload Generator</Text>

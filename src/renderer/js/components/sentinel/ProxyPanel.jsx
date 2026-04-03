@@ -4,13 +4,58 @@ const {
 	Box,
 	Button,
 	Code,
-	Heading,
+	Flex,
 	HStack,
 	Input,
+	Separator,
 	Text,
-	Textarea,
 	VStack,
 } = require('@chakra-ui/react');
+const MonacoEditor = require('@monaco-editor/react').default;
+const { FixedSizeList } = require('react-window');
+
+const ROW_HEIGHT = 34;
+
+function buildRawRequest(request = {}, pathOverride, bodyOverride) {
+	const headers = Object.entries(request.headers || {})
+		.map(([key, value]) => `${key}: ${value}`)
+		.join('\n');
+	return [
+		`${request.method || 'GET'} ${pathOverride || request.path || '/'} ${request.protocol || 'HTTP/1.1'}`,
+		headers,
+		'',
+		bodyOverride != null ? bodyOverride : (request.body || ''),
+	].join('\n');
+}
+
+function ProxyQueue({ queue, selectedId, onSelect }) {
+	return (
+		<FixedSizeList height={420} itemCount={queue.length} itemSize={ROW_HEIGHT} width='100%'>
+			{({ index, style }) => {
+				const item = queue[index];
+				const isSelected = item.id === selectedId;
+				return (
+					<Flex
+						style={style}
+						px='2'
+						align='center'
+						bg={isSelected ? 'bg.subtle' : 'transparent'}
+						borderBottomWidth='1px'
+						borderColor='border.default'
+						fontFamily='mono'
+						fontSize='xs'
+						cursor='pointer'
+						onClick={() => onSelect(item.id)}
+					>
+						<Box flex='0 0 64px' px='2'>{item.method || 'GET'}</Box>
+						<Box flex='0 0 180px' px='2' overflow='hidden' textOverflow='ellipsis' whiteSpace='nowrap'>{item.host || 'unknown-host'}</Box>
+						<Box flex='1' px='2' overflow='hidden' textOverflow='ellipsis' whiteSpace='nowrap'>{item.path || '/'}</Box>
+					</Flex>
+				);
+			}}
+		</FixedSizeList>
+	);
+}
 
 function ProxyPanel() {
 	const [status, setStatus] = React.useState({ running: false, port: 8080, intercepting: true });
@@ -19,6 +64,8 @@ function ProxyPanel() {
 	const [editPath, setEditPath] = React.useState('');
 	const [editBody, setEditBody] = React.useState('');
 	const [errorText, setErrorText] = React.useState('');
+	const [noticeText, setNoticeText] = React.useState('');
+	const [inspectorTab, setInspectorTab] = React.useState('raw');
 
 	const selected = queue.find(item => item.id === selectedId) || null;
 
@@ -106,6 +153,7 @@ function ProxyPanel() {
 			return;
 		}
 		setErrorText('');
+		setNoticeText('');
 		try {
 			const running = await sentinel.proxy.start({ port: status.port || 8080 });
 			setStatus(prev => ({ ...prev, running: true, port: running.port }));
@@ -120,6 +168,7 @@ function ProxyPanel() {
 			return;
 		}
 		setErrorText('');
+		setNoticeText('');
 		try {
 			await sentinel.proxy.stop();
 			setStatus(prev => ({ ...prev, running: false }));
@@ -134,6 +183,7 @@ function ProxyPanel() {
 			return;
 		}
 		setErrorText('');
+		setNoticeText('');
 		try {
 			const next = await sentinel.proxy.intercept.toggle({ enabled: !status.intercepting });
 			setStatus(prev => ({ ...prev, intercepting: next.intercepting }));
@@ -148,6 +198,7 @@ function ProxyPanel() {
 			return;
 		}
 		setErrorText('');
+		setNoticeText('');
 		try {
 			await sentinel.proxy.intercept.forward({
 				requestId: selected.id,
@@ -158,6 +209,7 @@ function ProxyPanel() {
 			});
 			setQueue(prev => prev.filter(item => item.id !== selected.id));
 			setSelectedId('');
+			setNoticeText('Forwarded selected request.');
 		} catch {
 			setErrorText('Unable to forward selected request.');
 		}
@@ -169,91 +221,136 @@ function ProxyPanel() {
 			return;
 		}
 		setErrorText('');
+		setNoticeText('');
 		try {
 			await sentinel.proxy.intercept.drop({ requestId: selected.id });
 			setQueue(prev => prev.filter(item => item.id !== selected.id));
 			setSelectedId('');
+			setNoticeText('Dropped selected request.');
 		} catch {
 			setErrorText('Unable to drop selected request.');
 		}
 	}
 
+	function sendSelectedToRepeater() {
+		if (!selected) {
+			return;
+		}
+		window.dispatchEvent(new CustomEvent('sentinel:repeater-handoff', {
+			detail: {
+				request: {
+					...selected,
+					path: editPath || selected.path,
+					body: editBody,
+				},
+			},
+		}));
+		window.dispatchEvent(new CustomEvent('sentinel:navigate-module', {
+			detail: { moduleName: 'Repeater' },
+		}));
+		setNoticeText('Queued request loaded into Repeater.');
+	}
+
+	const rawRequest = selected ? buildRawRequest(selected, editPath, editBody) : '';
+
 	return (
-		<Box p={4} borderWidth='1px' borderRadius='md'>
-			<VStack align='stretch' spacing={3}>
-				<Heading size='md'>Proxy</Heading>
-				<HStack justify='space-between' wrap='wrap'>
-					<HStack>
-						<Badge colorPalette={status.running ? 'green' : 'orange'}>
-							{status.running ? 'Running' : 'Stopped'}
-						</Badge>
-						<Badge colorPalette={status.intercepting ? 'purple' : 'blue'}>
-							Intercept {status.intercepting ? 'On' : 'Off'}
-						</Badge>
-						<Text fontSize='sm'>Port <Code>{status.port}</Code></Text>
-					</HStack>
-					<HStack>
-						<Button size='xs' variant='outline' onClick={status.running ? stopProxy : startProxy}>
-							{status.running ? 'Stop' : 'Start'}
-						</Button>
-						<Button size='xs' variant='outline' onClick={toggleIntercept}>
-							{status.intercepting ? 'Resume All' : 'Pause All'}
-						</Button>
-					</HStack>
+		<Flex h='100%' overflow='hidden' direction='column'>
+			<Flex px='3' py='2' borderBottomWidth='1px' borderColor='border.default' bg='bg.elevated' align='center' justify='space-between' flexShrink='0' wrap='wrap' gap='2'>
+				<HStack gap='3'>
+					<Text fontWeight='medium' fontSize='sm'>Proxy</Text>
+					<Badge colorPalette={status.running ? 'green' : 'orange'}>
+						{status.running ? 'Running' : 'Stopped'}
+					</Badge>
+					<Badge colorPalette={status.intercepting ? 'purple' : 'blue'}>
+						Intercept {status.intercepting ? 'On' : 'Off'}
+					</Badge>
+					<Text fontSize='xs' color='fg.muted'>Port <Code>{status.port}</Code></Text>
 				</HStack>
+				<HStack gap='2'>
+					<Button size='xs' variant='outline' onClick={status.running ? stopProxy : startProxy}>
+						{status.running ? 'Stop' : 'Start'}
+					</Button>
+					<Button size='xs' variant='outline' onClick={toggleIntercept}>
+						{status.intercepting ? 'Resume All' : 'Pause All'}
+					</Button>
+				</HStack>
+			</Flex>
+			<VStack align='stretch' spacing={3} p='4' flex='1' overflow='hidden'>
 
 				<Text color='fg.muted' fontSize='sm'>
-					Intercept queue depth: <Code>{queue.length}</Code>
+					Intercept queue depth: <Code>{queue.length}</Code> · Inspector mode <Code>{inspectorTab.toUpperCase()}</Code>
 				</Text>
 
-				<Box borderWidth='1px' borderRadius='md' p={3}>
-					<Text fontWeight='semibold' mb={2}>Queued Requests</Text>
-					{queue.length === 0 ? (
-						<Text color='fg.muted' fontSize='sm'>No paused requests.</Text>
-					) : queue.map(item => (
-						<Button
-							key={item.id}
-							size='xs'
-							variant={selectedId === item.id ? 'solid' : 'ghost'}
-							onClick={() => setSelectedId(item.id)}
-							mr={2}
-							mb={2}
-						>
-							{item.method} {item.host}{item.path}
-						</Button>
-					))}
-				</Box>
-
-				{selected ? (
-					<Box borderWidth='1px' borderRadius='md' p={3}>
-						<Text fontWeight='semibold' mb={2}>Edit Request Before Forward</Text>
-						<Text fontSize='sm' mb={1}>Request ID: <Code>{selected.id}</Code></Text>
-						<Input
-							size='sm'
-							value={editPath}
-							onChange={event => setEditPath(event.target.value)}
-							mb={2}
-							placeholder='Path'
-						/>
-						<Textarea
-							size='sm'
-							value={editBody}
-							onChange={event => setEditBody(event.target.value)}
-							placeholder='Request body (optional)'
-							rows={6}
-						/>
-						<HStack mt={3}>
-							<Button size='sm' colorPalette='green' onClick={forwardSelected}>Forward</Button>
-							<Button size='sm' colorPalette='red' variant='outline' onClick={dropSelected}>Drop</Button>
-						</HStack>
+				<Flex flex='1' minH='0' gap='3' overflow='hidden'>
+					<Box flex='1' minW='0' borderWidth='1px' borderRadius='sm' borderColor='border.default' overflow='hidden'>
+						<Flex px='2' py='2' borderBottomWidth='1px' borderColor='border.default' fontSize='xs' color='fg.muted' fontFamily='mono'>
+							<Box flex='0 0 64px' px='2'>METHOD</Box>
+							<Box flex='0 0 180px' px='2'>HOST</Box>
+							<Box flex='1' px='2'>PATH</Box>
+						</Flex>
+						{queue.length === 0 ? <Text color='fg.muted' fontSize='sm' p='3'>No paused requests.</Text> : <ProxyQueue queue={queue} selectedId={selectedId} onSelect={setSelectedId} />}
 					</Box>
-				) : null}
+					<Box w='44%' minW='360px' borderWidth='1px' borderRadius='sm' borderColor='border.default' overflow='hidden'>
+						{selected ? (
+							<VStack align='stretch' spacing={3} p='3' h='100%'>
+								<HStack justify='space-between' wrap='wrap'>
+									<Box>
+										<Text fontWeight='semibold'>{selected.method} {selected.host}{selected.path}</Text>
+										<Text fontSize='xs' color='fg.muted'>Request ID <Code>{selected.id}</Code></Text>
+									</Box>
+									<HStack>
+										<Button size='xs' variant={inspectorTab === 'raw' ? 'solid' : 'outline'} onClick={() => setInspectorTab('raw')}>Raw</Button>
+										<Button size='xs' variant={inspectorTab === 'edit' ? 'solid' : 'outline'} onClick={() => setInspectorTab('edit')}>Edit</Button>
+									</HStack>
+								</HStack>
+								{inspectorTab === 'edit' ? (
+									<VStack align='stretch' spacing={2}>
+										<Input size='sm' value={editPath} onChange={event => setEditPath(event.target.value)} placeholder='Path' fontFamily='mono' />
+										<Box flex='1' minH='240px' borderWidth='1px' borderRadius='sm' borderColor='border.default' overflow='hidden'>
+											<MonacoEditor
+												height='240px'
+												defaultLanguage='text'
+												theme='vs-dark'
+												value={editBody}
+												onChange={value => setEditBody(value || '')}
+												options={{ minimap: { enabled: false }, wordWrap: 'on', fontSize: 12 }}
+											/>
+										</Box>
+									</VStack>
+								) : (
+									<Box flex='1' minH='240px' borderWidth='1px' borderRadius='sm' borderColor='border.default' overflow='hidden'>
+										<MonacoEditor
+											height='240px'
+											defaultLanguage='http'
+											theme='vs-dark'
+											value={rawRequest}
+											options={{ readOnly: true, minimap: { enabled: false }, wordWrap: 'on', fontSize: 12 }}
+										/>
+									</Box>
+								)}
+								<Separator />
+								<HStack>
+									<Button size='sm' colorPalette='green' onClick={forwardSelected}>Forward</Button>
+									<Button size='sm' variant='outline' onClick={sendSelectedToRepeater}>Send to Repeater</Button>
+									<Button size='sm' colorPalette='red' variant='outline' onClick={dropSelected}>Drop</Button>
+								</HStack>
+							</VStack>
+						) : (
+							<Box p='4'>
+								<Text color='fg.muted' fontSize='sm'>Select a paused request to inspect or edit it before forwarding.</Text>
+							</Box>
+						)}
+					</Box>
+				</Flex>
 
 				{errorText ? (
 					<Text color='red.300' fontSize='sm'>{errorText}</Text>
 				) : null}
+				{noticeText ? (
+					<Text color='green.300' fontSize='sm'>{noticeText}</Text>
+				) : null}
 			</VStack>
-		</Box>
+		</Flex>
 	);
 }
 

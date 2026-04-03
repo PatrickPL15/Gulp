@@ -3,7 +3,7 @@ const {
   Box,
   Button,
   Code,
-  Heading,
+  Flex,
   HStack,
   Input,
   Text,
@@ -82,8 +82,12 @@ function DecoderPanel() {
   return (
     <Box p='4' borderWidth='1px' borderRadius='md'>
       <VStack align='stretch' spacing={3}>
-        <Heading size='md'>Decoder</Heading>
-        <Text color='fg.muted'>Apply chained transforms and inspect each intermediate output.</Text>
+        <Flex justify='space-between' align='center' pb='3' borderBottomWidth='1px' borderColor='border.default'>
+          <Text fontWeight='medium' fontSize='sm'>Decoder</Text>
+          <HStack gap='2'>
+            <Button size='xs' variant='outline' onClick={runDecoder}>Run</Button>
+          </HStack>
+        </Flex>
 
         <Box borderWidth='1px' borderRadius='md' p={3}>
           <Text fontWeight='semibold' mb={2}>Input</Text>

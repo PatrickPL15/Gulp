@@ -6,8 +6,9 @@ Desktop security-workbench foundation built with Electron (main process), React 
 - Electron + renderer scaffold is running from built output (`dist/main/index.js`).
 - Chakra UI integration is in place with theme config in `src/renderer/js/theme.js`.
 - Vitest test setup exists (`test`, `test:ui`, `test:coverage` scripts).
-- Sentinel M1-M7 capabilities are implemented: CA lifecycle, intercepting proxy, rules, persistent history, Repeater response viewers, Intruder payload attacks, target/scope management, scanner/OOB/sequencer workflows, and decoder/embedded-browser workflows.
-- Latest milestone validation snapshot includes M7 scanner/OOB/sequencer suites plus proxy/persistence/renderer regression suites passing.
+- Sentinel M1-M9 capabilities are implemented: CA lifecycle, intercepting proxy, rules, persistent history, Repeater response viewers, Intruder payload attacks, target/scope management, scanner/OOB/sequencer workflows, decoder/embedded-browser workflows, extension automation, and the high-density workbench UI shell.
+- Workbench shell includes a two-state module sidebar (collapsed icon-only and expanded icon+title modes), animated context rail transitions, keyboard-accessible quick actions, and preserved context-rail scroll/focus behavior.
+- Latest milestone validation snapshot includes full UI/workbench regression coverage alongside proxy, persistence, scanner, and extension suites passing.
 - Sentinel roadmap and checklist are tracked in:
    - `APP_COMPLETION_AND_TEST_CHECKLIST.md`
    - `SENTINEL_IMPLEMENTATION_PLAN.md`
@@ -126,11 +127,12 @@ npm run dev
 - Test framework is Vitest with jsdom and Testing Library.
 - Current full validation: 25 test files / 297 tests passing, plus successful Gulp build.
 - Current targeted backend and renderer suites pass, including SEN-018 through SEN-024 and project-store stability checks.
+- Current renderer validation also covers the M9 workbench shell, dark-first theme tokens, and split-pane navigation flows.
 - Post-build runtime validation (`npm run test:build`) also passes (3/3 dist smoke tests).
 - Coverage/report strategy is documented in `TEST_COVERAGE.md`.
 
 ## Sentinel Scope Status
-M1 through M8 capabilities are complete and implemented in this branch, including:
+M1 through M9 capabilities are complete and implemented in this branch, including:
 
 1. Core proxy pipeline (intercept, edit, forward, rules, history).
 2. Manual tools (Repeater response viewers and request replay workflows).
@@ -140,11 +142,9 @@ M1 through M8 capabilities are complete and implemented in this branch, includin
 6. Advanced scanner/OOB/sequencer workflows.
 7. Build validation layer testing for generated `dist/` artifacts.
 8. Extension host, script automation runtime, and IPC/renderer hardening.
+9. Workbench shell modernization: fixed viewport layout, activity bar, tab strip, virtualized proxy/history surfaces, Monaco-backed inspectors, buffered streaming, and dark-first semantic theming.
 
-Remaining planned scope is M9+:
-
-1. Workbench shell modernization (fixed viewport + activity bar + tabs + status bar).
-2. High-density virtualized proxy/history surfaces and buffered streaming UX polish.
+No planned milestone gaps remain through M9.
 
 ## Planned Changes (Roadmap Highlights)
 - Milestone 0-1: contract baseline, persistence, CA lifecycle, service bootstrap.
@@ -173,6 +173,11 @@ npx gulp build
 npm run start
 ```
 
+### App shows a blank white screen
+- Rebuild before launch: `npm run build` then `npm run start`.
+- Runtime launches from generated `dist/`; stale bundles can hide renderer fixes made in `src/`.
+- A recent startup crash source (invalid tooltip component usage) has been corrected in `App.jsx`.
+
 ### UI changes not visible
 - Confirm watch/build is running.
 - Verify new artifacts in `dist/renderer/`.
@@ -180,12 +185,12 @@ npm run start
 ### Main process changes not reflected
 - Confirm `src/main/**` was copied to `dist/main/` by build/watch.
 
-## Workbench UI Directive (Planned)
-Upcoming UI work follows a fixed desktop-workbench architecture:
+## Workbench UI Directive (Implemented)
+The renderer now follows a fixed desktop-workbench architecture:
 
 1. Shell layout uses fixed viewport (`h="100vh"`, `overflow="hidden"`) with collapsible panes.
-2. Left activity bar provides quick switching for Proxy, Scanner, and Repeater.
-3. Main workspace uses tabbed workflows (Chakra Tabs `variant="enclosed"`) for concurrent tasks.
+2. Left activity bar provides quick switching for all modules and supports both collapsed (icons only) and expanded (icons + labels) states.
+3. Main workspace uses a concurrent tab strip for module workflows.
 4. Bottom status bar surfaces real-time engine status, active scans/tasks, and memory usage.
 5. Proxy/history tables target high-density rendering and virtualization (`@tanstack/react-table` + `@tanstack/react-virtual` or `react-window`).
 6. Request/response inspector roadmap includes Monaco-powered Raw view plus Headers/Raw/Preview tabs.

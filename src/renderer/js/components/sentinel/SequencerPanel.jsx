@@ -4,7 +4,7 @@ const {
   Box,
   Button,
   Code,
-  Heading,
+  Flex,
   HStack,
   Input,
   Text,
@@ -106,8 +106,14 @@ function SequencerPanel() {
   return (
     <Box p='4' borderWidth='1px' borderRadius='md'>
       <VStack align='stretch' spacing={3}>
-        <Heading size='md'>Sequencer</Heading>
-        <Text color='fg.muted'>Capture replayed token samples and calculate entropy/predictability metrics.</Text>
+        <Flex justify='space-between' align='center' pb='3' borderBottomWidth='1px' borderColor='border.default'>
+          <Text fontWeight='medium' fontSize='sm'>Sequencer</Text>
+          <HStack gap='2'>
+            <Button size='xs' variant='outline' onClick={startCapture}>Start Capture</Button>
+            <Button size='xs' variant='outline' onClick={stopCapture}>Stop</Button>
+            <Button size='xs' variant='outline' onClick={analyzeSession}>Analyze</Button>
+          </HStack>
+        </Flex>
 
         <Box borderWidth='1px' borderRadius='md' p={3}>
           <Text fontWeight='semibold' mb={2}>Capture Configuration</Text>
