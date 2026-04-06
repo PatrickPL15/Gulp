@@ -78,7 +78,7 @@ function watchFiles() {
   gulp.watch(paths.contracts, copyContracts);
 }
 
-const build = gulp.series(cleanDist, gulp.parallel(copyHtml, copyDocs, compileSass, bundleJs, copyMain, copyContracts, generateBuildMetadata));
+const build = gulp.series(cleanDist, gulp.parallel(copyHtml, copyDocs, compileSass, bundleJs, copyMain, copyContracts), generateBuildMetadata);
 
 exports.clean = cleanDist;
 exports.watch = watchFiles;

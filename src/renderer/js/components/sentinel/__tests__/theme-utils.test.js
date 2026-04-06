@@ -1,11 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-
-const {
-  isDarkTheme,
-  getMonacoTheme,
-  getStatusTextColor,
-  getOverlayScrim,
-} = require('../theme-utils.js');
+import { isDarkTheme, getMonacoTheme, getStatusTextColor, getOverlayScrim } from '../theme-utils.js';
 
 describe('theme-utils', () => {
   describe('isDarkTheme', () => {
