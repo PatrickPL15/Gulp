@@ -578,7 +578,7 @@ function IntruderPanel({ themeId }) {
                       </thead>
                       <tbody>
                         {filteredResults.map(result => (
-                          <tr key={result.id} style={{ borderTop: '1px solid var(--sentinel-border-default, #34485b)' }}>
+                          <tr key={result.id} style={{ borderTop: '1px solid var(--sentinel-border-default, #2a3948)' }}>
                             <td style={{ padding: '6px', fontFamily: 'monospace' }}>{result.payload}</td>
                             <td style={{ padding: '6px' }}><Code>{result.statusCode}</Code></td>
                             <td style={{ padding: '6px' }}>{result.length}</td>

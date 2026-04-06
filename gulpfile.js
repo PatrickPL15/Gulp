@@ -2,6 +2,7 @@ const gulp = require('gulp');
 const sass = require('gulp-sass')(require('sass'));
 const esbuild = require('gulp-esbuild');
 const clean = require('gulp-clean');
+const { execSync } = require('child_process');
 
 const paths = {
   html: 'src/renderer/index.html',
@@ -60,6 +61,14 @@ function copyContracts() {
     .pipe(gulp.dest(`${paths.dist}/contracts`));
 }
 
+function generateBuildMetadata(done) {
+  execSync(
+    `node scripts/versioning/write-build-metadata.js --out=${paths.dist}/contracts/build-info.json`,
+    { stdio: 'inherit' }
+  );
+  done();
+}
+
 function watchFiles() {
   gulp.watch(paths.html, copyHtml);
   gulp.watch(paths.docs, copyDocs);
@@ -69,7 +78,7 @@ function watchFiles() {
   gulp.watch(paths.contracts, copyContracts);
 }
 
-const build = gulp.series(cleanDist, gulp.parallel(copyHtml, copyDocs, compileSass, bundleJs, copyMain, copyContracts));
+const build = gulp.series(cleanDist, gulp.parallel(copyHtml, copyDocs, compileSass, bundleJs, copyMain, copyContracts, generateBuildMetadata));
 
 exports.clean = cleanDist;
 exports.watch = watchFiles;
