@@ -8,11 +8,13 @@ SEN-014 Protocol support
 
 const http = require('node:http');
 const https = require('node:https');
+const tls = require('node:tls');
 const { URL } = require('node:url');
 const { randomUUID } = require('node:crypto');
 const interceptEngineModule = require('./intercept-engine');
 const historyLogModule = require('./history-log');
 const rulesEngineModule = require('./rules-engine');
+const caManager = require('../certs/ca-manager');
 
 const MAX_REQUEST_BYTES = 25 * 1024 * 1024; // 25 MB
 
@@ -306,6 +308,15 @@ class ProtocolSupport {
 			});
 		});
 
+		// Handle HTTPS CONNECT tunnels for MITM interception.
+		this.server.on('connect', (req, socket, head) => {
+			this.handleConnect(req, socket, head).catch(() => {
+				try { socket.destroy(); } catch {
+					// ignore cleanup failure
+				}
+			});
+		});
+
 		await new Promise((resolve, reject) => {
 			this.server.once('error', reject);
 			this.server.listen(port, '127.0.0.1', () => resolve());
@@ -342,7 +353,69 @@ class ProtocolSupport {
 		};
 	}
 
-	async handleHttpRequest(req, res) {
+	async handleConnect(req, clientSocket, head) {
+		const url = req.url || '';
+		const colonIdx = url.lastIndexOf(':');
+		const targetHost = colonIdx >= 0 ? url.slice(0, colonIdx) : url;
+		const targetPort = colonIdx >= 0 ? Number(url.slice(colonIdx + 1)) : 443;
+
+		if (!targetHost) {
+			clientSocket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
+			clientSocket.destroy();
+			return;
+		}
+
+		// Acknowledge the tunnel before the browser starts the TLS handshake.
+		clientSocket.write('HTTP/1.1 200 Connection Established\r\nProxy-agent: Sentinel\r\n\r\n');
+
+		// Push back any bytes the HTTP parser already consumed before handing us the socket.
+		if (head && head.length > 0) {
+			clientSocket.unshift(head);
+		}
+
+		// Obtain a per-host leaf cert signed by the Sentinel CA for MITM.
+		let leaf;
+		try {
+			leaf = caManager.getLeafCertificate(targetHost);
+		} catch {
+			clientSocket.destroy();
+			return;
+		}
+
+		// Wrap the raw socket in TLS, presenting the forged cert to the browser.
+		const tlsSocket = new tls.TLSSocket(clientSocket, {
+			isServer: true,
+			cert: leaf.certPem,
+			key: leaf.keyPem,
+		});
+
+		// Use a transient HTTP server to parse decrypted requests off the TLS socket.
+		const tmpServer = http.createServer();
+		tmpServer.on('request', (innerReq, innerRes) => {
+			this.handleHttpRequest(innerReq, innerRes, {
+				tls: true,
+				host: targetHost,
+				port: targetPort,
+			}).catch(() => {
+				if (!innerRes.headersSent) {
+					innerRes.writeHead(502, { 'content-type': 'text/plain; charset=utf-8' });
+					innerRes.end('Sentinel proxy upstream error');
+				}
+			});
+		});
+
+		// Feed the TLS socket as a connection into the transient HTTP server.
+		tmpServer.emit('connection', tlsSocket);
+
+		const cleanup = () => {
+			try { tlsSocket.destroy(); } catch { /* ignore */ }
+			tmpServer.close();
+		};
+		tlsSocket.once('close', cleanup);
+		tlsSocket.once('error', cleanup);
+	}
+
+	async handleHttpRequest(req, res, context = {}) {
 		const bodyBuffer = await readBody(req);
 		const timestamp = Date.now();
 		const connectionId = randomUUID();
@@ -353,30 +426,44 @@ class ProtocolSupport {
 			: null;
 		const rawBodyBase64 = bodyBuffer.length > 0 ? bodyBuffer.toString('base64') : null;
 
+		// When called from an HTTPS CONNECT tunnel, context carries host/port/tls.
+		const isTls = !!context.tls;
+		const contextHost = String(context.host || '');
+		const contextPort = Number(context.port || (isTls ? 443 : 80));
+		const protocol = isTls ? 'https:' : 'http:';
+
 		const target = /^https?:\/\//i.test(req.url || '') ? new URL(req.url) : null;
-		const parsedHost = parseHostAndPort(normalizedHeaders.host || '', 'http:');
+		const parsedHost = parseHostAndPort(normalizedHeaders.host || contextHost, protocol);
+		const resolvedHost = target ? target.hostname : (contextHost || parsedHost.host);
+		const resolvedPort = target
+			? Number(target.port || (target.protocol === 'https:' ? 443 : 80))
+			: (context.port !== undefined ? contextPort : parsedHost.port);
+		const resolvedPath = target ? `${target.pathname || '/'}${target.search || ''}` : (req.url || '/');
+		const resolvedUrl = target ? target.toString()
+			: `${protocol}//${resolvedHost}${resolvedPort !== (isTls ? 443 : 80) ? `:${resolvedPort}` : ''}${resolvedPath}`;
+
 		const requestModel = {
 			id: randomUUID(),
 			connectionId,
 			timestamp,
 			method: (req.method || 'GET').toUpperCase(),
-			url: target ? target.toString() : (req.url || '/'),
-			host: target ? target.hostname : parsedHost.host,
-			port: target ? Number(target.port || (target.protocol === 'https:' ? 443 : 80)) : parsedHost.port,
-			path: target ? `${target.pathname || '/'}${target.search || ''}` : (req.url || '/'),
+			url: resolvedUrl,
+			host: resolvedHost,
+			port: resolvedPort,
+			path: resolvedPath,
 			queryString: target ? (target.search || '').replace(/^\?/, '') : '',
 			headers: normalizedHeaders,
 			body: bodyText,
 			rawBodyBase64,
 			protocol: 'HTTP/1.1',
-			tls: false,
+			tls: isTls,
 			tags: [],
 			comment: '',
 			inScope: this.scopeEvaluator ? this.scopeEvaluator({
-				protocol: target ? target.protocol.replace(':', '') : 'http',
-				host: target ? target.hostname : parsedHost.host,
-				port: target ? Number(target.port || (target.protocol === 'https:' ? 443 : 80)) : parsedHost.port,
-				path: target ? `${target.pathname || '/'}${target.search || ''}` : (req.url || '/'),
+				protocol: target ? target.protocol.replace(':', '') : (isTls ? 'https' : 'http'),
+				host: resolvedHost,
+				port: resolvedPort,
+				path: resolvedPath,
 			}) : false,
 		};
 

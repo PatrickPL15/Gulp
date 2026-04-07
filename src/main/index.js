@@ -1,5 +1,5 @@
 const electron = require('electron');
-const { app, BrowserWindow, ipcMain, dialog } = electron;
+const { app, BrowserWindow, BrowserView, ipcMain, dialog, session: electronSession } = electron;
 const path = require('path');
 const caManager = require('./certs/ca-manager');
 const projectStore = require('./db/project-store');
@@ -19,6 +19,254 @@ const embeddedBrowserService = require('./proxy/embedded-browser-service');
 
 let mainWindowRef = null;
 let shutdownInProgress = null;
+const embeddedBrowserViews = new Map();
+let activeEmbeddedBrowserSessionId = '';
+
+function hasVisibleBrowserBounds(bounds = {}) {
+  return Number(bounds.width) > 0 && Number(bounds.height) > 0;
+}
+
+function destroyEmbeddedBrowserView(sessionId) {
+  const entry = embeddedBrowserViews.get(sessionId);
+  if (!entry) {
+    return;
+  }
+
+  const targetWindow = getActiveWindow();
+  if (targetWindow && typeof targetWindow.removeBrowserView === 'function' && entry.attached) {
+    try {
+      targetWindow.removeBrowserView(entry.view);
+    } catch {
+      // Ignore detach failures during cleanup.
+    }
+  }
+
+  try {
+    if (entry.view && entry.view.webContents && typeof entry.view.webContents.isDestroyed === 'function' && !entry.view.webContents.isDestroyed()) {
+      entry.view.webContents.destroy();
+    }
+  } catch {
+    // Ignore view destruction failures during cleanup.
+  }
+
+  embeddedBrowserViews.delete(sessionId);
+  if (activeEmbeddedBrowserSessionId === sessionId) {
+    activeEmbeddedBrowserSessionId = '';
+  }
+}
+
+function ensureEmbeddedBrowserView(sessionState) {
+  if (!BrowserView || !sessionState || !sessionState.id) {
+    return null;
+  }
+
+  const existing = embeddedBrowserViews.get(sessionState.id);
+  if (existing) {
+    return existing;
+  }
+
+  const partition = String(sessionState.hostPartition || `sentinel-browser-${sessionState.id}`);
+  const isolatedSession = electronSession && typeof electronSession.fromPartition === 'function'
+    ? electronSession.fromPartition(partition)
+    : null;
+
+  if (isolatedSession && typeof isolatedSession.setPermissionRequestHandler === 'function') {
+    isolatedSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
+      callback(false);
+    });
+  }
+
+  // Trust all TLS certs in this isolated session — all traffic routes through the Sentinel
+  // MITM proxy which presents its own CA-signed certs. Isolated partitions don't inherit
+  // the system trust store, so cert verification is delegated to proxy routing intent.
+  if (isolatedSession && typeof isolatedSession.setCertificateVerifyProc === 'function') {
+    isolatedSession.setCertificateVerifyProc((_request, callback) => {
+      callback(0);
+    });
+  }
+
+  const view = new BrowserView({
+    webPreferences: {
+      partition,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  if (view.webContents && typeof view.webContents.setWindowOpenHandler === 'function') {
+    view.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  }
+
+  view.webContents.on('did-start-loading', () => {
+    embeddedBrowserService.applyRuntimeState({
+      sessionId: sessionState.id,
+      loading: true,
+      reason: 'chromium:did-start-loading',
+    });
+  });
+
+  view.webContents.on('did-stop-loading', () => {
+    const currentUrl = typeof view.webContents.getURL === 'function' ? view.webContents.getURL() : '';
+    const title = typeof view.webContents.getTitle === 'function' ? view.webContents.getTitle() : '';
+    Promise.resolve(protocolSupport.getStatus())
+      .then(status => embeddedBrowserService.completeRuntimeNavigation({
+        sessionId: sessionState.id,
+        proxyPort: status && status.running ? status.port : 0,
+        currentUrl,
+        title,
+      }))
+      .catch(() => embeddedBrowserService.completeRuntimeNavigation({
+        sessionId: sessionState.id,
+        currentUrl,
+        title,
+      }));
+  });
+
+  view.webContents.on('page-title-updated', (_event, title) => {
+    embeddedBrowserService.applyRuntimeState({
+      sessionId: sessionState.id,
+      title: String(title || ''),
+      reason: 'chromium:title:updated',
+    });
+  });
+
+  view.webContents.on('did-fail-load', (_event, errorCode, description, validatedUrl) => {
+    // ERR_ABORTED (-3) fires when an in-progress load is cancelled by a new navigation
+    // (redirect, reload, programmatic navigate) — not a real failure; ignore it.
+    if (errorCode === -3) {
+      return;
+    }
+    embeddedBrowserService.failRuntimeNavigation({
+      sessionId: sessionState.id,
+      url: String(validatedUrl || ''),
+      error: new Error(String(description || 'Chromium load failed.')),
+    });
+  });
+
+  const entry = {
+    view,
+    partition,
+    attached: false,
+  };
+  embeddedBrowserViews.set(sessionState.id, entry);
+  return entry;
+}
+
+function syncEmbeddedBrowserHost() {
+  const targetWindow = getActiveWindow();
+  const listed = embeddedBrowserService.listSessions();
+  const sessions = Array.isArray(listed.items) ? listed.items : [];
+  const activeSession = sessions.find(item => item.focused && item.visible && hasVisibleBrowserBounds(item.bounds)) || null;
+
+  for (const [sessionId, entry] of embeddedBrowserViews.entries()) {
+    if (!targetWindow || !activeSession || sessionId !== activeSession.id) {
+      if (entry.attached && targetWindow && typeof targetWindow.removeBrowserView === 'function') {
+        try {
+          targetWindow.removeBrowserView(entry.view);
+        } catch {
+          // Ignore detach failures when re-syncing the Chromium host.
+        }
+      }
+      entry.attached = false;
+    }
+  }
+
+  if (!targetWindow || !activeSession) {
+    activeEmbeddedBrowserSessionId = '';
+    return;
+  }
+
+  const entry = ensureEmbeddedBrowserView(activeSession);
+  if (!entry) {
+    return;
+  }
+
+  if (!entry.attached && typeof targetWindow.addBrowserView === 'function') {
+    targetWindow.addBrowserView(entry.view);
+    entry.attached = true;
+  }
+
+  if (typeof entry.view.setBounds === 'function') {
+    entry.view.setBounds(activeSession.bounds);
+  }
+  if (typeof entry.view.setAutoResize === 'function') {
+    entry.view.setAutoResize({ width: false, height: false });
+  }
+
+  activeEmbeddedBrowserSessionId = activeSession.id;
+}
+
+async function loadEmbeddedBrowserIntoHost(sessionState) {
+  const entry = ensureEmbeddedBrowserView(sessionState);
+  if (!entry || !sessionState || !sessionState.currentUrl) {
+    return;
+  }
+
+  const status = await protocolSupport.getStatus();
+  const proxyPort = status && status.running ? status.port : 0;
+  if (proxyPort > 0 && entry.view && entry.view.webContents && entry.view.webContents.session && typeof entry.view.webContents.session.setProxy === 'function') {
+    await entry.view.webContents.session.setProxy({
+      proxyRules: `http=127.0.0.1:${proxyPort};https=127.0.0.1:${proxyPort}`,
+      proxyBypassRules: '<-loopback>',
+    });
+  }
+
+  if (entry.view && entry.view.webContents && typeof entry.view.webContents.loadURL === 'function') {
+    await entry.view.webContents.loadURL(sessionState.currentUrl);
+  }
+
+  return entry;
+}
+
+async function navigateEmbeddedBrowserView(sessionState) {
+  return loadEmbeddedBrowserIntoHost(sessionState);
+}
+
+async function goBackEmbeddedBrowserView(sessionState) {
+  const entry = ensureEmbeddedBrowserView(sessionState);
+  if (!entry || !entry.view || !entry.view.webContents) {
+    return null;
+  }
+
+  const webContents = entry.view.webContents;
+  if (typeof webContents.canGoBack === 'function' && webContents.canGoBack() && typeof webContents.goBack === 'function') {
+    webContents.goBack();
+    return entry;
+  }
+
+  return navigateEmbeddedBrowserView(sessionState);
+}
+
+async function goForwardEmbeddedBrowserView(sessionState) {
+  const entry = ensureEmbeddedBrowserView(sessionState);
+  if (!entry || !entry.view || !entry.view.webContents) {
+    return null;
+  }
+
+  const webContents = entry.view.webContents;
+  if (typeof webContents.canGoForward === 'function' && webContents.canGoForward() && typeof webContents.goForward === 'function') {
+    webContents.goForward();
+    return entry;
+  }
+
+  return navigateEmbeddedBrowserView(sessionState);
+}
+
+async function reloadEmbeddedBrowserView(sessionState) {
+  const entry = ensureEmbeddedBrowserView(sessionState);
+  if (!entry || !entry.view || !entry.view.webContents) {
+    return null;
+  }
+
+  const webContents = entry.view.webContents;
+  if (typeof webContents.reload === 'function') {
+    webContents.reload();
+    return entry;
+  }
+
+  return navigateEmbeddedBrowserView(sessionState);
+}
 
 function getActiveWindow() {
   if (mainWindowRef && !mainWindowRef.isDestroyed()) {
@@ -35,6 +283,23 @@ function sendToRenderer(channel, payload) {
     return;
   }
   target.webContents.send(channel, payload);
+}
+
+/**
+ * Push a structured log entry to the renderer console drawer.
+ * @param {'info'|'warn'|'error'} level
+ * @param {string} source  Short label, e.g. 'proxy', 'browser', 'extensions'
+ * @param {string} message
+ * @param {string} [detail]
+ */
+function sendConsoleLog(level, source, message, detail) {
+  sendToRenderer('console:log', {
+    level: String(level || 'info'),
+    source: String(source || 'app'),
+    message: String(message || ''),
+    detail: detail !== undefined ? String(detail) : undefined,
+    timestamp: Date.now(),
+  });
 }
 
 async function pickImportFile({ title, filters }) {
@@ -55,11 +320,13 @@ async function pickImportFile({ title, filters }) {
 function registerProxyHandlers() {
   ipcMain.handle('proxy:start', async (_event, args = {}) => {
     const started = await protocolSupport.start({ port: args.port || 8080 });
+    sendConsoleLog('info', 'proxy', `Proxy started on port ${started.port}`);
     return { port: started.port, status: 'running' };
   });
 
   ipcMain.handle('proxy:stop', async () => {
     const stopped = await protocolSupport.stop();
+    sendConsoleLog('info', 'proxy', 'Proxy stopped');
     return { status: stopped.status };
   });
 
@@ -246,15 +513,141 @@ function registerProxyHandlers() {
   });
 
   ipcMain.handle('browser:session:create', async (_event, args = {}) => {
-    return { session: embeddedBrowserService.createSession(args) };
+    const result = { session: embeddedBrowserService.createSession(args) };
+    ensureEmbeddedBrowserView(result.session);
+    syncEmbeddedBrowserHost();
+    return result;
+  });
+
+  ipcMain.handle('browser:session:get', async (_event, args = {}) => {
+    return embeddedBrowserService.getSession(args);
+  });
+
+  ipcMain.handle('browser:session:close', async (_event, args = {}) => {
+    const result = embeddedBrowserService.closeSession(args);
+    destroyEmbeddedBrowserView(args.sessionId);
+    syncEmbeddedBrowserHost();
+    return result;
+  });
+
+  ipcMain.handle('browser:session:focus', async (_event, args = {}) => {
+    const result = embeddedBrowserService.focusSession(args);
+    syncEmbeddedBrowserHost();
+    return result;
   });
 
   ipcMain.handle('browser:sessions:list', async () => {
     return embeddedBrowserService.listSessions();
   });
 
+  ipcMain.handle('browser:view:show', async (_event, args = {}) => {
+    const result = embeddedBrowserService.showView(args);
+    syncEmbeddedBrowserHost();
+    return result;
+  });
+
+  ipcMain.handle('browser:view:hide', async (_event, args = {}) => {
+    const result = embeddedBrowserService.hideView(args);
+    syncEmbeddedBrowserHost();
+    return result;
+  });
+
+  ipcMain.handle('browser:view:set-bounds', async (_event, args = {}) => {
+    const result = embeddedBrowserService.setViewBounds(args);
+    syncEmbeddedBrowserHost();
+    return result;
+  });
+
   ipcMain.handle('browser:navigate', async (_event, args = {}) => {
-    return embeddedBrowserService.navigate(args);
+    const result = await embeddedBrowserService.navigate(args);
+    try {
+      await navigateEmbeddedBrowserView(result.session);
+    } catch (error) {
+      embeddedBrowserService.failRuntimeNavigation({
+        sessionId: result.session.id,
+        url: result.session.currentUrl,
+        error: new Error(error && error.message ? error.message : 'Chromium host navigation failed.'),
+      });
+    }
+    syncEmbeddedBrowserHost();
+    return result;
+  });
+
+  ipcMain.handle('browser:back', async (_event, args = {}) => {
+    const result = await embeddedBrowserService.back(args);
+    if (result && result.session && !result.skipped) {
+      try {
+        await goBackEmbeddedBrowserView(result.session);
+      } catch {
+        // Runtime state is updated via BrowserView events or explicit navigate errors.
+      }
+    }
+    syncEmbeddedBrowserHost();
+    return result;
+  });
+
+  ipcMain.handle('browser:forward', async (_event, args = {}) => {
+    const result = await embeddedBrowserService.forward(args);
+    if (result && result.session && !result.skipped) {
+      try {
+        await goForwardEmbeddedBrowserView(result.session);
+      } catch {
+        // Runtime state is updated via BrowserView events or explicit navigate errors.
+      }
+    }
+    syncEmbeddedBrowserHost();
+    return result;
+  });
+
+  ipcMain.handle('browser:reload', async (_event, args = {}) => {
+    const result = await embeddedBrowserService.reload(args);
+    if (result && result.session && !result.skipped) {
+      try {
+        await reloadEmbeddedBrowserView(result.session);
+      } catch {
+        // Runtime state is updated via BrowserView events or explicit navigate errors.
+      }
+    }
+    syncEmbeddedBrowserHost();
+    return result;
+  });
+
+  ipcMain.handle('browser:stop', async (_event, args = {}) => {
+    const result = embeddedBrowserService.stop(args);
+    const entry = embeddedBrowserViews.get(args.sessionId);
+    if (entry && entry.view && entry.view.webContents && typeof entry.view.webContents.stop === 'function') {
+      entry.view.webContents.stop();
+    }
+    return result;
+  });
+
+  embeddedBrowserService.on('state', payload => {
+    sendToRenderer('browser:state', payload);
+  });
+
+  embeddedBrowserService.on('navigate:start', payload => {
+    sendToRenderer('browser:navigate:start', payload);
+    const session = payload && payload.session ? payload.session : null;
+    if (session) {
+      sendConsoleLog('info', 'browser', `Navigating → ${session.currentUrl || '...'}`, `session: ${session.name || session.id}`);
+    }
+  });
+
+  embeddedBrowserService.on('navigate:complete', payload => {
+    sendToRenderer('browser:navigate:complete', payload);
+    const session = payload && payload.session ? payload.session : null;
+    if (session) {
+      sendConsoleLog('info', 'browser', `Loaded ${session.currentUrl || ''}`, `status: ${session.statusCode || 'n/a'} · proxy port: ${payload && payload.proxy ? payload.proxy.port : 'n/a'}`);
+    }
+  });
+
+  embeddedBrowserService.on('navigate:error', payload => {
+    sendToRenderer('browser:navigate:error', payload);
+    sendConsoleLog('error', 'browser', `Navigation failed: ${payload && payload.url ? payload.url : ''}`, payload && payload.error ? String(payload.error) : undefined);
+  });
+
+  embeddedBrowserService.on('title:updated', payload => {
+    sendToRenderer('browser:title:updated', payload);
   });
 
   interceptEngine.on('request', request => {
@@ -275,6 +668,7 @@ function registerProxyHandlers() {
 
   interceptEngine.on('forward-error', payload => {
     sendToRenderer('proxy:intercept:error', payload);
+    sendConsoleLog('warn', 'proxy', `Forward error: ${payload && payload.requestId ? payload.requestId : ''}`, payload && payload.error ? String(payload.error) : undefined);
   });
 
   historyLog.on('push', item => {
@@ -295,6 +689,7 @@ function registerProxyHandlers() {
         finding: payload.finding,
         scanId: payload.scanId || '',
       };
+      sendConsoleLog('warn', 'scanner', `Finding: ${payload.finding.title || payload.finding.type || 'unknown'}`, `severity: ${payload.finding.severity || 'n/a'} · scan: ${payload.scanId || 'n/a'}`);
       setImmediate(() => {
         extensionHost.emitEvent('scanner.finding', findingPayload);
       });
@@ -458,7 +853,20 @@ function createWindow () {
   });
 
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  mainWindow.webContents.once('did-finish-load', () => {
+    sendConsoleLog('info', 'app', 'Sentinel workspace loaded', `Electron ${process.versions.electron || 'unknown'} · Node ${process.versions.node || 'unknown'}`);
+  });
+  mainWindow.on('resize', () => {
+    syncEmbeddedBrowserHost();
+  });
+  mainWindow.on('closed', () => {
+    mainWindowRef = null;
+    for (const sessionId of embeddedBrowserViews.keys()) {
+      destroyEmbeddedBrowserView(sessionId);
+    }
+  });
   mainWindowRef = mainWindow;
+  syncEmbeddedBrowserHost();
   return mainWindow;
 }
 
@@ -478,6 +886,10 @@ async function shutdownServices() {
       await projectStore.closeProject();
     } catch {
       // Ignore close errors during shutdown.
+    }
+
+    for (const sessionId of embeddedBrowserViews.keys()) {
+      destroyEmbeddedBrowserView(sessionId);
     }
   })();
 

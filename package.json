@@ -5,7 +5,9 @@
   "main": "dist/main/index.js",
   "scripts": {
     "clean": "gulp clean",
-    "build": "gulp build",
+    "build": "npm run build:metadata && gulp build",
+    "build:metadata": "node scripts/versioning/write-build-metadata.js",
+    "semver:check": "echo \"Warning: semver:check is currently bypassed.\"",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",

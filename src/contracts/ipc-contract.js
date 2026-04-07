@@ -13,7 +13,7 @@
  *   - payload:  shape of the argument object sent with the call.
  *   - response: shape of the resolved value (invoke channels only).
  *
- * Schema version: 7
+ * Schema version: 9
  */
 
 'use strict';
@@ -319,6 +319,27 @@ const CHANNELS = [
     notes:     'Creates a browser session for the embedded browser panel.',
   },
   {
+    channel:   'browser:session:get',
+    direction: 'invoke',
+    payload:   '{ sessionId: string }',
+    response:  '{ session: BrowserSession }',
+    notes:     'Returns state for a single embedded browser session.',
+  },
+  {
+    channel:   'browser:session:close',
+    direction: 'invoke',
+    payload:   '{ sessionId: string }',
+    response:  '{ ok: boolean, sessionId: string }',
+    notes:     'Closes and disposes an embedded browser session.',
+  },
+  {
+    channel:   'browser:session:focus',
+    direction: 'invoke',
+    payload:   '{ sessionId: string }',
+    response:  '{ session: BrowserSession }',
+    notes:     'Marks a browser session as focused for future Chromium view ownership.',
+  },
+  {
     channel:   'browser:sessions:list',
     direction: 'invoke',
     payload:   '{}',
@@ -326,11 +347,95 @@ const CHANNELS = [
     notes:     'Lists embedded browser sessions.',
   },
   {
+    channel:   'browser:view:show',
+    direction: 'invoke',
+    payload:   '{ sessionId: string }',
+    response:  '{ session: BrowserSession }',
+    notes:     'Marks the embedded browser view as visible for a session.',
+  },
+  {
+    channel:   'browser:view:hide',
+    direction: 'invoke',
+    payload:   '{ sessionId: string }',
+    response:  '{ session: BrowserSession }',
+    notes:     'Marks the embedded browser view as hidden for a session.',
+  },
+  {
+    channel:   'browser:view:set-bounds',
+    direction: 'invoke',
+    payload:   '{ sessionId: string, bounds: { x: number, y: number, width: number, height: number } }',
+    response:  '{ session: BrowserSession }',
+    notes:     'Stores renderer-reported viewport bounds for a browser session.',
+  },
+  {
     channel:   'browser:navigate',
     direction: 'invoke',
     payload:   '{ sessionId: string, url: string }',
     response:  '{ session: BrowserSession, response: HttpResponse, proxy: { port: number } }',
     notes:     'Navigates a session URL through the Sentinel proxy.',
+  },
+  {
+    channel:   'browser:back',
+    direction: 'invoke',
+    payload:   '{ sessionId: string }',
+    response:  '{ session: BrowserSession, response?: HttpResponse, proxy?: { port: number }, skipped?: boolean }',
+    notes:     'Navigates backward within embedded browser session history when available.',
+  },
+  {
+    channel:   'browser:forward',
+    direction: 'invoke',
+    payload:   '{ sessionId: string }',
+    response:  '{ session: BrowserSession, response?: HttpResponse, proxy?: { port: number }, skipped?: boolean }',
+    notes:     'Navigates forward within embedded browser session history when available.',
+  },
+  {
+    channel:   'browser:reload',
+    direction: 'invoke',
+    payload:   '{ sessionId: string }',
+    response:  '{ session: BrowserSession, response?: HttpResponse, proxy?: { port: number }, skipped?: boolean }',
+    notes:     'Reloads the current embedded browser session URL when available.',
+  },
+  {
+    channel:   'browser:stop',
+    direction: 'invoke',
+    payload:   '{ sessionId: string }',
+    response:  '{ session: BrowserSession }',
+    notes:     'Stops the current navigation state for future Chromium-backed sessions.',
+  },
+  {
+    channel:   'browser:state',
+    direction: 'push',
+    payload:   '{ reason: string, session: BrowserSession, closed?: boolean, proxy?: { port: number } }',
+    response:  'n/a',
+    notes:     'Emitted when embedded browser session state changes.',
+  },
+  {
+    channel:   'browser:navigate:start',
+    direction: 'push',
+    payload:   '{ sessionId: string, url: string, session: BrowserSession }',
+    response:  'n/a',
+    notes:     'Emitted when embedded browser navigation starts.',
+  },
+  {
+    channel:   'browser:navigate:complete',
+    direction: 'push',
+    payload:   '{ session: BrowserSession, response: HttpResponse, proxy: { port: number } }',
+    response:  'n/a',
+    notes:     'Emitted when embedded browser navigation completes.',
+  },
+  {
+    channel:   'browser:navigate:error',
+    direction: 'push',
+    payload:   '{ sessionId: string, url: string, error: string }',
+    response:  'n/a',
+    notes:     'Emitted when embedded browser navigation fails.',
+  },
+  {
+    channel:   'browser:title:updated',
+    direction: 'push',
+    payload:   '{ sessionId: string, title: string }',
+    response:  'n/a',
+    notes:     'Emitted when a page title is derived or updated for an embedded session.',
   },
 
   // -------------------------------------------------------------------------
@@ -485,6 +590,17 @@ const CHANNELS = [
     response:  '{ guidance: { platform: string, title: string, steps: string[] } }',
     notes:     'Returns OS-specific trust-store installation guidance for the current CA.',
   },
+
+  // -------------------------------------------------------------------------
+  // Console — app-level log stream
+  // -------------------------------------------------------------------------
+  {
+    channel:   'console:log',
+    direction: 'push',
+    payload:   '{ level: "info"|"warn"|"error", source: string, message: string, detail?: string, timestamp: number }',
+    response:  'n/a',
+    notes:     'Main process pushes structured log entries to the renderer console drawer.',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -534,7 +650,7 @@ function getPushChannels() {
 // ---------------------------------------------------------------------------
 
 module.exports = {
-  SCHEMA_VERSION: 7,
+  SCHEMA_VERSION: 9,
   CHANNELS,
   getChannel,
   getChannelsForService,

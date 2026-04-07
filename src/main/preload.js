@@ -107,8 +107,23 @@ contextBridge.exposeInMainWorld('sentinel', {
   // --- Embedded browser --------------------------------------------------
   browser: {
     createSession: (args) => invoke('browser:session:create', args),
+    getSession:    (args) => invoke('browser:session:get', args),
+    closeSession:  (args) => invoke('browser:session:close', args),
+    focusSession:  (args) => invoke('browser:session:focus', args),
     listSessions:  ()     => invoke('browser:sessions:list', {}),
+    showView:      (args) => invoke('browser:view:show', args),
+    hideView:      (args) => invoke('browser:view:hide', args),
+    setBounds:     (args) => invoke('browser:view:set-bounds', args),
     navigate:      (args) => invoke('browser:navigate', args),
+    back:          (args) => invoke('browser:back', args),
+    forward:       (args) => invoke('browser:forward', args),
+    reload:        (args) => invoke('browser:reload', args),
+    stop:          (args) => invoke('browser:stop', args),
+    onState:       (fn)   => onPush('browser:state', fn),
+    onNavigateStart:    (fn) => onPush('browser:navigate:start', fn),
+    onNavigateComplete: (fn) => onPush('browser:navigate:complete', fn),
+    onNavigateError:    (fn) => onPush('browser:navigate:error', fn),
+    onTitleUpdated:     (fn) => onPush('browser:title:updated', fn),
   },
 
   // --- OOB service ------------------------------------------------------
@@ -148,6 +163,11 @@ contextBridge.exposeInMainWorld('sentinel', {
     export:        (args)=> invoke('ca:export', args),
     rotate:        ()    => invoke('ca:rotate', {}),
     trustGuidance: ()    => invoke('ca:trust:guidance', {}),
+  },
+
+  // --- App console log stream ------------------------------------------
+  console: {
+    onLog: (fn) => onPush('console:log', fn),
   },
 });
 

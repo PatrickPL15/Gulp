@@ -26,7 +26,16 @@ const {
   FiMonitor,
   FiPackage,
   FiChevronsLeft,
+<<<<<<< Updated upstream
   FiChevronsRight
+=======
+  FiChevronsRight,
+  FiChevronRight,
+  FiTerminal,
+  FiChevronDown,
+  FiChevronUp,
+  FiTrash2,
+>>>>>>> Stashed changes
 } = require('react-icons/fi');
 const DashboardShell = require('./sentinel/DashboardShell');
 const ProxyPanel = require('./sentinel/ProxyPanel');
@@ -167,6 +176,15 @@ function App() {
   const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false);
   const [commandQuery, setCommandQuery] = React.useState('');
   const [memoryUsage, setMemoryUsage] = React.useState(formatMemoryUsageMb());
+<<<<<<< Updated upstream
+=======
+  const [selectedThemeId, setSelectedThemeId] = React.useState('dark-steel');
+  const [consoleLogs, setConsoleLogs] = React.useState([]);
+  const [consoleOpen, setConsoleOpen] = React.useState(false);
+  const [consoleFilter, setConsoleFilter] = React.useState('all'); // 'all' | 'info' | 'warn' | 'error'
+  const [unreadErrors, setUnreadErrors] = React.useState(0);
+  const consoleEndRef = React.useRef(null);
+>>>>>>> Stashed changes
   const contextToggleButtonRef = React.useRef(null);
   const contextRailContentRef = React.useRef(null);
   const quickActionButtonRefs = React.useRef([]);
@@ -175,6 +193,73 @@ function App() {
   const previousContextCollapsedRef = React.useRef(false);
 
   const versions = (window.electronInfo && window.electronInfo.versions) || {};
+
+  const MAX_CONSOLE_ENTRIES = 500;
+
+  const pushLog = React.useCallback((level, source, message, detail) => {
+    const entry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      level: String(level || 'info'),
+      source: String(source || 'app'),
+      message: String(message || ''),
+      detail: detail !== undefined && detail !== null ? String(detail) : undefined,
+      timestamp: Date.now(),
+    };
+    setConsoleLogs(prev => {
+      const next = [...prev, entry];
+      return next.length > MAX_CONSOLE_ENTRIES ? next.slice(next.length - MAX_CONSOLE_ENTRIES) : next;
+    });
+    if (level === 'error' || level === 'warn') {
+      setUnreadErrors(prev => prev + 1);
+    }
+  }, []);
+
+  // Scroll to the bottom whenever new entries arrive while console is open.
+  React.useEffect(() => {
+    if (consoleOpen && consoleEndRef.current && typeof consoleEndRef.current.scrollIntoView === 'function') {
+      consoleEndRef.current.scrollIntoView({ block: 'end' });
+    }
+  }, [consoleLogs, consoleOpen]);
+
+  // Reset unread badge when drawer is opened.
+  React.useEffect(() => {
+    if (consoleOpen) {
+      setUnreadErrors(0);
+    }
+  }, [consoleOpen]);
+
+  // Subscribe to main-process console:log push events via preload.
+  React.useEffect(() => {
+    const api = typeof window !== 'undefined' && window.sentinel && window.sentinel.console;
+    if (!api || typeof api.onLog !== 'function') {
+      return undefined;
+    }
+    const unsub = api.onLog(payload => {
+      if (!payload) return;
+      pushLog(payload.level, payload.source, payload.message, payload.detail);
+    });
+    return () => { if (typeof unsub === 'function') unsub(); };
+  }, [pushLog]);
+
+  // Capture renderer-side unhandled errors and promise rejections.
+  React.useEffect(() => {
+    const handleError = (event) => {
+      const msg = event.message || (event.error && event.error.message) || 'Unknown error';
+      const detail = event.filename ? `${event.filename}:${event.lineno || 0}` : undefined;
+      pushLog('error', 'renderer', msg, detail);
+    };
+    const handleRejection = (event) => {
+      const reason = event.reason;
+      const msg = reason instanceof Error ? reason.message : String(reason || 'Unhandled rejection');
+      pushLog('error', 'renderer', msg);
+    };
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
+    };
+  }, [pushLog]);
 
   const addPane = React.useCallback((moduleName) => {
     setOpenPanes((prev) => {
@@ -520,6 +605,122 @@ function App() {
             </Box>
           </Flex>
 
+          {/* Console Drawer */}
+          {(() => {
+            const levelColor = { info: selectedTheme.colors.fgDefault, warn: '#d97706', error: '#dc2626' };
+            const levelBg = { info: 'transparent', warn: 'rgba(217,119,6,0.08)', error: 'rgba(220,38,38,0.08)' };
+            const filteredLogs = consoleFilter === 'all' ? consoleLogs : consoleLogs.filter(e => e.level === consoleFilter);
+            return (
+              <Box
+                borderTopWidth='1px'
+                borderColor={selectedTheme.colors.borderDefault}
+                bg={selectedTheme.colors.bgElevated}
+                style={{ transition: 'height 0.2s ease' }}
+                h={consoleOpen ? '200px' : '0px'}
+                overflow='hidden'
+                display='flex'
+                flexDirection='column'
+              >
+                {consoleOpen ? (
+                  <Flex direction='column' h='100%'>
+                    <Flex
+                      px='3'
+                      py='1'
+                      borderBottomWidth='1px'
+                      borderColor={selectedTheme.colors.borderSubtle}
+                      align='center'
+                      gap='2'
+                      flex='0 0 auto'
+                      bg={selectedTheme.colors.bgPanel}
+                    >
+                      <HStack gap='1' flex='1'>
+                        {['all', 'info', 'warn', 'error'].map(lvl => (
+                          <Button
+                            key={lvl}
+                            size='xs'
+                            variant={consoleFilter === lvl ? 'solid' : 'ghost'}
+                            color={consoleFilter === lvl ? 'white' : selectedTheme.colors.fgMuted}
+                            bg={consoleFilter === lvl ? (lvl === 'error' ? '#991b1b' : lvl === 'warn' ? '#92400e' : 'brand.600') : 'transparent'}
+                            _hover={{ bg: selectedTheme.colors.bgSubtle }}
+                            onClick={() => setConsoleFilter(lvl)}
+                          >
+                            {lvl.charAt(0).toUpperCase() + lvl.slice(1)}
+                            {lvl !== 'all' ? (
+                              <Badge ml='1' colorPalette={lvl === 'error' ? 'red' : lvl === 'warn' ? 'orange' : 'blue'} size='xs'>
+                                {consoleLogs.filter(e => e.level === lvl).length}
+                              </Badge>
+                            ) : null}
+                          </Button>
+                        ))}
+                      </HStack>
+                      <Button
+                        size='xs'
+                        variant='ghost'
+                        color={selectedTheme.colors.fgMuted}
+                        _hover={{ bg: selectedTheme.colors.bgSubtle }}
+                        onClick={() => setConsoleLogs([])}
+                        title='Clear console'
+                        aria-label='Clear console'
+                      >
+                        <FiTrash2 size={12} />
+                      </Button>
+                    </Flex>
+                    <Box flex='1' overflowY='auto' px='2' py='1' fontFamily="'IBM Plex Mono', monospace" fontSize='11px'>
+                      {filteredLogs.length === 0 ? (
+                        <Text color={selectedTheme.colors.fgMuted} fontSize='11px' py='2' px='1'>No entries.</Text>
+                      ) : filteredLogs.map(entry => (
+                        <Flex
+                          key={entry.id}
+                          gap='2'
+                          py='1px'
+                          px='1'
+                          borderRadius='sm'
+                          bg={levelBg[entry.level] || 'transparent'}
+                          align='baseline'
+                        >
+                          <Text
+                            flex='0 0 auto'
+                            color={selectedTheme.colors.fgMuted}
+                            fontSize='10px'
+                            style={{ userSelect: 'none' }}
+                          >
+                            {new Date(entry.timestamp).toLocaleTimeString()}
+                          </Text>
+                          <Text
+                            flex='0 0 auto'
+                            color={levelColor[entry.level] || selectedTheme.colors.fgMuted}
+                            fontWeight='600'
+                            fontSize='10px'
+                            minW='36px'
+                            style={{ userSelect: 'none' }}
+                          >
+                            {String(entry.level || 'info').toUpperCase()}
+                          </Text>
+                          <Text
+                            flex='0 0 auto'
+                            color={selectedTheme.colors.fgMuted}
+                            fontSize='10px'
+                            minW='60px'
+                            style={{ userSelect: 'none' }}
+                          >
+                            [{entry.source}]
+                          </Text>
+                          <Text color={levelColor[entry.level] || selectedTheme.colors.fgDefault} flex='1'>
+                            {entry.message}
+                            {entry.detail ? (
+                              <Text as='span' color={selectedTheme.colors.fgMuted}> — {entry.detail}</Text>
+                            ) : null}
+                          </Text>
+                        </Flex>
+                      ))}
+                      <Box ref={consoleEndRef} />
+                    </Box>
+                  </Flex>
+                ) : null}
+              </Box>
+            );
+          })()}
+
           <Flex px='3' py='2' borderTopWidth='1px' borderColor='border.default' bg='bg.elevated' justify='space-between' align='center' fontSize='xs' fontFamily='mono'>
             <HStack gap='3'>
               <Text>Engine <Code>{proxyRunning ? 'running' : 'paused'}</Code></Text>
@@ -527,6 +728,23 @@ function App() {
               <Text>Scope <Code>in-scope-only</Code></Text>
             </HStack>
             <HStack gap='3'>
+              <Button
+                size='xs'
+                variant='ghost'
+                color={selectedTheme.colors.fgMuted}
+                _hover={{ bg: selectedTheme.colors.bgSubtle }}
+                onClick={() => setConsoleOpen(prev => !prev)}
+                title={consoleOpen ? 'Hide console' : 'Show console'}
+              >
+                <HStack gap='1'>
+                  <FiTerminal size={12} />
+                  <Text fontSize='xs'>Console</Text>
+                  {unreadErrors > 0 && !consoleOpen ? (
+                    <Badge colorPalette='red' size='xs'>{unreadErrors}</Badge>
+                  ) : null}
+                  {consoleOpen ? <FiChevronDown size={12} /> : <FiChevronUp size={12} />}
+                </HStack>
+              </Button>
               <Text>Memory <Code>{memoryUsage}</Code></Text>
               <Text>Node <Code>{versions.node || 'unknown'}</Code></Text>
               <Text>Electron <Code>{versions.electron || 'unknown'}</Code></Text>
