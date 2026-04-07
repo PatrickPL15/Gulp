@@ -13,7 +13,7 @@
  *   - payload:  shape of the argument object sent with the call.
  *   - response: shape of the resolved value (invoke channels only).
  *
- * Schema version: 9
+ * Schema version: 10
  */
 
 'use strict';
@@ -53,6 +53,20 @@ const CHANNELS = [
     payload:   '{}',
     response:  '{ running: boolean, port: number, intercepting: boolean }',
     notes:     'Queries current proxy runtime state.',
+  },
+  {
+    channel:   'proxy:config:get',
+    direction: 'invoke',
+    payload:   '{}',
+    response:  '{ customHeaders: Record<string,string>, toolIdentifier: { enabled: boolean, headerName: string, value: string }, staticIpAddresses: string[] }',
+    notes:     'Returns project-level runtime forwarding settings applied to outbound traffic.',
+  },
+  {
+    channel:   'proxy:config:set',
+    direction: 'invoke',
+    payload:   '{ config: { customHeaders: Record<string,string>, toolIdentifier: { enabled: boolean, headerName: string, value: string }, staticIpAddresses: string[] } }',
+    response:  '{ ok: boolean, config: object }',
+    notes:     'Persists and applies runtime forwarding settings for headers, tool identity, and static source IP pool.',
   },
 
   // -------------------------------------------------------------------------
@@ -600,6 +614,13 @@ const CHANNELS = [
     payload:   '{ level: "info"|"warn"|"error", source: string, message: string, detail?: string, timestamp: number }',
     response:  'n/a',
     notes:     'Main process pushes structured log entries to the renderer console drawer.',
+  },
+  {
+    channel:   'console:export',
+    direction: 'invoke',
+    payload:   '{ entries: Array<{ level?: string, source?: string, message?: string, detail?: string, timestamp?: number }> }',
+    response:  '{ ok: boolean, canceled?: boolean, filePath?: string }',
+    notes:     'Saves console log entries to a user-selected text file via native save dialog.',
   },
 ];
 

@@ -133,7 +133,7 @@ function DashboardShell() {
 	];
 
 	return (
-		<Box p='4' h='100%' overflowY='auto'>
+		<Box p='4' h='100%' overflowY='auto' overflowX='hidden' wordBreak='break-word'>
 			<Heading size='sm' mb='4'>Dashboard</Heading>
 			<Grid templateColumns='repeat(3, 1fr)' gap='4' mb='4'>
 				<MetricWidget title='Security Metrics' metrics={securityMetrics} />

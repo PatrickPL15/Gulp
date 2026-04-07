@@ -39,6 +39,10 @@ contextBridge.exposeInMainWorld('sentinel', {
     start:   (args)    => invoke('proxy:start', args),
     stop:    ()        => invoke('proxy:stop', {}),
     status:  ()        => invoke('proxy:status', {}),
+    config: {
+      get:   ()         => invoke('proxy:config:get', {}),
+      set:   (args)     => invoke('proxy:config:set', args),
+    },
     intercept: {
       toggle:  (args)  => invoke('proxy:intercept:toggle', args),
       forward: (args)  => invoke('proxy:intercept:forward', args),
@@ -168,6 +172,7 @@ contextBridge.exposeInMainWorld('sentinel', {
   // --- App console log stream ------------------------------------------
   console: {
     onLog: (fn) => onPush('console:log', fn),
+    export: (args) => invoke('console:export', args),
   },
 });
 

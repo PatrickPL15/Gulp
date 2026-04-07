@@ -7,6 +7,8 @@
     "clean": "gulp clean",
     "build": "npm run build:metadata && gulp build",
     "build:metadata": "node scripts/versioning/write-build-metadata.js",
+    "pack:win": "npm run build && electron-builder --win --dir",
+    "installer:win": "npm run build && electron-builder --win nsis",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
@@ -27,6 +29,7 @@
     "@vitest/ui": "^4.1.2",
     "cross-env": "^10.1.0",
     "electron": "^41.1.0",
+    "electron-builder": "^24.13.3",
     "esbuild": "^0.25.4",
     "gulp": "^5.0.1",
     "gulp-clean": "^0.4.0",
@@ -53,5 +56,36 @@
     "react-icons": "^5.6.0",
     "react-window": "^1.8.10",
     "sqlite3": "^6.0.1"
+  },
+  "build": {
+    "appId": "com.trogon4081.gulp",
+    "productName": "Sentinel",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "dist/main/index.js"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

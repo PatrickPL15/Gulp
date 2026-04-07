@@ -116,13 +116,7 @@
 - Avoid noisy comments on trivial assignments, simple conditionals, or self-explanatory names.
 - Keep comment style consistent with existing file conventions and update comments when behavior changes.
 
-## Append-Only Directive Update (2026-04-03): SemVer 2.0.0 Versioning
-- All version strings in `package.json` must conform to SemVer 2.0.0: `MAJOR.MINOR.PATCH[-pre-release][+build-metadata]`.
-- Increment MAJOR only for breaking IPC contract or preload surface changes requiring coordinated main/renderer updates.
-- Increment MINOR for any backwards-compatible new Sentinel module, IPC channel, or preload addition.
-- Increment PATCH for backwards-compatible bug fixes with no interface change.
-- Pre-release suffixes use `-` and dot-separated identifiers; numeric identifiers must not have leading zeroes (e.g. `-rc.1`, not `-rc.01`).
-- Build metadata (`+sha.xxxxx`) is generated automatically by `scripts/versioning/write-build-metadata.js`; never write it manually into `package.json`.
+## Append-Only Directive Update (2026-04-03): IPC Channel Stability
+- Never remove or rename existing preload-exposed IPC channels without a coordinated update to both main and renderer.
+- Adding new IPC channels is a backwards-compatible change.
 - `git.commitCount` in `src/contracts/build-info.json` is the monotonically increasing build iteration number.
-- Always run `npm run semver:check` after editing `package.json` version, and `npm run version:verify` before publishing any release commit.
-- Never remove or rename existing preload-exposed IPC channels without bumping MAJOR; adding new ones is a MINOR change.

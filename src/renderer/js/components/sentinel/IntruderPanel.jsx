@@ -420,7 +420,7 @@ function IntruderPanel({ themeId }) {
   const estimatedTotal = estimateAttackTotal(attackType, positionSources.map(entry => entry.source));
 
   return (
-    <Box p='4' borderWidth='1px' borderRadius='md'>
+    <Box p='4' h='100%' overflowY='auto' overflowX='hidden' wordBreak='break-word' borderWidth='1px' borderRadius='sm' borderColor='border.default'>
       <VStack align='stretch' spacing={4}>
         <Flex justify='space-between' align='center' mb='1' pb='3' borderBottomWidth='1px' borderColor='border.default'>
           <Text fontWeight='medium' fontSize='sm'>Intruder</Text>
@@ -479,7 +479,7 @@ function IntruderPanel({ themeId }) {
                 <Button size='xs' variant='outline' onClick={() => insertMarker(bodyRef, body, setBody, 'payload')}>Mark Body</Button>
               </HStack>
 
-              <Box borderWidth='1px' borderRadius='md' p={3}>
+              <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p={3}>
                 <Text fontWeight='semibold' fontSize='sm' mb={2}>Attack Profile</Text>
                 <select value={attackType} onChange={event => setAttackType(event.target.value)} style={{ width: '100%', padding: '6px 8px', fontSize: '12px' }}>
                   <option value='sniper'>Single-point / Sniper</option>
@@ -488,14 +488,14 @@ function IntruderPanel({ themeId }) {
                 </select>
               </Box>
 
-              <Box borderWidth='1px' borderRadius='md' p={3}>
+              <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p={3}>
                 <Text fontWeight='semibold' fontSize='sm' mb={2}>Payload Sources</Text>
                 <VStack align='stretch' spacing={3}>
                   {positionSources.length === 0 ? <Text fontSize='xs' color='fg.muted'>Add at least one <Code>§marker§</Code> in URL, headers, or body.</Text> : null}
                   {positionSources.map((entry, index) => {
                     const source = entry.source;
                     return (
-                      <Box key={entry.marker.id} borderWidth='1px' borderRadius='sm' p={2}>
+                      <Box key={entry.marker.id} borderWidth='1px' borderRadius='sm' borderColor='border.default' p={2}>
                         <Text fontSize='xs' fontWeight='semibold' mb={2}>{entry.marker.label} · default <Code>{entry.marker.defaultValue}</Code></Text>
                         <select value={source.type} onChange={event => updatePositionSource(index, { type: event.target.value })} style={{ width: '100%', padding: '6px 8px', fontSize: '12px', marginBottom: '8px' }}>
                           <option value='dictionary'>Dictionary</option>
@@ -537,7 +537,7 @@ function IntruderPanel({ themeId }) {
                 <Button size='sm' colorPalette='red' onClick={startAttack}>Start Attack</Button>
               </HStack>
 
-              <Box borderWidth='1px' borderRadius='md' p={3}>
+              <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p={3}>
                 <HStack justify='space-between' wrap='wrap' mb={2}>
                   <Text fontWeight='semibold' fontSize='sm'>Live Results</Text>
                   <HStack>

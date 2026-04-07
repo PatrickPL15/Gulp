@@ -296,7 +296,9 @@ class EmbeddedBrowserService extends EventEmitter {
 			return status.port;
 		}
 
-		const started = await this.startProxy({ port: (status && status.port) || 8080 });
+		// Use port 0 so the OS assigns any available port, avoiding EADDRINUSE conflicts
+		// when port 8080 is already in use by another service.
+		const started = await this.startProxy({ port: 0 });
 		return started.port;
 	}
 

@@ -7,8 +7,9 @@ Desktop security-workbench foundation built with Electron (main process), React 
 - Chakra UI integration is in place with theme config in `src/renderer/js/theme.js`.
 - Vitest test setup exists (`test`, `test:ui`, `test:coverage` scripts).
 - Sentinel M1-M9 capabilities are implemented: CA lifecycle, intercepting proxy, rules, persistent history, Repeater response viewers, Intruder payload attacks, target/scope management, scanner/OOB/sequencer workflows, decoder/embedded-browser workflows, extension automation, and the high-density workbench UI shell.
+- Proxy runtime configuration now supports project-persisted custom outbound headers, configurable tool-identifier header injection, and static source-IP rotation.
 - Workbench shell includes a two-state module sidebar (collapsed icon-only and expanded icon+title modes), animated context rail transitions, keyboard-accessible quick actions, and preserved context-rail scroll/focus behavior.
-- Latest milestone validation snapshot includes full UI/workbench regression coverage alongside proxy, persistence, scanner, and extension suites passing.
+- Latest validation snapshot includes broad backend/renderer coverage with two known unrelated embedded-browser test failures tracked separately.
 - Sentinel roadmap and checklist are tracked in:
    - `APP_COMPLETION_AND_TEST_CHECKLIST.md`
    - `SENTINEL_IMPLEMENTATION_PLAN.md`
@@ -73,7 +74,7 @@ Desktop security-workbench foundation built with Electron (main process), React 
 │           ├─ __tests__/
 │           └─ sentinel/
 │              ├─ DashboardShell.jsx       (dashboard shell + CA guidance summary)
-│              ├─ ProxyPanel.jsx           (intercept queue control and request editing)
+│              ├─ ProxyPanel.jsx           (intercept queue control, request editing, and runtime forwarding settings)
 │              ├─ HistoryPanel.jsx         (paginated filterable history + tool handoff)
 │              ├─ RepeaterPanel.jsx        (response viewers + compare workflow)
 │              ├─ IntruderPanel.jsx        (marker-based attack editor + live results)
@@ -126,7 +127,9 @@ npm run dev
 
 ## Testing Snapshot
 - Test framework is Vitest with jsdom and Testing Library.
-- Current full validation: 26 test files / 325 tests (324 passing, 1 known failing: `sen20-embedded-browser` session state controls scaffold).
+- Current full validation includes two known unrelated embedded-browser failures:
+   - `src/main/proxy/__tests__/sen20-embedded-browser.test.js` session host-model expectation
+   - `src/renderer/js/components/sentinel/__tests__/components.test.js` button label expectation (`Reload` vs current compact control labels)
 - Current targeted backend and renderer suites pass, including SEN-018 through SEN-024 and project-store stability checks.
 - Current renderer validation also covers the M9 workbench shell, dark-first theme tokens, and split-pane navigation flows.
 - Post-build runtime validation (`npm run test:build`) also passes (3/3 dist smoke tests).
@@ -144,6 +147,7 @@ M1 through M9 capabilities are complete and implemented in this branch, includin
 7. Build validation layer testing for generated `dist/` artifacts.
 8. Extension host, script automation runtime, and IPC/renderer hardening.
 9. Workbench shell modernization: fixed viewport layout, activity bar, tab strip, virtualized proxy/history surfaces, Monaco-backed inspectors, buffered streaming, and dark-first semantic theming.
+10. Project-level outbound proxy runtime controls for custom headers, tool identity header, and static source-IP pool rotation.
 
 No planned milestone gaps remain through M9.
 

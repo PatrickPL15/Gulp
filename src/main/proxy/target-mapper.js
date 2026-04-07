@@ -333,6 +333,47 @@ function stripTag(value, tagName) {
 	return normalizeText(value.slice(start + open.length, end));
 }
 
+// Convert a Burp advanced-mode regex host pattern to a plain hostname or wildcard glob.
+// "^hackerone\\.com$" (JSON) → after JSON.parse → "^hackerone\.com$" → "hackerone.com"
+// "^.*\\.hackerone-ext-content\\.com$" → "*.hackerone-ext-content.com"
+function stripBurpRegexHost(raw) {
+	let host = normalizeText(raw);
+	if (!host) return '';
+	// Only transform anchored or escaped regex patterns
+	if (!host.startsWith('^') && !host.includes('\\.')) return host.toLowerCase();
+	if (host.startsWith('^')) host = host.slice(1);
+	if (host.endsWith('$')) host = host.slice(0, -1);
+	// .*\. matches any subdomain prefix — convert to wildcard glob
+	host = host.replace(/\.\*\\\./g, '*.');
+	// Unescape remaining \. → .
+	host = host.replace(/\\\./g, '.');
+	return host.toLowerCase();
+}
+
+// Extract an integer port from a Burp regex port string like "^80$".
+// Returns null for wildcard patterns (multiple ports via alternation) or unparseable values.
+function extractBurpRegexPort(raw) {
+	if (!raw) return null;
+	const str = String(raw);
+	// Alternation means multiple acceptable ports — treat as wildcard
+	if (str.includes('|')) return null;
+	const cleaned = str.replace(/[\^$()*+?]/g, '').trim();
+	const num = Number(cleaned);
+	return Number.isInteger(num) && num > 0 && num <= 65535 ? num : null;
+}
+
+// Strip Burp regex anchors/wildcards from a file/path field.
+// "^/.*" → "/"   "^/api/.*" → "/api/"
+function stripBurpRegexPath(raw) {
+	let p = normalizeText(raw);
+	if (!p) return '/';
+	if (p.startsWith('^')) p = p.slice(1);
+	if (p.endsWith('$')) p = p.slice(0, -1);
+	// /path/.* → /path/
+	p = p.replace(/\/\.\*$/, '/');
+	return p || '/';
+}
+
 function parseBurpXml(text) {
 	const warnings = [];
 	const rules = [];
@@ -350,11 +391,19 @@ function parseBurpXml(text) {
 
 			const includeRaw = stripTag(item, 'include').toLowerCase();
 			const kind = includeRaw === 'false' ? 'exclude' : 'include';
-			const host = stripTag(item, 'host') || stripTag(item, 'domain');
-			const path = stripTag(item, 'path') || '/';
-			const protocol = stripTag(item, 'protocol');
+			const hostRaw = stripTag(item, 'host') || stripTag(item, 'domain');
+			// Advanced mode XML uses <file> for paths; plain mode may use <path>
+			const pathRaw = stripTag(item, 'path') || stripTag(item, 'file') || '/';
 			const portText = stripTag(item, 'port');
-			const port = portText ? Number(portText) : null;
+			const protocolRaw = normalizeText(stripTag(item, 'protocol')).toLowerCase();
+			// Detect advanced mode by regex anchor on host field
+			const useRegex = hostRaw.startsWith('^');
+			const host = useRegex ? stripBurpRegexHost(hostRaw) : normalizeHost(hostRaw);
+			const path = useRegex ? stripBurpRegexPath(pathRaw) : normalizeText(pathRaw) || '/';
+			const port = useRegex
+				? extractBurpRegexPort(portText)
+				: (portText ? Number(portText) : null);
+			const protocol = (protocolRaw && protocolRaw !== 'any') ? protocolRaw : null;
 
 			if (!host) {
 				warnings.push('Skipped Burp XML scope item without host/domain.');
@@ -377,6 +426,11 @@ function parseBurpJson(text) {
 		throw new Error('Burp import file is not valid JSON or XML.');
 	}
 
+	// advanced_mode means host/port/file fields are regex patterns, not plain strings
+	const isAdvancedMode = Boolean(
+		payload.target && payload.target.scope && payload.target.scope.advanced_mode
+	);
+
 	const rawRules = [];
 	if (Array.isArray(payload.scope)) {
 		rawRules.push(...payload.scope);
@@ -389,15 +443,46 @@ function parseBurpJson(text) {
 		rawRules.push(...payload.target.scope.exclude.map(entry => ({ ...entry, kind: 'exclude' })));
 	}
 
-	const rules = rawRules.map(entry => ({
-		kind: entry.kind || (entry.include === false ? 'exclude' : 'include'),
-		host: entry.host || entry.domain || entry.hostname,
-		path: entry.path || '/',
-		protocol: entry.protocol,
-		port: entry.port,
-		cidr: entry.cidr,
-		ip: entry.ip,
-	})).filter(entry => entry.host || entry.cidr || entry.ip);
+	const rules = rawRules
+		.filter(entry => {
+			if (entry.enabled === false) {
+				warnings.push(`Skipped disabled Burp scope entry: ${entry.host || '(no host)'}`);
+				return false;
+			}
+			return true;
+		})
+		.map(entry => {
+			// Apply regex stripping when advanced_mode is declared or host looks like a regex
+			const useRegex = isAdvancedMode || (typeof entry.host === 'string' && entry.host.startsWith('^'));
+			const rawHost = entry.host || entry.domain || entry.hostname || '';
+			const host = useRegex ? stripBurpRegexHost(rawHost) : normalizeHost(rawHost);
+			// Burp uses "file" for the path field; fall back to "path" for non-advanced exports
+			const path = useRegex
+				? stripBurpRegexPath(entry.file || entry.path)
+				: normalizeText(entry.path || entry.file || '/') || '/';
+			const port = useRegex
+				? extractBurpRegexPort(entry.port) || null
+				: (entry.port ? Number(entry.port) : null);
+			const protocolRaw = normalizeText(entry.protocol).toLowerCase();
+			const protocol = (protocolRaw && protocolRaw !== 'any') ? protocolRaw : null;
+
+			return {
+				kind: entry.kind || (entry.include === false ? 'exclude' : 'include'),
+				host,
+				path,
+				protocol,
+				port: Number.isInteger(port) ? port : null,
+				cidr: entry.cidr || null,
+				ip: entry.ip || null,
+			};
+		})
+		.filter(entry => {
+			const valid = Boolean(entry.host || entry.cidr || entry.ip);
+			if (!valid) {
+				warnings.push('Skipped Burp JSON entry without host/ip/cidr fields.');
+			}
+			return valid;
+		});
 
 	if (rules.length === 0) {
 		warnings.push('Burp JSON did not contain recognizable scope entries.');
@@ -587,7 +672,8 @@ class TargetMapper {
 			const host = row.asset_identifier || row.host || row.domain || row.hostname || row.target;
 			const path = row.path || '/';
 			const protocol = row.protocol || row.scheme || '';
-			const port = row.port ? Number(row.port) : null;
+			const rawPort = row.port ? Number(row.port) : null;
+			const port = Number.isInteger(rawPort) && rawPort > 0 && rawPort <= 65535 ? rawPort : null;
 			const cidr = row.cidr || row.range || '';
 			const ip = row.ip || '';
 			let kind = normalizeRuleKind(row.kind || row.type || row.include, 'include');

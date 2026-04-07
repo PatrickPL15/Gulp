@@ -425,6 +425,15 @@ describe('project-store (SEN-012)', () => {
     // Verify no error on second module
     const r3 = await projectStore.setModuleState('scanner', { running: false });
     expect(r3.ok).toBe(true);
+
+    const proxyState = await projectStore.getModuleState('proxy');
+    expect(proxyState).toEqual({ intercepting: false, port: 9090 });
+
+    const scannerState = await projectStore.getModuleState('scanner');
+    expect(scannerState).toEqual({ running: false });
+
+    const missingState = await projectStore.getModuleState('missing-module');
+    expect(missingState).toBeNull();
   });
 
   // -----------------------------------------------------------------------

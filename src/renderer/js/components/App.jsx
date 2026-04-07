@@ -10,6 +10,7 @@ const {
   Input,
   Stack,
   Text,
+  Textarea,
   VStack
 } = require('@chakra-ui/react');
 const {
@@ -32,6 +33,7 @@ const {
   FiChevronDown,
   FiChevronUp,
   FiTrash2,
+  FiSettings,
 } = require('react-icons/fi');
 const DashboardShell = require('./sentinel/DashboardShell');
 const ProxyPanel = require('./sentinel/ProxyPanel');
@@ -162,6 +164,259 @@ function formatMemoryUsageMb() {
   return 'n/a';
 }
 
+// Mirrors the semantic token values from theme.js for use in inline-style contexts.
+const THEME_REGISTRY = {
+  'dark-steel': {
+    label: 'Dark Steel',
+    description: 'Deep blue-gray shell with crisp neutral contrast.',
+    group: 'dark',
+    mode: 'dark',
+    colors: {
+      fgDefault: '#f0f4f8',
+      fgMuted: '#cad7e2',
+      bgCanvas: '#0e141c',
+      bgPanel: '#111821',
+      bgSurface: '#1a2531',
+      bgSubtle: '#202d3a',
+      bgElevated: '#0b1118',
+      borderDefault: '#2a3948',
+      borderSubtle: '#34485b',
+    }
+  },
+  'dark-graphite': {
+    label: 'Dark Graphite',
+    description: 'Neutral graphite palette with restrained highlights.',
+    group: 'dark',
+    mode: 'dark',
+    colors: {
+      fgDefault: '#f5f7fa',
+      fgMuted: '#d3dae4',
+      bgCanvas: '#101215',
+      bgPanel: '#161a1f',
+      bgSurface: '#1d232b',
+      bgSubtle: '#252d36',
+      bgElevated: '#0d1014',
+      borderDefault: '#313b46',
+      borderSubtle: '#3e4a57',
+    }
+  },
+  'dark-ocean': {
+    label: 'Dark Ocean',
+    description: 'Cool navy surfaces tuned for long scanning sessions.',
+    group: 'dark',
+    mode: 'dark',
+    colors: {
+      fgDefault: '#eef6ff',
+      fgMuted: '#c7d9eb',
+      bgCanvas: '#09131d',
+      bgPanel: '#0f1c28',
+      bgSurface: '#162636',
+      bgSubtle: '#1d3146',
+      bgElevated: '#071019',
+      borderDefault: '#284259',
+      borderSubtle: '#35546f',
+    }
+  },
+  'dark-ember': {
+    label: 'Dark Ember',
+    description: 'Warm charcoal surfaces with amber-leaning accents.',
+    group: 'dark',
+    mode: 'dark',
+    colors: {
+      fgDefault: '#faf2e8',
+      fgMuted: '#dfcdb9',
+      bgCanvas: '#17110d',
+      bgPanel: '#211914',
+      bgSurface: '#2a211b',
+      bgSubtle: '#342820',
+      bgElevated: '#120d0a',
+      borderDefault: '#4a372d',
+      borderSubtle: '#5a4337',
+    }
+  },
+  'dark-circuit': {
+    label: 'Dark Circuit',
+    description: 'Black-green console styling for analysis-heavy workflows.',
+    group: 'dark',
+    mode: 'dark',
+    colors: {
+      fgDefault: '#edfdf5',
+      fgMuted: '#c6e7d7',
+      bgCanvas: '#0a120f',
+      bgPanel: '#101915',
+      bgSurface: '#15231d',
+      bgSubtle: '#1c2d26',
+      bgElevated: '#08100d',
+      borderDefault: '#284236',
+      borderSubtle: '#345547',
+    }
+  },
+  'light-paper': {
+    label: 'Light Paper',
+    description: 'Warm bright canvas with neutral panel contrast.',
+    group: 'light',
+    mode: 'light',
+    colors: {
+      fgDefault: '#18212b',
+      fgMuted: '#506171',
+      bgCanvas: '#f6f4ef',
+      bgPanel: '#ffffff',
+      bgSurface: '#f2ede4',
+      bgSubtle: '#e6e0d5',
+      bgElevated: '#ede7dc',
+      borderDefault: '#c6bcae',
+      borderSubtle: '#d7cfc3',
+    }
+  },
+  'light-stone': {
+    label: 'Light Stone',
+    description: 'Cool neutral theme with calm contrast and low glare.',
+    group: 'light',
+    mode: 'light',
+    colors: {
+      fgDefault: '#1d2731',
+      fgMuted: '#5a6977',
+      bgCanvas: '#edf1f4',
+      bgPanel: '#ffffff',
+      bgSurface: '#e4eaef',
+      bgSubtle: '#d7dfe6',
+      bgElevated: '#e8edf2',
+      borderDefault: '#b8c3ce',
+      borderSubtle: '#cad3dc',
+    }
+  },
+  'light-blueprint': {
+    label: 'Light Blueprint',
+    description: 'Pale blue engineering surfaces with strong ink text.',
+    group: 'light',
+    mode: 'light',
+    colors: {
+      fgDefault: '#142538',
+      fgMuted: '#4d657d',
+      bgCanvas: '#eef5fb',
+      bgPanel: '#ffffff',
+      bgSurface: '#dfeaf5',
+      bgSubtle: '#d0e0ee',
+      bgElevated: '#e7f0f8',
+      borderDefault: '#aec6da',
+      borderSubtle: '#c1d4e4',
+    }
+  },
+  'light-sage': {
+    label: 'Light Sage',
+    description: 'Soft green-gray workbench with readable status contrast.',
+    group: 'light',
+    mode: 'light',
+    colors: {
+      fgDefault: '#1b2922',
+      fgMuted: '#58695f',
+      bgCanvas: '#eef3ee',
+      bgPanel: '#ffffff',
+      bgSurface: '#e0e9e1',
+      bgSubtle: '#d0ddd1',
+      bgElevated: '#e6ede7',
+      borderDefault: '#b1c0b2',
+      borderSubtle: '#c4d0c4',
+    }
+  },
+  'light-signal': {
+    label: 'Light Signal',
+    description: 'Clean amber-tinted daylight theme for review work.',
+    group: 'light',
+    mode: 'light',
+    colors: {
+      fgDefault: '#2a2116',
+      fgMuted: '#6d5d46',
+      bgCanvas: '#fbf4e8',
+      bgPanel: '#fffdf8',
+      bgSurface: '#f3e6cf',
+      bgSubtle: '#ead9b9',
+      bgElevated: '#f7eddc',
+      borderDefault: '#d3bc92',
+      borderSubtle: '#e0cdac',
+    }
+  }
+};
+
+const FALLBACK_THEME = THEME_REGISTRY['dark-steel'];
+const THEME_GROUPS = [
+  { id: 'dark', label: 'Dark themes' },
+  { id: 'light', label: 'Light themes' }
+];
+
+function getInitialThemeId() {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const storedThemeId = window.localStorage.getItem('sentinel-theme-id');
+    if (storedThemeId && THEME_REGISTRY[storedThemeId]) {
+      return storedThemeId;
+    }
+  }
+
+  return 'dark-steel';
+}
+
+function applyThemeToDocument(themeId) {
+  if (typeof document === 'undefined' || !document.documentElement) {
+    return;
+  }
+
+  const theme = THEME_REGISTRY[themeId] || FALLBACK_THEME;
+  const root = document.documentElement;
+  const body = document.body;
+
+  root.setAttribute('data-theme', theme.mode);
+  root.setAttribute('data-sentinel-theme-id', themeId);
+  root.style.colorScheme = theme.mode;
+
+  Object.entries(theme.colors).forEach(([token, value]) => {
+    const cssName = token.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
+    root.style.setProperty(`--sentinel-${cssName}`, value);
+  });
+
+  if (body) {
+    body.style.backgroundColor = theme.colors.bgCanvas;
+    body.style.color = theme.colors.fgDefault;
+  }
+
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.setItem('sentinel-theme-id', themeId);
+  }
+}
+
+function renderConsoleExportLine(entry) {
+  const timestamp = Number(entry && entry.timestamp);
+  const level = String(entry && entry.level ? entry.level : 'info').toUpperCase();
+  const source = String(entry && entry.source ? entry.source : 'app');
+  const message = String(entry && entry.message ? entry.message : '');
+  const detail = entry && entry.detail !== undefined && entry.detail !== null ? ` | ${String(entry.detail)}` : '';
+  const renderedTimestamp = Number.isFinite(timestamp)
+    ? new Date(timestamp).toISOString()
+    : new Date().toISOString();
+
+  return `${renderedTimestamp} [${level}] [${source}] ${message}${detail}`;
+}
+
+function downloadConsoleLogs(entries) {
+  if (typeof document === 'undefined' || typeof window === 'undefined' || typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') {
+    return false;
+  }
+
+  const records = Array.isArray(entries) ? entries : [];
+  const content = `${records.map(renderConsoleExportLine).join('\n')}\n`;
+  const blob = new window.Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const stamp = new Date().toISOString().replace(/[.:]/g, '-');
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `sentinel-app-log-${stamp}.log`;
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+  return true;
+}
+
 function App() {
   const [sidebarExpanded, setSidebarExpanded] = React.useState(false);
   const [openPanes, setOpenPanes] = React.useState(['Dashboard', 'Proxy']);
@@ -172,11 +427,21 @@ function App() {
   const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false);
   const [commandQuery, setCommandQuery] = React.useState('');
   const [memoryUsage, setMemoryUsage] = React.useState(formatMemoryUsageMb());
-  const [selectedThemeId, setSelectedThemeId] = React.useState('dark-steel');
+  const [selectedThemeId, setSelectedThemeId] = React.useState(getInitialThemeId);
+  const selectedTheme = THEME_REGISTRY[selectedThemeId] || FALLBACK_THEME;
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [consoleLogs, setConsoleLogs] = React.useState([]);
   const [consoleOpen, setConsoleOpen] = React.useState(false);
+  const [consoleAutoScroll, setConsoleAutoScroll] = React.useState(true);
   const [consoleFilter, setConsoleFilter] = React.useState('all'); // 'all' | 'info' | 'warn' | 'error'
   const [unreadErrors, setUnreadErrors] = React.useState(0);
+  const [proxyHeadersText, setProxyHeadersText] = React.useState('');
+  const [proxyToolHeaderEnabled, setProxyToolHeaderEnabled] = React.useState(false);
+  const [proxyToolHeaderName, setProxyToolHeaderName] = React.useState('X-Sentinel-Tool');
+  const [proxyToolHeaderValue, setProxyToolHeaderValue] = React.useState('Gulp-Sentinel');
+  const [proxyStaticIpsText, setProxyStaticIpsText] = React.useState('');
+  const [proxySettingsLoading, setProxySettingsLoading] = React.useState(false);
+  const [proxySettingsSaving, setProxySettingsSaving] = React.useState(false);
   const consoleEndRef = React.useRef(null);
   const contextToggleButtonRef = React.useRef(null);
   const contextRailContentRef = React.useRef(null);
@@ -207,12 +472,41 @@ function App() {
     }
   }, []);
 
+  const exportConsoleLogs = React.useCallback(async () => {
+    const api = typeof window !== 'undefined' && window.sentinel && window.sentinel.console;
+    if (!api || typeof api.export !== 'function') {
+      pushLog('error', 'renderer', 'Console export is unavailable in this build.');
+      return;
+    }
+
+    try {
+      const result = await api.export({ entries: consoleLogs });
+      if (result && result.ok && result.filePath) {
+        pushLog('info', 'app', 'Console log export completed.', result.filePath);
+        return;
+      }
+      if (!result || !result.canceled) {
+        pushLog('warn', 'app', 'Console log export did not complete.');
+      }
+    } catch (error) {
+      const message = error && error.message ? error.message : String(error);
+      if (message.includes("No handler registered for 'console:export'")) {
+        const downloaded = downloadConsoleLogs(consoleLogs);
+        if (downloaded) {
+          pushLog('warn', 'app', 'Console export handler unavailable. Downloaded log via renderer fallback.');
+          return;
+        }
+      }
+      pushLog('error', 'app', 'Console log export failed.', message);
+    }
+  }, [consoleLogs, pushLog]);
+
   // Scroll to the bottom whenever new entries arrive while console is open.
   React.useEffect(() => {
-    if (consoleOpen && consoleEndRef.current && typeof consoleEndRef.current.scrollIntoView === 'function') {
+    if (consoleOpen && consoleAutoScroll && consoleEndRef.current && typeof consoleEndRef.current.scrollIntoView === 'function') {
       consoleEndRef.current.scrollIntoView({ block: 'end' });
     }
-  }, [consoleLogs, consoleOpen]);
+  }, [consoleLogs, consoleOpen, consoleAutoScroll]);
 
   // Reset unread badge when drawer is opened.
   React.useEffect(() => {
@@ -278,6 +572,103 @@ function App() {
   }, [activePane]);
 
   React.useEffect(() => {
+    applyThemeToDocument(selectedThemeId);
+  }, [selectedThemeId]);
+
+  function parseHeadersText(text) {
+    const map = {};
+    for (const rawLine of String(text || '').split(/\r?\n/g)) {
+      const line = rawLine.trim();
+      if (!line) {
+        continue;
+      }
+      const separator = line.indexOf(':');
+      if (separator <= 0) {
+        continue;
+      }
+      const name = line.slice(0, separator).trim();
+      const value = line.slice(separator + 1).trim();
+      if (!name) {
+        continue;
+      }
+      map[name] = value;
+    }
+    return map;
+  }
+
+  function parseStaticIpsText(text) {
+    const out = [];
+    const seen = new Set();
+    for (const token of String(text || '').split(/\r?\n|,/g)) {
+      const ip = token.trim();
+      if (!ip || seen.has(ip)) {
+        continue;
+      }
+      seen.add(ip);
+      out.push(ip);
+    }
+    return out;
+  }
+
+  const loadProxyRuntimeSettings = React.useCallback(async () => {
+    const api = typeof window !== 'undefined' && window.sentinel && window.sentinel.proxy && window.sentinel.proxy.config;
+    if (!api || typeof api.get !== 'function') {
+      return;
+    }
+
+    setProxySettingsLoading(true);
+    try {
+      const config = await api.get();
+      const headersText = Object.entries(config && config.customHeaders ? config.customHeaders : {})
+        .map(([name, value]) => `${name}: ${value}`)
+        .join('\n');
+      setProxyHeadersText(headersText);
+      setProxyToolHeaderEnabled(Boolean(config && config.toolIdentifier && config.toolIdentifier.enabled));
+      setProxyToolHeaderName(String(config && config.toolIdentifier && config.toolIdentifier.headerName ? config.toolIdentifier.headerName : 'X-Sentinel-Tool'));
+      setProxyToolHeaderValue(String(config && config.toolIdentifier && config.toolIdentifier.value ? config.toolIdentifier.value : 'Gulp-Sentinel'));
+      setProxyStaticIpsText(Array.isArray(config && config.staticIpAddresses) ? config.staticIpAddresses.join('\n') : '');
+    } catch (error) {
+      pushLog('error', 'app', 'Failed to load proxy runtime settings.', error && error.message ? error.message : String(error));
+    } finally {
+      setProxySettingsLoading(false);
+    }
+  }, [pushLog]);
+
+  const saveProxyRuntimeSettings = React.useCallback(async () => {
+    const api = typeof window !== 'undefined' && window.sentinel && window.sentinel.proxy && window.sentinel.proxy.config;
+    if (!api || typeof api.set !== 'function') {
+      pushLog('error', 'app', 'Proxy runtime settings are unavailable in this build.');
+      return;
+    }
+
+    setProxySettingsSaving(true);
+    try {
+      const config = {
+        customHeaders: parseHeadersText(proxyHeadersText),
+        toolIdentifier: {
+          enabled: proxyToolHeaderEnabled,
+          headerName: proxyToolHeaderName,
+          value: proxyToolHeaderValue,
+        },
+        staticIpAddresses: parseStaticIpsText(proxyStaticIpsText),
+      };
+      await api.set({ config });
+      pushLog('info', 'app', 'Proxy runtime settings saved from Preferences.');
+    } catch (error) {
+      pushLog('error', 'app', 'Failed to save proxy runtime settings.', error && error.message ? error.message : String(error));
+    } finally {
+      setProxySettingsSaving(false);
+    }
+  }, [proxyHeadersText, proxyStaticIpsText, proxyToolHeaderEnabled, proxyToolHeaderName, proxyToolHeaderValue, pushLog]);
+
+  React.useEffect(() => {
+    if (!settingsOpen) {
+      return;
+    }
+    loadProxyRuntimeSettings();
+  }, [settingsOpen, loadProxyRuntimeSettings]);
+
+  React.useEffect(() => {
     const handleKeyDown = (event) => {
       if ((event.ctrlKey || event.metaKey) && String(event.key).toLowerCase() === 'k') {
         event.preventDefault();
@@ -285,6 +676,7 @@ function App() {
       }
       if (event.key === 'Escape') {
         setCommandPaletteOpen(false);
+        setSettingsOpen(false);
       }
     };
 
@@ -420,9 +812,21 @@ function App() {
   }, [contextCollapsed]);
 
   const ActivePanel = modulePanels[activePane] || DashboardShell;
+  const activeTheme = selectedTheme;
+  const shellCodeProps = {
+    bg: 'bg.subtle',
+    color: 'fg.default',
+    borderWidth: '1px',
+    borderColor: 'border.default',
+    borderRadius: 'sm',
+    px: '1.5',
+    py: '0.5',
+    fontSize: 'xs',
+    fontFamily: 'mono'
+  };
 
   return (
-    <Flex h='100vh' overflow='hidden' bg='bg.canvas' color='fg.default' direction='row'>
+    <Flex h='100vh' overflow='hidden' bg='bg.canvas' color='fg.default' direction='row' fontFamily='body'>
 
       {/* Left Activity Bar */}
       <VStack
@@ -499,15 +903,21 @@ function App() {
         <Box borderBottomWidth='1px' borderColor='border.default' bg='bg.elevated'>
           <Flex px='4' py='3' justify='space-between' align='center' gap='4'>
             <Box>
-              <Heading size='sm'>Sentinel Workspace</Heading>
-              <Text fontSize='sm' color='fg.muted'>Workbench shell for concurrent security workflows.</Text>
+              <Heading size='sm' fontFamily='heading' letterSpacing='0.01em'>Sentinel Workspace</Heading>
+              <Text fontSize='sm' color='fg.muted' fontFamily='body'>Workbench shell for concurrent security workflows.</Text>
             </Box>
             <HStack gap='3' wrap='wrap' justify='flex-end'>
               <Badge colorPalette={proxyRunning ? 'green' : 'orange'}>
                 Proxy {proxyRunning ? 'running' : 'paused'}
               </Badge>
-              <Text fontSize='xs' color='fg.muted'>Project <Code>sentinel-dev</Code></Text>
-              <Text fontSize='xs' color='fg.muted'>Electron <Code>{versions.electron || 'unknown'}</Code></Text>
+              <Button size='xs' variant='outline' onClick={() => setSettingsOpen(true)}>
+                <HStack gap='1'>
+                  <FiSettings size={12} />
+                  <Text fontSize='xs'>Settings</Text>
+                </HStack>
+              </Button>
+              <Text fontSize='xs' color='fg.muted' fontFamily='body'>Project <Code {...shellCodeProps}>sentinel-dev</Code></Text>
+              <Text fontSize='xs' color='fg.muted' fontFamily='body'>Electron <Code {...shellCodeProps}>{versions.electron || 'unknown'}</Code></Text>
               <Button size='xs' variant='outline' onClick={() => setProxyRunning((prev) => !prev)}>
                 {proxyRunning ? 'Pause' : 'Resume'}
               </Button>
@@ -545,7 +955,7 @@ function App() {
 
           <Flex flex='1' overflow='hidden' p='3' gap='3'>
             <Box flex='1' minW='0' h='100%' borderWidth='1px' borderColor='border.subtle' borderRadius='sm' bg='bg.surface' overflow='hidden'>
-              <ActivePanel />
+              <ActivePanel themeId={selectedThemeId} />
             </Box>
 
             <Box
@@ -557,19 +967,22 @@ function App() {
               overflow='hidden'
               pointerEvents={contextCollapsed ? 'none' : 'auto'}
               aria-hidden={contextCollapsed}
+              bg='bg.elevated'
+              borderLeftWidth={contextCollapsed ? '0px' : '1px'}
+              borderColor='border.default'
             >
-              <VStack ref={contextRailContentRef} w='320px' minW='320px' align='stretch' gap='3' overflowY='auto' overflowX='hidden' pr='1'>
-                <Box p='4' borderWidth='1px' borderColor='border.subtle' borderRadius='sm' bg='bg.panel'>
-                  <Text fontWeight='semibold' mb='2'>Active Context</Text>
-                  <Text fontSize='sm' mb='2'>Pane <Code>{activePane}</Code></Text>
+              <VStack ref={contextRailContentRef} w='320px' minW='320px' align='stretch' gap='3' overflowY='auto' overflowX='hidden' p='3'>
+                <Box p='4' borderWidth='1px' borderColor='border.default' borderRadius='sm' bg='bg.panel'>
+                  <Text fontWeight='semibold' mb='2' fontSize='sm' fontFamily='heading'>Active Context</Text>
+                  <Text fontSize='sm' mb='2' fontFamily='body'>Pane <Code {...shellCodeProps}>{activePane}</Code></Text>
                   {(panelStatusFields[activePane] || []).map((field) => (
-                    <Text key={field.key} fontSize='sm' fontFamily='mono'>
-                      {field.label}: <Code>{String((panelStatus[activePane] || {})[field.key] ?? '\u2014')}</Code>
+                    <Text key={field.key} fontSize='sm' fontFamily='body' color='fg.muted'>
+                      {field.label}: <Code {...shellCodeProps}>{String((panelStatus[activePane] || {})[field.key] ?? '\u2014')}</Code>
                     </Text>
                   ))}
                 </Box>
-                <Box p='4' borderWidth='1px' borderColor='border.subtle' borderRadius='sm' bg='bg.panel'>
-                  <Text fontWeight='semibold' mb='2'>Quick Actions</Text>
+                <Box p='4' borderWidth='1px' borderColor='border.default' borderRadius='sm' bg='bg.panel'>
+                  <Text fontWeight='semibold' mb='2' fontSize='sm' fontFamily='heading'>Quick Actions</Text>
                   <Stack gap='2'>
                     {contextQuickActions.map((action, index) => (
                       <Button
@@ -579,7 +992,7 @@ function App() {
                         }}
                         size='sm'
                         justifyContent='flex-start'
-                        variant='ghost'
+                        variant='outline'
                         onClick={action.run}
                         onFocus={() => {
                           lastQuickActionIndexRef.current = index;
@@ -587,8 +1000,8 @@ function App() {
                         onKeyDown={(event) => handleQuickActionKeyDown(event, index)}
                       >
                         <Box textAlign='left'>
-                          <Text fontSize='sm'>{action.label}</Text>
-                          <Text fontSize='xs' color='fg.muted'>{action.description}</Text>
+                          <Text fontSize='sm' fontFamily='body'>{action.label}</Text>
+                          <Text fontSize='xs' color='fg.muted' fontFamily='body'>{action.description}</Text>
                         </Box>
                       </Button>
                     ))}
@@ -626,6 +1039,10 @@ function App() {
                       flex='0 0 auto'
                       bg={selectedTheme.colors.bgPanel}
                     >
+                      <HStack gap='1' flex='0 0 auto'>
+                        <Box w='6px' h='6px' borderRadius='full' bg='green.400' />
+                        <Text fontSize='xs' color={selectedTheme.colors.fgMuted}>Live Output</Text>
+                      </HStack>
                       <HStack gap='1' flex='1'>
                         {['all', 'info', 'warn', 'error'].map(lvl => (
                           <Button
@@ -649,6 +1066,28 @@ function App() {
                       <Button
                         size='xs'
                         variant='ghost'
+                        color={consoleAutoScroll ? selectedTheme.colors.fgDefault : selectedTheme.colors.fgMuted}
+                        _hover={{ bg: selectedTheme.colors.bgSubtle }}
+                        onClick={() => setConsoleAutoScroll(prev => !prev)}
+                        title={consoleAutoScroll ? 'Pause auto-scroll' : 'Resume auto-scroll'}
+                        aria-label={consoleAutoScroll ? 'Pause auto-scroll' : 'Resume auto-scroll'}
+                      >
+                        {consoleAutoScroll ? 'Pause Auto-Scroll' : 'Resume Auto-Scroll'}
+                      </Button>
+                      <Button
+                        size='xs'
+                        variant='ghost'
+                        color={selectedTheme.colors.fgMuted}
+                        _hover={{ bg: selectedTheme.colors.bgSubtle }}
+                        onClick={exportConsoleLogs}
+                        title='Export console logs'
+                        aria-label='Export console logs'
+                      >
+                        Export Logs
+                      </Button>
+                      <Button
+                        size='xs'
+                        variant='ghost'
                         color={selectedTheme.colors.fgMuted}
                         _hover={{ bg: selectedTheme.colors.bgSubtle }}
                         onClick={() => setConsoleLogs([])}
@@ -658,9 +1097,9 @@ function App() {
                         <FiTrash2 size={12} />
                       </Button>
                     </Flex>
-                    <Box flex='1' overflowY='auto' px='2' py='1' fontFamily="'IBM Plex Mono', monospace" fontSize='11px'>
+                    <Box flex='1' overflowY='auto' overflowX='hidden' wordBreak='break-word' px='2' py='1' fontFamily="'IBM Plex Mono', monospace" fontSize='11px'>
                       {filteredLogs.length === 0 ? (
-                        <Text color={selectedTheme.colors.fgMuted} fontSize='11px' py='2' px='1'>No entries.</Text>
+                        <Text color={selectedTheme.colors.fgMuted} fontSize='11px' py='2' px='1'>Waiting for app output stream...</Text>
                       ) : filteredLogs.map(entry => (
                         <Flex
                           key={entry.id}
@@ -714,11 +1153,11 @@ function App() {
             );
           })()}
 
-          <Flex px='3' py='2' borderTopWidth='1px' borderColor='border.default' bg='bg.elevated' justify='space-between' align='center' fontSize='xs' fontFamily='mono'>
+          <Flex px='3' py='2' borderTopWidth='1px' borderColor='border.default' bg='bg.elevated' justify='space-between' align='center' fontSize='xs' fontFamily='body'>
             <HStack gap='3'>
-              <Text>Engine <Code>{proxyRunning ? 'running' : 'paused'}</Code></Text>
-              <Text>Tabs <Code>{openPanes.length}</Code></Text>
-              <Text>Scope <Code>in-scope-only</Code></Text>
+              <Text>Engine <Code {...shellCodeProps}>{proxyRunning ? 'running' : 'paused'}</Code></Text>
+              <Text>Tabs <Code {...shellCodeProps}>{openPanes.length}</Code></Text>
+              <Text>Scope <Code {...shellCodeProps}>in-scope-only</Code></Text>
             </HStack>
             <HStack gap='3'>
               <Button
@@ -738,16 +1177,166 @@ function App() {
                   {consoleOpen ? <FiChevronDown size={12} /> : <FiChevronUp size={12} />}
                 </HStack>
               </Button>
-              <Text>Memory <Code>{memoryUsage}</Code></Text>
-              <Text>Node <Code>{versions.node || 'unknown'}</Code></Text>
-              <Text>Electron <Code>{versions.electron || 'unknown'}</Code></Text>
+              <Text>Memory <Code {...shellCodeProps}>{memoryUsage}</Code></Text>
+              <Text>Node <Code {...shellCodeProps}>{versions.node || 'unknown'}</Code></Text>
+              <Text>Electron <Code {...shellCodeProps}>{versions.electron || 'unknown'}</Code></Text>
             </HStack>
           </Flex>
         </Flex>
       </Flex>
 
+      {settingsOpen ? (
+        <Flex
+          position='fixed'
+          inset='0'
+          bg={activeTheme.mode === 'dark' ? 'rgba(5, 10, 16, 0.68)' : 'rgba(20, 28, 36, 0.20)'}
+          justify='flex-end'
+          zIndex='1050'
+          role='presentation'
+          onClick={() => setSettingsOpen(false)}
+        >
+          <Box
+            w='380px'
+            maxW='calc(100vw - 24px)'
+            h='100%'
+            bg='bg.panel'
+            borderLeftWidth='1px'
+            borderColor='border.default'
+            px='4'
+            py='4'
+            overflowY='auto'
+            onClick={(event) => event.stopPropagation()}
+            role='dialog'
+            aria-modal='true'
+            aria-label='Preferences'
+          >
+            <Flex justify='space-between' align='flex-start' mb='4' gap='3'>
+              <Box>
+                <Heading size='sm'>Preferences</Heading>
+                <Text fontSize='sm' color='fg.muted' mt='1'>
+                  Theme options apply across shell surfaces, panel controls, status messages, and overlays.
+                </Text>
+              </Box>
+              <Button size='xs' variant='ghost' onClick={() => setSettingsOpen(false)}>
+                Close
+              </Button>
+            </Flex>
+
+            <Box borderWidth='1px' borderColor='border.default' borderRadius='sm' bg='bg.surface' p='3'>
+              <Text fontWeight='semibold' fontSize='sm'>Theme Options</Text>
+              <Text fontSize='xs' color='fg.muted' mt='1'>
+                Active theme <Code>{activeTheme.label}</Code>
+              </Text>
+
+              <VStack align='stretch' gap='4' mt='4'>
+                {THEME_GROUPS.map((group) => (
+                  <Box key={group.id}>
+                    <Text fontSize='xs' color='fg.muted' textTransform='uppercase' letterSpacing='wider' mb='2'>
+                      {group.label}
+                    </Text>
+                    <VStack align='stretch' gap='2'>
+                      {Object.entries(THEME_REGISTRY)
+                        .filter(([, theme]) => theme.group === group.id)
+                        .map(([themeId, theme]) => (
+                          <Button
+                            key={themeId}
+                            variant={selectedThemeId === themeId ? 'solid' : 'outline'}
+                            justifyContent='space-between'
+                            h='auto'
+                            py='3'
+                            px='3'
+                            onClick={() => setSelectedThemeId(themeId)}
+                            aria-pressed={selectedThemeId === themeId}
+                          >
+                            <Box textAlign='left'>
+                              <Text fontSize='sm' fontWeight='semibold'>{theme.label}</Text>
+                              <Text fontSize='xs' color={selectedThemeId === themeId ? 'whiteAlpha.800' : 'fg.muted'}>
+                                {theme.description}
+                              </Text>
+                            </Box>
+                            <HStack gap='1' flexShrink='0'>
+                              <Box w='10px' h='10px' borderRadius='full' bg={theme.colors.bgCanvas} borderWidth='1px' borderColor={theme.colors.borderDefault} />
+                              <Box w='10px' h='10px' borderRadius='full' bg={theme.colors.bgSurface} borderWidth='1px' borderColor={theme.colors.borderDefault} />
+                              <Box w='10px' h='10px' borderRadius='full' bg={theme.colors.fgDefault} borderWidth='1px' borderColor={theme.colors.borderDefault} />
+                            </HStack>
+                          </Button>
+                        ))}
+                    </VStack>
+                  </Box>
+                ))}
+              </VStack>
+            </Box>
+
+            <Box borderWidth='1px' borderColor='border.default' borderRadius='sm' bg='bg.surface' p='3' mt='4'>
+              <Flex justify='space-between' align='center' mb='2' gap='2'>
+                <Text fontWeight='semibold' fontSize='sm'>Proxy Runtime Settings</Text>
+                <Button size='xs' variant='outline' onClick={saveProxyRuntimeSettings} loading={proxySettingsSaving} disabled={proxySettingsLoading}>
+                  Save
+                </Button>
+              </Flex>
+              <Text fontSize='xs' color='fg.muted' mb='2'>
+                Configure global headers, tool identifier header, and static source IP pool for outbound proxy traffic.
+              </Text>
+
+              <VStack align='stretch' gap='2'>
+                <Text fontSize='xs' color='fg.muted'>Custom headers (one per line: <Code>Header-Name: value</Code>)</Text>
+                <Textarea
+                  size='sm'
+                  minH='80px'
+                  value={proxyHeadersText}
+                  onChange={(event) => setProxyHeadersText(event.target.value)}
+                  placeholder={'X-Customer-ID: acme\nX-Environment: production'}
+                  fontFamily='mono'
+                  disabled={proxySettingsLoading || proxySettingsSaving}
+                />
+
+                <HStack align='center' gap='2' wrap='wrap'>
+                  <Button
+                    size='xs'
+                    variant={proxyToolHeaderEnabled ? 'solid' : 'outline'}
+                    onClick={() => setProxyToolHeaderEnabled(prev => !prev)}
+                    disabled={proxySettingsLoading || proxySettingsSaving}
+                  >
+                    {proxyToolHeaderEnabled ? 'Tool Header Enabled' : 'Tool Header Disabled'}
+                  </Button>
+                  <Input
+                    size='sm'
+                    value={proxyToolHeaderName}
+                    onChange={(event) => setProxyToolHeaderName(event.target.value)}
+                    placeholder='Header name'
+                    maxW='170px'
+                    fontFamily='mono'
+                    disabled={proxySettingsLoading || proxySettingsSaving}
+                  />
+                  <Input
+                    size='sm'
+                    value={proxyToolHeaderValue}
+                    onChange={(event) => setProxyToolHeaderValue(event.target.value)}
+                    placeholder='Header value'
+                    maxW='170px'
+                    fontFamily='mono'
+                    disabled={proxySettingsLoading || proxySettingsSaving}
+                  />
+                </HStack>
+
+                <Text fontSize='xs' color='fg.muted'>Static source IPs (one per line or comma-separated; rotated per request)</Text>
+                <Textarea
+                  size='sm'
+                  minH='64px'
+                  value={proxyStaticIpsText}
+                  onChange={(event) => setProxyStaticIpsText(event.target.value)}
+                  placeholder={'192.0.2.10\n192.0.2.11'}
+                  fontFamily='mono'
+                  disabled={proxySettingsLoading || proxySettingsSaving}
+                />
+              </VStack>
+            </Box>
+          </Box>
+        </Flex>
+      ) : null}
+
       {commandPaletteOpen ? (
-        <Flex position='fixed' inset='0' bg='rgba(5, 10, 16, 0.65)' align='flex-start' justify='center' pt='16' zIndex='1000' role='presentation'>
+        <Flex position='fixed' inset='0' bg={activeTheme.mode === 'dark' ? 'rgba(5, 10, 16, 0.65)' : 'rgba(20, 28, 36, 0.18)'} align='flex-start' justify='center' pt='16' zIndex='1000' role='presentation'>
           <Box
             w='560px'
             maxW='calc(100vw - 32px)'

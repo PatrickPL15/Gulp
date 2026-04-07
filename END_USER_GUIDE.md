@@ -28,6 +28,7 @@ Open Settings from the toolbar:
 1. Click `Settings`.
 2. Open `Preferences`.
 3. Choose a theme in `Theme Options`.
+4. Configure global proxy forwarding behavior in `Proxy Runtime Settings`.
 
 Theme groups:
 - Dark themes: 5 options
@@ -39,6 +40,11 @@ Theme changes apply across:
 - Monaco editors in Proxy/History inspectors
 - Status and feedback messages
 - Command palette overlay
+
+Proxy runtime settings apply across outbound traffic:
+- Custom headers: add one header per line (`Header-Name: value`) and save.
+- Tool identifier header: enable/disable and set custom name/value.
+- Static source IP pool: add one IP per line (or comma-separated); requests rotate through configured IPs.
 
 ## Keyboard Shortcut
 - Command palette toggle: `Ctrl+K`
@@ -55,6 +61,7 @@ Use for live interception:
 3. Select paused requests.
 4. Edit and forward/drop.
 5. Send request to Repeater.
+6. Configure and save runtime forwarding settings (custom headers, tool identifier header, static source IP list).
 
 ### History
 Use for stored traffic:
@@ -139,6 +146,12 @@ Monaco inspector themes follow selected light/dark mode. If you still see stale 
 1. Check message shown at bottom of panel.
 2. Use Refresh/Reload controls in that module.
 3. If needed, restart app after rebuild.
+
+### Proxy runtime settings did not apply
+1. Open `Settings` -> `Proxy Runtime Settings` and click `Save`.
+2. Confirm header format is `Name: value` (lines without `:` are ignored).
+3. Confirm static IP entries are valid routable/local addresses for your host.
+4. Re-send traffic after saving.
 
 ## Safety Notes
 - Renderer module UI does not require direct Node.js access.

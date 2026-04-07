@@ -1,5 +1,6 @@
 const electron = require('electron');
 const { app, BrowserWindow, WebContentsView, ipcMain, dialog, session: electronSession } = electron;
+const fs = require('node:fs/promises');
 const path = require('path');
 const caManager = require('./certs/ca-manager');
 const projectStore = require('./db/project-store');
@@ -21,9 +22,121 @@ let mainWindowRef = null;
 let shutdownInProgress = null;
 const embeddedBrowserViews = new Map();
 let activeEmbeddedBrowserSessionId = '';
+const pendingConsoleLogs = [];
+const MAX_PENDING_CONSOLE_LOGS = 500;
+const persistedConsoleLogHistory = [];
+const MAX_CONSOLE_LOG_HISTORY = 5000;
+const processOutputBuffers = {
+  stdout: '',
+  stderr: '',
+};
+let processOutputStreamingInstalled = false;
+let runtimeLogHooksInstalled = false;
+let consoleLogSequence = 0;
+const DEFAULT_PROXY_RUNTIME_CONFIG = {
+  customHeaders: {},
+  toolIdentifier: {
+    enabled: false,
+    headerName: 'X-Sentinel-Tool',
+    value: 'Gulp-Sentinel',
+  },
+  staticIpAddresses: [],
+};
+
+function normalizeProxyRuntimeConfig(input = {}) {
+  const customHeaders = {};
+  const rawHeaders = input && typeof input.customHeaders === 'object' && input.customHeaders
+    ? input.customHeaders
+    : {};
+  for (const [name, value] of Object.entries(rawHeaders)) {
+    const key = String(name || '').trim();
+    if (!key) {
+      continue;
+    }
+    customHeaders[key] = String(value == null ? '' : value);
+  }
+
+  const rawTool = input && typeof input.toolIdentifier === 'object' && input.toolIdentifier
+    ? input.toolIdentifier
+    : {};
+  const headerName = String(rawTool.headerName || DEFAULT_PROXY_RUNTIME_CONFIG.toolIdentifier.headerName).trim() || DEFAULT_PROXY_RUNTIME_CONFIG.toolIdentifier.headerName;
+  const value = String(rawTool.value == null ? DEFAULT_PROXY_RUNTIME_CONFIG.toolIdentifier.value : rawTool.value);
+
+  const ips = Array.isArray(input.staticIpAddresses)
+    ? [...new Set(input.staticIpAddresses.map(ip => String(ip || '').trim()).filter(Boolean))]
+    : [];
+
+  return {
+    customHeaders,
+    toolIdentifier: {
+      enabled: Boolean(rawTool.enabled),
+      headerName,
+      value,
+    },
+    staticIpAddresses: ips,
+  };
+}
 
 function hasVisibleBrowserBounds(bounds = {}) {
   return Number(bounds.width) > 0 && Number(bounds.height) > 0;
+}
+
+function isNavigationAbortError(error) {
+  if (!error) {
+    return false;
+  }
+
+  const code = typeof error.code === 'string' ? error.code.toUpperCase() : '';
+  const errorCode = Number(error.errorCode);
+  const message = String(error.message || error.toString() || '').toUpperCase();
+
+  return code === 'ERR_ABORTED'
+    || errorCode === -3
+    || message.includes('ERR_ABORTED')
+    || message.includes('(-3)');
+}
+
+function stringifyLogValue(value) {
+  if (value === undefined || value === null) {
+    return '';
+  }
+
+  if (value instanceof Error) {
+    return value.stack || value.message || value.toString();
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    try {
+      return String(value);
+    } catch {
+      return '[unprintable]';
+    }
+  }
+}
+
+function clampEmbeddedBrowserBounds(targetWindow, bounds = {}) {
+  if (!targetWindow || typeof targetWindow.getContentBounds !== 'function') {
+    return bounds;
+  }
+
+  const contentBounds = targetWindow.getContentBounds();
+  const maxWidth = Math.max(0, Number(contentBounds.width) || 0);
+  const maxHeight = Math.max(0, Number(contentBounds.height) || 0);
+  const x = Math.min(Math.max(0, Number(bounds.x) || 0), maxWidth);
+  const y = Math.min(Math.max(0, Number(bounds.y) || 0), maxHeight);
+
+  return {
+    x,
+    y,
+    width: Math.max(0, Math.min(Math.max(0, Number(bounds.width) || 0), maxWidth - x)),
+    height: Math.max(0, Math.min(Math.max(0, Number(bounds.height) || 0), maxHeight - y)),
+  };
 }
 
 function destroyEmbeddedBrowserView(sessionId) {
@@ -76,6 +189,14 @@ function ensureEmbeddedBrowserView(sessionState) {
     });
   }
 
+  if (isolatedSession && isolatedSession.webRequest && typeof isolatedSession.webRequest.onBeforeSendHeaders === 'function') {
+    isolatedSession.webRequest.onBeforeSendHeaders((details, callback) => {
+      const nextHeaders = { ...(details.requestHeaders || {}) };
+      nextHeaders['X-Sentinel-Embedded-Browser'] = '1';
+      callback({ requestHeaders: nextHeaders });
+    });
+  }
+
   // Trust all TLS certs in this isolated session — all traffic routes through the Sentinel
   // MITM proxy which presents its own CA-signed certs. Isolated partitions don't inherit
   // the system trust store, so cert verification is delegated to proxy routing intent.
@@ -99,16 +220,19 @@ function ensureEmbeddedBrowserView(sessionState) {
   }
 
   view.webContents.on('did-start-loading', () => {
+    const url = typeof view.webContents.getURL === 'function' ? view.webContents.getURL() : '';
     embeddedBrowserService.applyRuntimeState({
       sessionId: sessionState.id,
       loading: true,
       reason: 'chromium:did-start-loading',
     });
+    sendConsoleLog('info', 'browser', 'Chromium did-start-loading', `session: ${sessionState.name || sessionState.id} · url: ${url || 'about:blank'}`);
   });
 
   view.webContents.on('did-stop-loading', () => {
     const currentUrl = typeof view.webContents.getURL === 'function' ? view.webContents.getURL() : '';
     const title = typeof view.webContents.getTitle === 'function' ? view.webContents.getTitle() : '';
+    sendConsoleLog('info', 'browser', 'Chromium did-stop-loading', `session: ${sessionState.name || sessionState.id} · url: ${currentUrl || 'about:blank'}`);
     Promise.resolve(protocolSupport.getStatus())
       .then(status => embeddedBrowserService.completeRuntimeNavigation({
         sessionId: sessionState.id,
@@ -134,9 +258,11 @@ function ensureEmbeddedBrowserView(sessionState) {
   view.webContents.on('did-fail-load', (_event, errorCode, description, validatedUrl) => {
     // ERR_ABORTED (-3) fires when an in-progress load is cancelled by a new navigation
     // (redirect, reload, programmatic navigate) — not a real failure; ignore it.
-    if (errorCode === -3) {
+    if (isNavigationAbortError({ errorCode, message: description })) {
+      sendConsoleLog('warn', 'browser', 'Chromium did-fail-load (ignored abort)', `code: ${errorCode} · ${String(description || 'n/a')} · url: ${String(validatedUrl || '')}`);
       return;
     }
+    sendConsoleLog('error', 'browser', 'Chromium did-fail-load', `code: ${errorCode} · ${String(description || 'n/a')} · url: ${String(validatedUrl || '')}`);
     embeddedBrowserService.failRuntimeNavigation({
       sessionId: sessionState.id,
       url: String(validatedUrl || ''),
@@ -188,7 +314,7 @@ function syncEmbeddedBrowserHost() {
   }
 
   if (typeof entry.view.setBounds === 'function') {
-    entry.view.setBounds(activeSession.bounds);
+    entry.view.setBounds(clampEmbeddedBrowserBounds(targetWindow, activeSession.bounds));
   }
 
   activeEmbeddedBrowserSessionId = activeSession.id;
@@ -197,7 +323,7 @@ function syncEmbeddedBrowserHost() {
 async function loadEmbeddedBrowserIntoHost(sessionState) {
   const entry = ensureEmbeddedBrowserView(sessionState);
   if (!entry || !sessionState || !sessionState.currentUrl) {
-    return;
+    throw new Error('Chromium host view could not be prepared for navigation');
   }
 
   const status = await protocolSupport.getStatus();
@@ -210,7 +336,23 @@ async function loadEmbeddedBrowserIntoHost(sessionState) {
   }
 
   if (entry.view && entry.view.webContents && typeof entry.view.webContents.loadURL === 'function') {
-    await entry.view.webContents.loadURL(sessionState.currentUrl);
+    sendConsoleLog(
+      'info',
+      'browser',
+      'Chromium loadURL start',
+      `session: ${sessionState.name || sessionState.id} · url: ${sessionState.currentUrl} · proxyPort: ${proxyPort || 'none'} · partition: ${entry.partition || 'n/a'}`,
+    );
+    try {
+      await entry.view.webContents.loadURL(sessionState.currentUrl);
+      sendConsoleLog('info', 'browser', 'Chromium loadURL resolved', `session: ${sessionState.name || sessionState.id} · url: ${sessionState.currentUrl}`);
+    } catch (error) {
+      // Electron may reject loadURL with ERR_ABORTED for normal redirect/cancel flow.
+      if (!isNavigationAbortError(error)) {
+        sendConsoleLog('error', 'browser', 'Chromium loadURL rejected', stringifyLogValue(error));
+        throw error;
+      }
+      sendConsoleLog('warn', 'browser', 'Chromium loadURL aborted (ignored)', stringifyLogValue(error));
+    }
   }
 
   return entry;
@@ -282,6 +424,85 @@ function sendToRenderer(channel, payload) {
   target.webContents.send(channel, payload);
 }
 
+function flushPendingConsoleLogs() {
+  const target = getActiveWindow();
+  if (!target || !target.webContents || pendingConsoleLogs.length === 0) {
+    return;
+  }
+
+  const queued = pendingConsoleLogs.splice(0, pendingConsoleLogs.length);
+  queued.forEach((entry) => {
+    target.webContents.send('console:log', entry);
+  });
+}
+
+function appendProcessOutputChunk(source, level, chunk) {
+  const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk || '');
+  if (!text) {
+    return;
+  }
+
+  const normalized = text.replace(/\r\n/g, '\n');
+  const buffered = `${processOutputBuffers[source] || ''}${normalized}`;
+  const lines = buffered.split('\n');
+  processOutputBuffers[source] = lines.pop() || '';
+
+  lines
+    .map(line => line.replace(/\r/g, ''))
+    .filter(line => line.trim().length > 0)
+    .forEach(line => sendConsoleLog(level, source, line));
+}
+
+function installProcessOutputStreaming() {
+  if (processOutputStreamingInstalled) {
+    return;
+  }
+  processOutputStreamingInstalled = true;
+
+  const patchStream = (name, level) => {
+    const stream = process[name];
+    if (!stream || typeof stream.write !== 'function') {
+      return;
+    }
+
+    const originalWrite = stream.write.bind(stream);
+    stream.write = (...args) => {
+      appendProcessOutputChunk(name, level, args[0]);
+      return originalWrite(...args);
+    };
+  };
+
+  patchStream('stdout', 'info');
+  patchStream('stderr', 'error');
+}
+
+function installRuntimeLogHooks() {
+  if (runtimeLogHooksInstalled) {
+    return;
+  }
+  runtimeLogHooksInstalled = true;
+
+  process.on('uncaughtException', (error) => {
+    sendConsoleLog('error', 'process', 'Uncaught exception', stringifyLogValue(error));
+  });
+
+  process.on('unhandledRejection', (reason) => {
+    sendConsoleLog('error', 'process', 'Unhandled promise rejection', stringifyLogValue(reason));
+  });
+
+  process.on('warning', (warning) => {
+    sendConsoleLog('warn', 'process', 'Runtime warning', stringifyLogValue(warning));
+  });
+
+  app.on('render-process-gone', (_event, _webContents, details) => {
+    sendConsoleLog('error', 'app', 'Render process gone', stringifyLogValue(details));
+  });
+
+  app.on('child-process-gone', (_event, details) => {
+    sendConsoleLog('error', 'app', 'Child process gone', stringifyLogValue(details));
+  });
+}
+
 /**
  * Push a structured log entry to the renderer console drawer.
  * @param {'info'|'warn'|'error'} level
@@ -290,13 +511,74 @@ function sendToRenderer(channel, payload) {
  * @param {string} [detail]
  */
 function sendConsoleLog(level, source, message, detail) {
-  sendToRenderer('console:log', {
+  const payload = {
+    sequence: ++consoleLogSequence,
+    pid: process.pid,
     level: String(level || 'info'),
     source: String(source || 'app'),
     message: String(message || ''),
-    detail: detail !== undefined ? String(detail) : undefined,
+    detail: detail !== undefined ? stringifyLogValue(detail) : undefined,
     timestamp: Date.now(),
+  };
+
+  persistedConsoleLogHistory.push(payload);
+  if (persistedConsoleLogHistory.length > MAX_CONSOLE_LOG_HISTORY) {
+    persistedConsoleLogHistory.splice(0, persistedConsoleLogHistory.length - MAX_CONSOLE_LOG_HISTORY);
+  }
+
+  const target = getActiveWindow();
+  if (target && target.webContents) {
+    flushPendingConsoleLogs();
+    target.webContents.send('console:log', payload);
+    return;
+  }
+
+  pendingConsoleLogs.push(payload);
+  if (pendingConsoleLogs.length > MAX_PENDING_CONSOLE_LOGS) {
+    pendingConsoleLogs.splice(0, pendingConsoleLogs.length - MAX_PENDING_CONSOLE_LOGS);
+  }
+}
+
+function formatConsoleLogEntry(entry = {}) {
+  const timestamp = Number(entry.timestamp);
+  const level = String(entry.level || 'info').toUpperCase();
+  const source = String(entry.source || 'app');
+  const sequence = Number(entry.sequence);
+  const pid = Number(entry.pid);
+  const message = String(entry.message || '');
+  const detail = entry.detail !== undefined && entry.detail !== null ? ` | ${String(entry.detail)}` : '';
+  const renderedTimestamp = Number.isFinite(timestamp)
+    ? new Date(timestamp).toISOString()
+    : new Date().toISOString();
+  const sequenceSegment = Number.isFinite(sequence) ? ` #${sequence}` : '';
+  const pidSegment = Number.isFinite(pid) ? ` pid=${pid}` : '';
+
+  return `${renderedTimestamp}${sequenceSegment} [${level}] [${source}]${pidSegment} ${message}${detail}`;
+}
+
+async function exportConsoleEntries(entries = []) {
+  const targetWindow = BrowserWindow.getFocusedWindow() || getActiveWindow() || null;
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const defaultPath = path.join(app.getPath('documents'), `sentinel-app-log-${timestamp}.log`);
+  const result = await dialog.showSaveDialog(targetWindow, {
+    title: 'Export Sentinel App Logs',
+    defaultPath,
+    filters: [
+      { name: 'Log files', extensions: ['log', 'txt'] },
+      { name: 'All files', extensions: ['*'] },
+    ],
   });
+
+  if (!result || result.canceled || !result.filePath) {
+    return { ok: false, canceled: true };
+  }
+
+  const records = Array.isArray(entries) && entries.length > 0
+    ? entries
+    : persistedConsoleLogHistory;
+  const content = `${records.map(formatConsoleLogEntry).join('\n')}\n`;
+  await fs.writeFile(result.filePath, content, 'utf8');
+  return { ok: true, filePath: result.filePath };
 }
 
 async function pickImportFile({ title, filters }) {
@@ -312,6 +594,12 @@ async function pickImportFile({ title, filters }) {
   }
 
   return result.filePaths[0];
+}
+
+function registerConsoleHandlers() {
+  ipcMain.handle('console:export', async (_event, args = {}) => {
+    return exportConsoleEntries(args && args.entries);
+  });
 }
 
 function registerProxyHandlers() {
@@ -336,6 +624,24 @@ function registerProxyHandlers() {
       port: status.port,
       intercepting: status.intercepting,
     };
+  });
+
+  ipcMain.handle('proxy:config:get', async () => {
+    const current = typeof protocolSupport.getForwardRuntimeConfig === 'function'
+      ? protocolSupport.getForwardRuntimeConfig()
+      : DEFAULT_PROXY_RUNTIME_CONFIG;
+    return normalizeProxyRuntimeConfig(current);
+  });
+
+  ipcMain.handle('proxy:config:set', async (_event, args = {}) => {
+    const nextConfig = normalizeProxyRuntimeConfig(args.config || {});
+    if (typeof protocolSupport.setForwardRuntimeConfig === 'function') {
+      protocolSupport.setForwardRuntimeConfig(nextConfig);
+    }
+    if (typeof projectStore.setModuleState === 'function') {
+      await projectStore.setModuleState('proxy', { runtimeConfig: nextConfig });
+    }
+    return { ok: true, config: nextConfig };
   });
 
   ipcMain.handle('proxy:intercept:toggle', async (_event, args = {}) => {
@@ -567,10 +873,36 @@ function registerProxyHandlers() {
   });
 
   ipcMain.handle('browser:navigate', async (_event, args = {}) => {
-    const result = await embeddedBrowserService.navigate(args);
+    sendConsoleLog('info', 'browser', 'Navigate request received', `sessionId: ${String(args.sessionId || 'n/a')} · url: ${String(args.url || '')}`);
+    let result;
+    try {
+      result = await embeddedBrowserService.navigate(args);
+    } catch (navError) {
+      sendConsoleLog('error', 'browser', 'Navigate request rejected before load', stringifyLogValue(navError));
+      // Proxy start failed, URL is invalid, or session not found.
+      // Route through failRuntimeNavigation so the renderer gets a
+      // navigate:error push event rather than an IPC rejection.
+      try {
+        embeddedBrowserService.failRuntimeNavigation({
+          sessionId: args.sessionId,
+          url: String(args.url || ''),
+          error: navError instanceof Error ? navError : new Error(String(navError)),
+        });
+      } catch {
+        // Session not found — rethrow original so renderer sees the message.
+        throw navError;
+      }
+      return {};
+    }
     try {
       await navigateEmbeddedBrowserView(result.session);
     } catch (error) {
+      if (isNavigationAbortError(error)) {
+        sendConsoleLog('warn', 'browser', 'Navigate load aborted (ignored)', stringifyLogValue(error));
+        syncEmbeddedBrowserHost();
+        return result;
+      }
+      sendConsoleLog('error', 'browser', 'Navigate load failed', stringifyLogValue(error));
       embeddedBrowserService.failRuntimeNavigation({
         sessionId: result.session.id,
         url: result.session.currentUrl,
@@ -719,6 +1051,17 @@ async function loadProjectState() {
     ? await projectStore.listScopeRules()
     : [];
   targetMapper.setScopeRules(persistedScopeRules || []);
+
+  let proxyRuntimeConfig = DEFAULT_PROXY_RUNTIME_CONFIG;
+  if (typeof projectStore.getModuleState === 'function') {
+    const proxyState = await projectStore.getModuleState('proxy');
+    if (proxyState && proxyState.runtimeConfig) {
+      proxyRuntimeConfig = normalizeProxyRuntimeConfig(proxyState.runtimeConfig);
+    }
+  }
+  if (typeof protocolSupport.setForwardRuntimeConfig === 'function') {
+    protocolSupport.setForwardRuntimeConfig(proxyRuntimeConfig);
+  }
 
   const scopeEvaluator = requestLike => targetMapper.isInScope(requestLike);
   if (typeof rulesEngine.setScopeEvaluator === 'function') {
@@ -905,6 +1248,10 @@ async function shutdownServices() {
 }
 
 app.whenReady().then(() => {
+  installProcessOutputStreaming();
+  installRuntimeLogHooks();
+  registerConsoleHandlers();
+
   extensionHost.configure({
     extensionsDir: path.join(app.getPath('userData'), 'extensions'),
   });
@@ -913,6 +1260,12 @@ app.whenReady().then(() => {
     getProxyStatus: async () => protocolSupport.getStatus(),
     startProxy: async (args = {}) => protocolSupport.start(args),
   });
+
+  if (typeof protocolSupport.setLogger === 'function') {
+    protocolSupport.setLogger(({ level, stage, detail }) => {
+      sendConsoleLog(level || 'info', 'proxy', `Protocol ${stage || 'event'}`, detail || '');
+    });
+  }
 
   caManager.ensureCaArtifacts();
   openDefaultProjectStore().catch((error) => {

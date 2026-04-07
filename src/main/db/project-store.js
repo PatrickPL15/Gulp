@@ -621,6 +621,16 @@ class ProjectStore {
     await runAsync(this.db, 'UPDATE project_meta SET updated_at = ? WHERE id = ?', [Date.now(), 'default']);
     return { ok: true };
   }
+
+  async getModuleState(moduleName) {
+    this.ensureOpen();
+    const row = await getAsync(
+      this.db,
+      'SELECT data FROM module_state WHERE module = ? LIMIT 1',
+      [moduleName]
+    );
+    return row ? JSON.parse(row.data) : null;
+  }
 }
 
 const defaultStore = new ProjectStore();
@@ -657,4 +667,5 @@ module.exports = {
   addSequencerToken: tokenRow => defaultStore.addSequencerToken(tokenRow),
   listSequencerTokens: sessionId => defaultStore.listSequencerTokens(sessionId),
   setModuleState: (moduleName, state) => defaultStore.setModuleState(moduleName, state),
+  getModuleState: moduleName => defaultStore.getModuleState(moduleName),
 };

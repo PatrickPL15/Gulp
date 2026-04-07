@@ -7,9 +7,7 @@ const {
   Flex,
   HStack,
   Input,
-  SimpleGrid,
   Text,
-  VStack,
 } = require('@chakra-ui/react');
 const { getStatusTextColor } = require('./theme-utils');
 
@@ -31,14 +29,13 @@ function sortSessions(items) {
 }
 
 function buildBoundsFromRect(rect) {
-  // WebContentsView.setBounds expects device pixels; getBoundingClientRect returns CSS (logical) pixels.
-  // Multiply by devicePixelRatio so the overlay aligns on HiDPI displays (e.g. 125% Windows scaling).
-  const scale = (typeof window !== 'undefined' && window.devicePixelRatio > 0) ? window.devicePixelRatio : 1;
+  // Electron view bounds use the same logical pixel coordinate space as the renderer.
+  // Multiplying by devicePixelRatio causes hosted Chromium content to overflow on HiDPI displays.
   return {
-    x: Math.max(0, Math.round((rect.left || 0) * scale)),
-    y: Math.max(0, Math.round((rect.top || 0) * scale)),
-    width: Math.max(0, Math.round((rect.width || 0) * scale)),
-    height: Math.max(0, Math.round((rect.height || 0) * scale)),
+    x: Math.max(0, Math.round(rect.left || 0)),
+    y: Math.max(0, Math.round(rect.top || 0)),
+    width: Math.max(0, Math.round(rect.width || 0)),
+    height: Math.max(0, Math.round(rect.height || 0)),
   };
 }
 
@@ -217,11 +214,12 @@ function EmbeddedBrowserPanel({ themeId }) {
 
     const handleResize = () => {
       syncActiveBounds(activeSessionId).catch(() => {
-        // Ignore bounds sync failures triggered by resize events.
+        // Ignore bounds sync failures triggered by layout sync events.
       });
     };
 
     let resizeObserver = null;
+    let intervalId = null;
     if (typeof ResizeObserver === 'function' && hostRef.current) {
       resizeObserver = new ResizeObserver(() => {
         handleResize();
@@ -231,6 +229,10 @@ function EmbeddedBrowserPanel({ themeId }) {
 
     if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
       window.addEventListener('resize', handleResize);
+      window.addEventListener('scroll', handleResize, true);
+      intervalId = window.setInterval(() => {
+        handleResize();
+      }, 250);
     }
 
     handleResize();
@@ -239,8 +241,12 @@ function EmbeddedBrowserPanel({ themeId }) {
       if (resizeObserver) {
         resizeObserver.disconnect();
       }
+      if (intervalId && typeof window !== 'undefined') {
+        window.clearInterval(intervalId);
+      }
       if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
         window.removeEventListener('resize', handleResize);
+        window.removeEventListener('scroll', handleResize, true);
       }
     };
   }, [activeSessionId, syncActiveBounds]);
@@ -329,109 +335,106 @@ function EmbeddedBrowserPanel({ themeId }) {
   }
 
   return (
-    <Box p='4' borderWidth='1px' borderRadius='md' h='100%' minH='480px'>
-      <VStack align='stretch' spacing={3}>
-        <Flex justify='space-between' align='center' pb='3' borderBottomWidth='1px' borderColor='border.default'>
-          <Text fontWeight='medium' fontSize='sm'>Embedded Browser</Text>
-          <HStack gap='2'>
-            <Button size='xs' variant='outline' onClick={createSession}>New Session</Button>
-            <Button size='xs' variant='outline' onClick={loadSessions}>Refresh</Button>
-          </HStack>
-        </Flex>
-
-        <HStack>
-          <Button size='sm' onClick={createSession}>New Session</Button>
-          <Button size='sm' variant='outline' onClick={loadSessions}>Refresh Sessions</Button>
+    <Flex direction='column' h='100%' overflow='hidden' p='3' gap='2'>
+      {/* Panel header */}
+      <Flex flex='0 0 auto' align='center' justify='space-between' pb='2' borderBottomWidth='1px' borderColor='border.default'>
+        <Text fontWeight='semibold' fontSize='sm'>Embedded Browser</Text>
+        <HStack gap='2'>
           <Badge colorPalette='blue'>{sessions.length} sessions</Badge>
           <Badge colorPalette={activeSession && activeSession.loading ? 'orange' : 'green'}>
             {activeSession && activeSession.loading ? 'Loading' : 'Ready'}
           </Badge>
+          <Button size='xs' variant='outline' onClick={loadSessions}>Refresh</Button>
+          <Button size='xs' variant='outline' onClick={createSession}>New Session</Button>
         </HStack>
+      </Flex>
 
-        <Box borderWidth='1px' borderRadius='md' p={3}>
-          <Text fontWeight='semibold' mb={2}>Sessions</Text>
-          {sessions.length === 0 ? (
-            <Text fontSize='sm' color='fg.muted'>No browser sessions yet.</Text>
-          ) : sessions.map(session => (
-            <Button
-              key={session.id}
-              size='xs'
-              variant={activeSessionId === session.id ? 'solid' : 'ghost'}
-              onClick={() => setActiveSessionId(session.id)}
-              mr={2}
-              mb={2}
-            >
-              {session.name}
-            </Button>
-          ))}
-        </Box>
-
-        <Box borderWidth='1px' borderRadius='md' p={3}>
-          <Text fontWeight='semibold' mb={2}>Address Bar</Text>
-          <HStack wrap='wrap'>
-            <Button size='sm' variant='outline' onClick={() => runNavigation('back')} disabled={!activeSession || !activeSession.canGoBack}>Back</Button>
-            <Button size='sm' variant='outline' onClick={() => runNavigation('forward')} disabled={!activeSession || !activeSession.canGoForward}>Forward</Button>
-            <Button size='sm' variant='outline' onClick={() => runNavigation('reload')} disabled={!activeSession}>Reload</Button>
-            <Button size='sm' variant='outline' onClick={() => runNavigation('stop')} disabled={!activeSession || !activeSession.loading}>Stop</Button>
-            <Input value={address} onChange={event => setAddress(event.target.value)} placeholder='https://target.example' />
-            <Button size='sm' colorPalette='blue' onClick={navigate} disabled={!activeSessionId}>Go</Button>
-            <Button size='sm' variant='outline' colorPalette='red' onClick={closeActiveSession} disabled={!activeSessionId}>Close</Button>
-          </HStack>
-
-          {activeSession ? (
-            <SimpleGrid columns={{ base: 1, md: 2 }} gap={2} mt={2}>
-              <Text fontSize='sm' color='fg.muted'>
-                Active session: <Code>{activeSession.name}</Code> · URL <Code>{activeSession.currentUrl || 'pending'}</Code>
-              </Text>
-              <Text fontSize='sm' color='fg.muted'>
-                Title <Code>{activeSession.title || 'untitled'}</Code> · Proxy <Code>{lastProxyPort}</Code>
-              </Text>
-              <Text fontSize='sm' color='fg.muted'>
-                Status <Code>{activeSession.statusCode || 'pending'}</Code> · Type <Code>{activeSession.contentType || 'unknown'}</Code>
-              </Text>
-              <Text fontSize='sm' color='fg.muted'>
-                Bounds <Code>{`${activeSession.bounds && activeSession.bounds.width ? activeSession.bounds.width : 0}x${activeSession.bounds && activeSession.bounds.height ? activeSession.bounds.height : 0}`}</Code> · Partition <Code>{activeSession.hostPartition || 'n/a'}</Code>
-              </Text>
-            </SimpleGrid>
-          ) : null}
-        </Box>
-
-        <Box borderWidth='1px' borderRadius='md' p={2} minH='340px'>
-          <Text fontSize='sm' color='fg.muted' mb={2}>Chromium Surface</Text>
-          <Box
-            ref={hostRef}
-            data-testid='embedded-browser-host'
-            borderWidth='1px'
-            borderRadius='md'
-            overflow='hidden'
-            h='320px'
-            bg='bg.subtle'
-            position='relative'
+      {/* Session tabs */}
+      <HStack flex='0 0 auto' gap='1' overflowX='auto' overflowY='hidden' minH='6'>
+        {sessions.length === 0 ? (
+          <Text fontSize='xs' color='fg.muted'>No sessions yet — click New Session to begin.</Text>
+        ) : sessions.map(session => (
+          <Button
+            key={session.id}
+            size='xs'
+            flex='0 0 auto'
+            variant={activeSessionId === session.id ? 'solid' : 'ghost'}
+            onClick={() => setActiveSessionId(session.id)}
           >
-            <Flex
-              position='absolute'
-              inset='0'
-              align='center'
-              justify='center'
-              direction='column'
-              gap='2'
-              pointerEvents='none'
-              color='fg.muted'
-              textAlign='center'
-              bg='linear-gradient(180deg, rgba(8, 17, 26, 0.16) 0%, rgba(8, 17, 26, 0.02) 100%)'
-            >
-              <Text fontWeight='semibold'>Chromium WebContentsView Host</Text>
-              <Text fontSize='sm' maxW='md'>
-                The live browser surface is attached by Electron main process to this viewport region.
-              </Text>
-            </Flex>
-          </Box>
-        </Box>
+            {session.name}
+          </Button>
+        ))}
+      </HStack>
 
-        {statusText ? <Text color={getStatusTextColor('success', themeId)} fontSize='sm'>{statusText}</Text> : null}
-        {errorText ? <Text color={getStatusTextColor('error', themeId)} fontSize='sm'>{errorText}</Text> : null}
-      </VStack>
-    </Box>
+      {/* Address bar + nav controls */}
+      <HStack flex='0 0 auto' gap='1'>
+        <Button size='xs' variant='ghost' onClick={() => runNavigation('back')} disabled={!activeSession || !activeSession.canGoBack}>&#8592;</Button>
+        <Button size='xs' variant='ghost' onClick={() => runNavigation('forward')} disabled={!activeSession || !activeSession.canGoForward}>&#8594;</Button>
+        <Button size='xs' variant='ghost' onClick={() => runNavigation('reload')} disabled={!activeSession}>&#8635;</Button>
+        <Button size='xs' variant='ghost' onClick={() => runNavigation('stop')} disabled={!activeSession || !activeSession.loading}>&#x2715;</Button>
+        <Input flex='1' size='xs' value={address} onChange={event => setAddress(event.target.value)} placeholder='https://target.example' />
+        <Button size='xs' colorPalette='blue' onClick={navigate} disabled={!activeSessionId}>Go</Button>
+        <Button size='xs' variant='outline' colorPalette='red' onClick={closeActiveSession} disabled={!activeSessionId}>Close</Button>
+      </HStack>
+
+      {/* Compact session metadata */}
+      {activeSession ? (
+        <HStack flex='0 0 auto' gap='2' overflow='hidden'>
+          <Text fontSize='xs' color='fg.muted' flex='1' overflow='hidden'>
+            <Code fontSize='xs'>{activeSession.name}</Code>
+            {' · '}
+            <Code fontSize='xs'>{activeSession.currentUrl || 'pending'}</Code>
+            {' · Proxy '}
+            <Code fontSize='xs'>{lastProxyPort}</Code>
+          </Text>
+        </HStack>
+      ) : null}
+
+      {/* Chromium surface — flex:1 ensures this always fills available height within the panel */}
+      <Box
+        flex='1'
+        minH='0'
+        borderWidth='1px'
+        borderColor='border.default'
+        borderRadius='sm'
+        overflow='hidden'
+        bg='bg.canvas'
+        position='relative'
+      >
+        <Box
+          ref={hostRef}
+          data-testid='embedded-browser-host'
+          position='absolute'
+          inset='1px'
+          bg='bg.subtle'
+        />
+        <Flex
+          position='absolute'
+          inset='1px'
+          align='center'
+          justify='center'
+          direction='column'
+          gap='2'
+          pointerEvents='none'
+          color='fg.muted'
+          textAlign='center'
+          bg='linear-gradient(180deg, rgba(8, 17, 26, 0.16) 0%, rgba(8, 17, 26, 0.02) 100%)'
+        >
+          <Text fontWeight='semibold'>Chromium WebContentsView Host</Text>
+          <Text fontSize='sm' maxW='md'>
+            The live browser surface is attached by Electron main process to this viewport region.
+          </Text>
+        </Flex>
+      </Box>
+
+      {/* Status / error strip */}
+      {(statusText || errorText) ? (
+        <Box flex='0 0 auto'>
+          {statusText ? <Text fontSize='xs' color={getStatusTextColor('success', themeId)}>{statusText}</Text> : null}
+          {errorText ? <Text fontSize='xs' color={getStatusTextColor('error', themeId)}>{errorText}</Text> : null}
+        </Box>
+      ) : null}
+    </Flex>
   );
 }
 

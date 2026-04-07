@@ -44,6 +44,7 @@ describe('Sentinel Database and Certificate Services', () => {
       expect(typeof mod.replaceRules).toBe('function');
       expect(typeof mod.replaceScopeRules).toBe('function');
       expect(typeof mod.setModuleState).toBe('function');
+      expect(typeof mod.getModuleState).toBe('function');
     });
 
     it('exports schema constants and helpers', () => {
