@@ -11,6 +11,7 @@ const {
   Textarea,
   VStack,
 } = require('@chakra-ui/react');
+const { getStatusTextColor } = require('./theme-utils');
 
 const MARKER_REGEX = /§([^§]*)§/g;
 
@@ -191,7 +192,7 @@ function filterResults(results, filters) {
   });
 }
 
-function IntruderPanel() {
+function IntruderPanel({ themeId }) {
   const sentinel = typeof window !== 'undefined' ? window.sentinel : null;
   const urlRef = React.useRef(null);
   const headersRef = React.useRef(null);
@@ -577,7 +578,7 @@ function IntruderPanel() {
                       </thead>
                       <tbody>
                         {filteredResults.map(result => (
-                          <tr key={result.id} style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                          <tr key={result.id} style={{ borderTop: '1px solid var(--sentinel-border-default, #2a3948)' }}>
                             <td style={{ padding: '6px', fontFamily: 'monospace' }}>{result.payload}</td>
                             <td style={{ padding: '6px' }}><Code>{result.statusCode}</Code></td>
                             <td style={{ padding: '6px' }}>{result.length}</td>
@@ -597,8 +598,8 @@ function IntruderPanel() {
                 ) : null}
               </Box>
 
-              {errorText ? <Text color='red.300' fontSize='sm'>{errorText}</Text> : null}
-              {noticeText ? <Text color='green.300' fontSize='sm'>{noticeText}</Text> : null}
+              {errorText ? <Text color={getStatusTextColor('error', themeId)} fontSize='sm'>{errorText}</Text> : null}
+              {noticeText ? <Text color={getStatusTextColor('success', themeId)} fontSize='sm'>{noticeText}</Text> : null}
             </VStack>
           </Box>
         </HStack>

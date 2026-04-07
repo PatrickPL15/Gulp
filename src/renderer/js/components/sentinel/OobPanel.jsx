@@ -10,8 +10,15 @@ const {
   Text,
   VStack,
 } = require('@chakra-ui/react');
+const { getStatusTextColor } = require('./theme-utils');
 
-function OobPanel() {
+const LOOPBACK_PATTERN = /^https?:\/\/(127\.\d+\.\d+\.\d+|::1|\[::1\]|localhost)(:\d+)?\//i;
+
+function isLoopbackUrl(url) {
+  return typeof url === 'string' && LOOPBACK_PATTERN.test(url);
+}
+
+function OobPanel({ themeId }) {
   const sentinel = typeof window !== 'undefined' ? window.sentinel : null;
   const [payloadType, setPayloadType] = React.useState('http');
   const [sourceRequestId, setSourceRequestId] = React.useState('');
@@ -115,6 +122,12 @@ function OobPanel() {
                 <Badge>{payload.kind || payloadType}</Badge>
               </HStack>
               <Text fontSize='sm' color='fg.muted'>{payload.url}</Text>
+              {isLoopbackUrl(payload.url) ? (
+                // Loopback listener — external targets cannot reach 127.x / ::1 addresses.
+                <Text fontSize='xs' color='orange.400' mt={1}>
+                  Listener is bound to a loopback address. External targets cannot deliver callbacks to this URL. Configure a routable listener host to receive out-of-band interactions.
+                </Text>
+              ) : null}
               <Text fontSize='xs' color='fg.muted'>Domain marker: <Code>{payload.domain}</Code></Text>
               <Button mt={2} size='xs' variant='outline' onClick={() => {
                 setSelectedPayloadId(payload.id);
@@ -151,8 +164,8 @@ function OobPanel() {
           ))}
         </Box>
 
-        <Text fontSize='sm' color='fg.muted'>{statusText}</Text>
-        {errorText ? <Text color='red.300' fontSize='sm'>{errorText}</Text> : null}
+        <Text fontSize='sm' color={getStatusTextColor('info', themeId)}>{statusText}</Text>
+        {errorText ? <Text color={getStatusTextColor('error', themeId)} fontSize='sm'>{errorText}</Text> : null}
       </VStack>
     </Box>
   );

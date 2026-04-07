@@ -13,6 +13,7 @@ const {
 } = require('@chakra-ui/react');
 const MonacoEditor = require('@monaco-editor/react').default;
 const { FixedSizeList } = require('react-window');
+const { getMonacoTheme, getStatusTextColor } = require('./theme-utils');
 
 const ROW_HEIGHT = 34;
 
@@ -57,7 +58,7 @@ function ProxyQueue({ queue, selectedId, onSelect }) {
 	);
 }
 
-function ProxyPanel() {
+function ProxyPanel({ themeId }) {
 	const [status, setStatus] = React.useState({ running: false, port: 8080, intercepting: true });
 	const [queue, setQueue] = React.useState([]);
 	const [selectedId, setSelectedId] = React.useState('');
@@ -310,7 +311,7 @@ function ProxyPanel() {
 											<MonacoEditor
 												height='240px'
 												defaultLanguage='text'
-												theme='vs-dark'
+												theme={getMonacoTheme(themeId)}
 												value={editBody}
 												onChange={value => setEditBody(value || '')}
 												options={{ minimap: { enabled: false }, wordWrap: 'on', fontSize: 12 }}
@@ -322,7 +323,7 @@ function ProxyPanel() {
 										<MonacoEditor
 											height='240px'
 											defaultLanguage='http'
-											theme='vs-dark'
+											theme={getMonacoTheme(themeId)}
 											value={rawRequest}
 											options={{ readOnly: true, minimap: { enabled: false }, wordWrap: 'on', fontSize: 12 }}
 										/>
@@ -344,10 +345,10 @@ function ProxyPanel() {
 				</Flex>
 
 				{errorText ? (
-					<Text color='red.300' fontSize='sm'>{errorText}</Text>
+					<Text color={getStatusTextColor('error', themeId)} fontSize='sm'>{errorText}</Text>
 				) : null}
 				{noticeText ? (
-					<Text color='green.300' fontSize='sm'>{noticeText}</Text>
+					<Text color={getStatusTextColor('success', themeId)} fontSize='sm'>{noticeText}</Text>
 				) : null}
 			</VStack>
 		</Flex>

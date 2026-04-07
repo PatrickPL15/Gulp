@@ -8,12 +8,16 @@ SEN-017 Intruder attack engine
 'use strict';
 
 const fs = require('node:fs');
+const path = require('node:path');
 const { EventEmitter } = require('node:events');
 const { randomUUID } = require('node:crypto');
 const { forwardRequest } = require('./protocol-support');
 
 const MAX_GENERATED_PAYLOADS = 250;
 const MAX_ATTACK_REQUESTS = 500;
+const MAX_DICTIONARY_FILE_BYTES = 2 * 1024 * 1024;
+// Only plain-text line-based formats are valid dictionary sources.
+const DICTIONARY_EXTENSIONS = new Set(['.txt', '.csv', '.lst', '.log', '']);
 const MARKER_REGEX = /§([^§]*)§/g;
 
 function clone(value) {
@@ -141,7 +145,19 @@ function buildDictionaryPayloads(source = {}) {
 	}
 
 	if (source.filePath) {
-		const fileText = fs.readFileSync(String(source.filePath), 'utf8');
+		const resolvedPath = path.resolve(String(source.filePath));
+		const ext = path.extname(resolvedPath).toLowerCase();
+		if (!DICTIONARY_EXTENSIONS.has(ext)) {
+			throw new Error(`dictionary file has unsupported extension: ${ext || 'none'}`);
+		}
+		const stat = fs.statSync(resolvedPath);
+		if (!stat.isFile()) {
+			throw new Error('dictionary filePath must point to a file');
+		}
+		if (stat.size > MAX_DICTIONARY_FILE_BYTES) {
+			throw new Error(`dictionary file exceeds ${MAX_DICTIONARY_FILE_BYTES} byte limit`);
+		}
+		const fileText = fs.readFileSync(resolvedPath, 'utf8');
 		const items = splitLines(fileText);
 		if (items.length === 0) {
 			throw new Error('dictionary file does not contain any payloads');

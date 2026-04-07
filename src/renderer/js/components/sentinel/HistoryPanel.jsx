@@ -13,6 +13,7 @@ const {
 const MonacoEditor = require('@monaco-editor/react').default;
 const { FixedSizeList } = require('react-window');
 const { createColumnHelper, flexRender, getCoreRowModel, useReactTable } = require('@tanstack/react-table');
+const { getMonacoTheme, getStatusTextColor } = require('./theme-utils');
 
 const columnHelper = createColumnHelper();
 const ROW_HEIGHT = 34;
@@ -57,7 +58,7 @@ function buildRawResponse(response = {}) {
 	].join('\n');
 }
 
-function InspectorSection({ item, inspectorTab, setInspectorTab, onSendToRepeater, onSendToIntruder }) {
+function InspectorSection({ item, inspectorTab, setInspectorTab, onSendToRepeater, onSendToIntruder, themeId }) {
 	if (!item) {
 		return (
 			<Box p={4} h='100%'>
@@ -113,7 +114,7 @@ function InspectorSection({ item, inspectorTab, setInspectorTab, onSendToRepeate
 					<MonacoEditor
 						height='100%'
 						defaultLanguage='http'
-						theme='vs-dark'
+						theme={getMonacoTheme(themeId)}
 						value={rawText}
 						options={{ readOnly: true, minimap: { enabled: false }, wordWrap: 'on', fontSize: 12 }}
 					/>
@@ -186,7 +187,7 @@ function VirtualizedHistoryTable({ table, selectedId, onSelect }) {
 	);
 }
 
-function HistoryPanel() {
+function HistoryPanel({ themeId }) {
 	const [items, setItems] = React.useState([]);
 	const [loading, setLoading] = React.useState(true);
 	const [errorText, setErrorText] = React.useState('');
@@ -580,6 +581,7 @@ function HistoryPanel() {
 							setInspectorTab={setInspectorTab}
 							onSendToRepeater={() => selectedItem ? sendToRepeaterInspector(selectedItem) : null}
 							onSendToIntruder={() => selectedItem ? sendToIntruder(selectedItem.id) : null}
+							themeId={themeId}
 						/>
 					</Box>
 				</Flex>
@@ -604,8 +606,8 @@ function HistoryPanel() {
 					</Button>
 				</HStack>
 
-				{errorText ? <Text color='red.300' fontSize='sm'>{errorText}</Text> : null}
-				{noticeText ? <Text color='green.300' fontSize='sm'>{noticeText}</Text> : null}
+				{errorText ? <Text color={getStatusTextColor('error', themeId)} fontSize='sm'>{errorText}</Text> : null}
+				{noticeText ? <Text color={getStatusTextColor('success', themeId)} fontSize='sm'>{noticeText}</Text> : null}
 			</VStack>
 		</Flex>
 	);

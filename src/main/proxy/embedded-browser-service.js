@@ -2,7 +2,7 @@
 SEN-020 Embedded browser service
 - Creates embedded browser sessions managed by main process.
 - Coordinates Chromium-backed navigation state and session metadata.
-- Leaves actual page loading to the Electron BrowserView host layer.
+- Leaves actual page loading to the Electron WebContentsView host layer.
 */
 
 'use strict';
@@ -11,7 +11,7 @@ const { URL } = require('node:url');
 const { randomUUID } = require('node:crypto');
 const { EventEmitter } = require('node:events');
 
-const DEFAULT_BROWSER_HOST_MODEL = 'BrowserView';
+const DEFAULT_BROWSER_HOST_MODEL = 'WebContentsView';
 const DEFAULT_ALLOWED_SCHEMES = ['http:', 'https:'];
 const DEFAULT_SECURITY_PREFERENCES = Object.freeze({
 	contextIsolation: true,
@@ -196,7 +196,7 @@ class EmbeddedBrowserService extends EventEmitter {
 	buildPendingResponse() {
 		return {
 			statusCode: null,
-			statusMessage: 'Chromium navigation delegated to BrowserView host',
+			statusMessage: 'Chromium navigation delegated to WebContentsView host',
 			headers: {},
 			contentType: '',
 			body: null,

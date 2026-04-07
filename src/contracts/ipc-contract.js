@@ -253,16 +253,16 @@ const CHANNELS = [
   {
     channel:   'scope:import:burp',
     direction: 'invoke',
-    payload:   '{ filePath?: string }',
+    payload:   '{}',
     response:  '{ ok: boolean, imported: number, warnings: string[] }',
-    notes:     'Imports scope/project settings from a Burp config; uses provided filePath or opens a picker when omitted.',
+    notes:     'Always opens a native file picker to select a Burp config file; renderer-supplied file paths are not accepted.',
   },
   {
     channel:   'scope:import:csv',
     direction: 'invoke',
-    payload:   '{ filePath?: string, format: "hackerone" | "generic" }',
+    payload:   '{ format: "hackerone" | "generic" }',
     response:  '{ ok: boolean, imported: number, warnings: string[] }',
-    notes:     'Imports scope rules from CSV; uses provided filePath or opens a picker when omitted.',
+    notes:     'Always opens a native file picker to select a CSV file; renderer-supplied file paths are not accepted.',
   },
 
   // -------------------------------------------------------------------------

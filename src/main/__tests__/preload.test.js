@@ -212,17 +212,17 @@ describe('Preload Bridge - all invoke channels', () => {
     target.sitemap();
     scope.get();
     scope.set({ rules: [{ host: 'x.com' }] });
-    scope.importBurp({ filePath: '/tmp/burp-project.xml' });
-    scope.importCsv({ filePath: '/tmp/scope.csv', format: 'hackerone' });
+    scope.importBurp({});
+    scope.importCsv({ format: 'hackerone' });
 
     expect(ipcInvoke).toHaveBeenCalledWith('target:sitemap', {});
     expect(ipcInvoke).toHaveBeenCalledWith('scope:get', {});
     expect(ipcInvoke).toHaveBeenCalledWith('scope:set', { rules: [{ host: 'x.com' }] });
-    expect(ipcInvoke).toHaveBeenCalledWith('scope:import:burp', { filePath: '/tmp/burp-project.xml' });
-    expect(ipcInvoke).toHaveBeenCalledWith('scope:import:csv', { filePath: '/tmp/scope.csv', format: 'hackerone' });
+    expect(ipcInvoke).toHaveBeenCalledWith('scope:import:burp', {});
+    expect(ipcInvoke).toHaveBeenCalledWith('scope:import:csv', { format: 'hackerone' });
   });
 
-  it('scope import supports picker-first calls without filePath', () => {
+  it('scope import always delegates file selection to the native dialog', () => {
     const { exposed, ipcInvoke } = executePreload();
     const { scope } = exposed.sentinel;
 

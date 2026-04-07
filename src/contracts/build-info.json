@@ -1,7 +1,6 @@
 {
   "appName": "gulp",
   "version": "1.0.0",
-  "semverSpec": "2.0.0",
   "git": {
     "commit": "200164d3d78c9d4caad9976318fa5c1fd4d1d752",
     "shortCommit": "200164d3",

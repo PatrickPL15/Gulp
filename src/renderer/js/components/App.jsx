@@ -26,16 +26,12 @@ const {
   FiMonitor,
   FiPackage,
   FiChevronsLeft,
-<<<<<<< Updated upstream
-  FiChevronsRight
-=======
   FiChevronsRight,
   FiChevronRight,
   FiTerminal,
   FiChevronDown,
   FiChevronUp,
   FiTrash2,
->>>>>>> Stashed changes
 } = require('react-icons/fi');
 const DashboardShell = require('./sentinel/DashboardShell');
 const ProxyPanel = require('./sentinel/ProxyPanel');
@@ -176,15 +172,12 @@ function App() {
   const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false);
   const [commandQuery, setCommandQuery] = React.useState('');
   const [memoryUsage, setMemoryUsage] = React.useState(formatMemoryUsageMb());
-<<<<<<< Updated upstream
-=======
   const [selectedThemeId, setSelectedThemeId] = React.useState('dark-steel');
   const [consoleLogs, setConsoleLogs] = React.useState([]);
   const [consoleOpen, setConsoleOpen] = React.useState(false);
   const [consoleFilter, setConsoleFilter] = React.useState('all'); // 'all' | 'info' | 'warn' | 'error'
   const [unreadErrors, setUnreadErrors] = React.useState(0);
   const consoleEndRef = React.useRef(null);
->>>>>>> Stashed changes
   const contextToggleButtonRef = React.useRef(null);
   const contextRailContentRef = React.useRef(null);
   const quickActionButtonRefs = React.useRef([]);

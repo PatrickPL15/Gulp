@@ -11,8 +11,9 @@ const {
   Textarea,
   VStack,
 } = require('@chakra-ui/react');
+const { getStatusTextColor } = require('./theme-utils');
 
-function ScannerPanel() {
+function ScannerPanel({ themeId }) {
   const sentinel = typeof window !== 'undefined' ? window.sentinel : null;
   const [targetsText, setTargetsText] = React.useState('https://example.com/search');
   const [scopeHosts, setScopeHosts] = React.useState('');
@@ -174,8 +175,8 @@ function ScannerPanel() {
           ))}
         </Box>
 
-        <Text fontSize='sm' color='fg.muted'>{statusText}</Text>
-        {errorText ? <Text color='red.300' fontSize='sm'>{errorText}</Text> : null}
+        <Text fontSize='sm' color={getStatusTextColor('info', themeId)}>{statusText}</Text>
+        {errorText ? <Text color={getStatusTextColor('error', themeId)} fontSize='sm'>{errorText}</Text> : null}
       </VStack>
     </Box>
   );

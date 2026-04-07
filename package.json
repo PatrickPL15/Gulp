@@ -1,13 +1,12 @@
 {
   "name": "gulp",
   "version": "1.0.0",
-  "description": "",
+  "description": "Sentinel — desktop web security testing workbench built with Electron, React, and Chakra UI.",
   "main": "dist/main/index.js",
   "scripts": {
     "clean": "gulp clean",
     "build": "npm run build:metadata && gulp build",
     "build:metadata": "node scripts/versioning/write-build-metadata.js",
-    "semver:check": "echo \"Warning: semver:check is currently bypassed.\"",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
@@ -16,7 +15,7 @@
     "start": "electron ."
   },
   "keywords": [],
-  "author": "",
+  "author": "Trogon4081",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {

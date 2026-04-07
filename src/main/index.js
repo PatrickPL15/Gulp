@@ -1,5 +1,5 @@
 const electron = require('electron');
-const { app, BrowserWindow, BrowserView, ipcMain, dialog, session: electronSession } = electron;
+const { app, BrowserWindow, WebContentsView, ipcMain, dialog, session: electronSession } = electron;
 const path = require('path');
 const caManager = require('./certs/ca-manager');
 const projectStore = require('./db/project-store');
@@ -33,9 +33,9 @@ function destroyEmbeddedBrowserView(sessionId) {
   }
 
   const targetWindow = getActiveWindow();
-  if (targetWindow && typeof targetWindow.removeBrowserView === 'function' && entry.attached) {
+  if (targetWindow && targetWindow.contentView && entry.attached) {
     try {
-      targetWindow.removeBrowserView(entry.view);
+      targetWindow.contentView.removeChildView(entry.view);
     } catch {
       // Ignore detach failures during cleanup.
     }
@@ -56,7 +56,7 @@ function destroyEmbeddedBrowserView(sessionId) {
 }
 
 function ensureEmbeddedBrowserView(sessionState) {
-  if (!BrowserView || !sessionState || !sessionState.id) {
+  if (!WebContentsView || !sessionState || !sessionState.id) {
     return null;
   }
 
@@ -85,7 +85,7 @@ function ensureEmbeddedBrowserView(sessionState) {
     });
   }
 
-  const view = new BrowserView({
+  const view = new WebContentsView({
     webPreferences: {
       partition,
       contextIsolation: true,
@@ -161,9 +161,9 @@ function syncEmbeddedBrowserHost() {
 
   for (const [sessionId, entry] of embeddedBrowserViews.entries()) {
     if (!targetWindow || !activeSession || sessionId !== activeSession.id) {
-      if (entry.attached && targetWindow && typeof targetWindow.removeBrowserView === 'function') {
+      if (entry.attached && targetWindow && targetWindow.contentView) {
         try {
-          targetWindow.removeBrowserView(entry.view);
+          targetWindow.contentView.removeChildView(entry.view);
         } catch {
           // Ignore detach failures when re-syncing the Chromium host.
         }
@@ -182,16 +182,13 @@ function syncEmbeddedBrowserHost() {
     return;
   }
 
-  if (!entry.attached && typeof targetWindow.addBrowserView === 'function') {
-    targetWindow.addBrowserView(entry.view);
+  if (!entry.attached && targetWindow.contentView) {
+    targetWindow.contentView.addChildView(entry.view);
     entry.attached = true;
   }
 
   if (typeof entry.view.setBounds === 'function') {
     entry.view.setBounds(activeSession.bounds);
-  }
-  if (typeof entry.view.setAutoResize === 'function') {
-    entry.view.setAutoResize({ width: false, height: false });
   }
 
   activeEmbeddedBrowserSessionId = activeSession.id;
@@ -319,7 +316,9 @@ async function pickImportFile({ title, filters }) {
 
 function registerProxyHandlers() {
   ipcMain.handle('proxy:start', async (_event, args = {}) => {
-    const started = await protocolSupport.start({ port: args.port || 8080 });
+    const rawPort = Number(args.port);
+    const port = Number.isInteger(rawPort) && rawPort >= 1 && rawPort <= 65535 ? rawPort : 8080;
+    const started = await protocolSupport.start({ port });
     sendConsoleLog('info', 'proxy', `Proxy started on port ${started.port}`);
     return { port: started.port, status: 'running' };
   });
@@ -411,8 +410,16 @@ function registerProxyHandlers() {
   });
 
   ipcMain.handle('target:sitemap', async () => {
-    const result = await historyLog.query({ page: 0, pageSize: 5000, filter: {} });
-    return targetMapper.buildSiteMap(result.items || []);
+    // Cap at 2500 and project to minimal shape — buildSiteMap only reads host/path/method/statusCode,
+    // so fetching full request/response bodies wastes main-process memory for large histories.
+    const result = await historyLog.query({ page: 0, pageSize: 2500, filter: {} });
+    const hints = (result.items || []).map(item => ({
+      request: item.request
+        ? { host: item.request.host, path: item.request.path, method: item.request.method }
+        : null,
+      response: item.response ? { statusCode: item.response.statusCode } : null,
+    }));
+    return targetMapper.buildSiteMap(hints);
   });
 
   ipcMain.handle('scope:get', async () => {
@@ -430,9 +437,10 @@ function registerProxyHandlers() {
     return { ok: true };
   });
 
-  ipcMain.handle('scope:import:burp', async (_event, args = {}) => {
-    const providedPath = typeof args.filePath === 'string' ? args.filePath.trim() : '';
-    const selectedPath = providedPath || await pickImportFile({
+  // args.filePath is intentionally ignored — the file path must come from the native dialog
+  // so that the renderer cannot direct reads at arbitrary paths on the host filesystem.
+  ipcMain.handle('scope:import:burp', async () => {
+    const selectedPath = await pickImportFile({
       title: 'Import Burp Scope Configuration',
       filters: [
         { name: 'Burp Config', extensions: ['xml', 'json'] },
@@ -453,9 +461,9 @@ function registerProxyHandlers() {
     };
   });
 
+  // args.filePath is intentionally ignored — file path must come from the native dialog.
   ipcMain.handle('scope:import:csv', async (_event, args = {}) => {
-    const providedPath = typeof args.filePath === 'string' ? args.filePath.trim() : '';
-    const selectedPath = providedPath || await pickImportFile({
+    const selectedPath = await pickImportFile({
       title: 'Import CSV Scope Configuration',
       filters: [
         { name: 'CSV Files', extensions: ['csv'] },
@@ -579,7 +587,7 @@ function registerProxyHandlers() {
       try {
         await goBackEmbeddedBrowserView(result.session);
       } catch {
-        // Runtime state is updated via BrowserView events or explicit navigate errors.
+        // Runtime state is updated via WebContentsView events or explicit navigate errors.
       }
     }
     syncEmbeddedBrowserHost();
@@ -592,7 +600,7 @@ function registerProxyHandlers() {
       try {
         await goForwardEmbeddedBrowserView(result.session);
       } catch {
-        // Runtime state is updated via BrowserView events or explicit navigate errors.
+        // Runtime state is updated via WebContentsView events or explicit navigate errors.
       }
     }
     syncEmbeddedBrowserHost();
@@ -605,7 +613,7 @@ function registerProxyHandlers() {
       try {
         await reloadEmbeddedBrowserView(result.session);
       } catch {
-        // Runtime state is updated via BrowserView events or explicit navigate errors.
+        // Runtime state is updated via WebContentsView events or explicit navigate errors.
       }
     }
     syncEmbeddedBrowserHost();

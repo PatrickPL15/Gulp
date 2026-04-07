@@ -35,16 +35,16 @@ describe('Theme Configuration', () => {
   it('should define workbench semantic tokens', () => {
     const semanticColors = themeSystem.rawConfig.theme.semanticTokens.colors;
 
-    expect(semanticColors['bg.canvas'].value).toBe('{colors.workbench.900}');
-    expect(semanticColors['bg.panel'].value).toBe('#111821');
-    expect(semanticColors['bg.subtle'].value).toBe('#202d3a');
+    expect(semanticColors['bg.canvas'].value).toBe('var(--sentinel-bg-canvas, #0e141c)');
+    expect(semanticColors['bg.panel'].value).toBe('var(--sentinel-bg-panel, #111821)');
+    expect(semanticColors['bg.subtle'].value).toBe('var(--sentinel-bg-subtle, #202d3a)');
   });
 
   it('should provide valid workbench color references', () => {
     const allColors = [
       '#edf6ff', '#cfe3ff', '#9fc6ff', '#6ca7ff', '#3f89ff',
       '#216de6', '#1854b3', '#143f84', '#122f61', '#101f40',
-      '#111821', '#17212b', '#202d3a', '#0b1118'
+      '#111821', '#1a2531', '#202d3a', '#0b1118', '#34485b'
     ];
 
     allColors.forEach(color => {

@@ -24,6 +24,13 @@ function DashboardShell() {
 	const [guidance, setGuidance] = React.useState(null);
 	const [guidanceOpen, setGuidanceOpen] = React.useState(false);
 
+	// Live metric state — populated on mount and updated via push subscriptions.
+	const [requestTotal, setRequestTotal] = React.useState(0);
+	const [scopeEntries, setScopeEntries] = React.useState(0);
+	const [discoveredHosts, setDiscoveredHosts] = React.useState(0);
+	const [findingsTotal, setFindingsTotal] = React.useState(0);
+	const [findingsCritical, setFindingsCritical] = React.useState(0);
+
 	React.useEffect(() => {
 		let cancelled = false;
 
@@ -49,21 +56,79 @@ function DashboardShell() {
 		};
 	}, []);
 
+	React.useEffect(() => {
+		const sentinel = typeof window !== 'undefined' ? window.sentinel : null;
+		if (!sentinel) {
+			return undefined;
+		}
+
+		let cancelled = false;
+
+		async function loadMetrics() {
+			try {
+				const [historyResult, scopeResult, sitemapResult] = await Promise.all([
+					sentinel.history.query({ page: 0, pageSize: 1 }),
+					sentinel.scope.get(),
+					sentinel.target.sitemap(),
+				]);
+				if (cancelled) {
+					return;
+				}
+				if (historyResult && typeof historyResult.total === 'number') {
+					setRequestTotal(historyResult.total);
+				}
+				if (scopeResult && Array.isArray(scopeResult.rules)) {
+					setScopeEntries(scopeResult.rules.length);
+				}
+				if (sitemapResult && Array.isArray(sitemapResult.tree)) {
+					setDiscoveredHosts(sitemapResult.tree.length);
+				}
+			} catch {
+				// Metric load failure is non-fatal; leave values at their defaults.
+			}
+		}
+
+		loadMetrics();
+
+		const unsubHistory = sentinel.history.onPush(() => {
+			if (cancelled) {
+				return;
+			}
+			setRequestTotal(prev => prev + 1);
+		});
+
+		const unsubScanner = sentinel.scanner.onProgress((payload) => {
+			if (cancelled || !payload || !payload.finding) {
+				return;
+			}
+			setFindingsTotal(prev => prev + 1);
+			if (String(payload.finding.severity || '').toLowerCase() === 'critical') {
+				setFindingsCritical(prev => prev + 1);
+			}
+		});
+
+		return () => {
+			cancelled = true;
+			unsubHistory();
+			unsubScanner();
+		};
+	}, []);
+
 	const securityMetrics = [
-		{ label: 'Critical findings', value: 0 },
-		{ label: 'Open issues', value: 0 },
+		{ label: 'Critical findings', value: findingsCritical },
+		{ label: 'Open issues', value: findingsTotal },
 		{ label: 'Active sessions', value: 0 }
 	];
 
 	const trafficMetrics = [
-		{ label: 'Requests captured', value: 0 },
-		{ label: 'Visible (filtered)', value: 0 },
+		{ label: 'Requests captured', value: requestTotal },
+		{ label: 'Visible (filtered)', value: requestTotal },
 		{ label: 'Active filter', value: 'None' }
 	];
 
 	const targetMetrics = [
-		{ label: 'Discovered hosts', value: 0 },
-		{ label: 'Scope entries', value: 0 },
+		{ label: 'Discovered hosts', value: discoveredHosts },
+		{ label: 'Scope entries', value: scopeEntries },
 		{ label: 'Scope mode', value: 'in-scope-only' }
 	];
 

@@ -11,6 +11,7 @@ const {
   Text,
   VStack,
 } = require('@chakra-ui/react');
+const { getStatusTextColor } = require('./theme-utils');
 
 function mergeSession(currentItems, nextSession) {
   if (!nextSession || !nextSession.id) {
@@ -30,7 +31,7 @@ function sortSessions(items) {
 }
 
 function buildBoundsFromRect(rect) {
-  // BrowserView.setBounds expects device pixels; getBoundingClientRect returns CSS (logical) pixels.
+  // WebContentsView.setBounds expects device pixels; getBoundingClientRect returns CSS (logical) pixels.
   // Multiply by devicePixelRatio so the overlay aligns on HiDPI displays (e.g. 125% Windows scaling).
   const scale = (typeof window !== 'undefined' && window.devicePixelRatio > 0) ? window.devicePixelRatio : 1;
   return {
@@ -49,7 +50,7 @@ function getBrowserApi() {
   return window.sentinel.browser;
 }
 
-function EmbeddedBrowserPanel() {
+function EmbeddedBrowserPanel({ themeId }) {
   const [sessions, setSessions] = React.useState([]);
   const [activeSessionId, setActiveSessionId] = React.useState('');
   const [address, setAddress] = React.useState('https://example.com');
@@ -419,7 +420,7 @@ function EmbeddedBrowserPanel() {
               textAlign='center'
               bg='linear-gradient(180deg, rgba(8, 17, 26, 0.16) 0%, rgba(8, 17, 26, 0.02) 100%)'
             >
-              <Text fontWeight='semibold'>Chromium BrowserView Host</Text>
+              <Text fontWeight='semibold'>Chromium WebContentsView Host</Text>
               <Text fontSize='sm' maxW='md'>
                 The live browser surface is attached by Electron main process to this viewport region.
               </Text>
@@ -427,8 +428,8 @@ function EmbeddedBrowserPanel() {
           </Box>
         </Box>
 
-        {statusText ? <Text color='green.300' fontSize='sm'>{statusText}</Text> : null}
-        {errorText ? <Text color='red.300' fontSize='sm'>{errorText}</Text> : null}
+        {statusText ? <Text color={getStatusTextColor('success', themeId)} fontSize='sm'>{statusText}</Text> : null}
+        {errorText ? <Text color={getStatusTextColor('error', themeId)} fontSize='sm'>{errorText}</Text> : null}
       </VStack>
     </Box>
   );
