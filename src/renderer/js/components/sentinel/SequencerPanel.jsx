@@ -105,7 +105,7 @@ function SequencerPanel({ themeId }) {
   }
 
   return (
-    <Box p='4' borderWidth='1px' borderRadius='md'>
+    <Box p='4' h='100%' overflowY='auto' overflowX='hidden' wordBreak='break-word' borderWidth='1px' borderRadius='sm' borderColor='border.default'>
       <VStack align='stretch' spacing={3}>
         <Flex justify='space-between' align='center' pb='3' borderBottomWidth='1px' borderColor='border.default'>
           <Text fontWeight='medium' fontSize='sm'>Sequencer</Text>
@@ -116,8 +116,8 @@ function SequencerPanel({ themeId }) {
           </HStack>
         </Flex>
 
-        <Box borderWidth='1px' borderRadius='md' p={3}>
-          <Text fontWeight='semibold' mb={2}>Capture Configuration</Text>
+        <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p={3}>
+          <Text fontWeight='semibold' fontSize='sm' mb={2}>Capture Configuration</Text>
           <HStack>
             <Input value={requestId} onChange={event => setRequestId(event.target.value)} placeholder='History request ID' />
             <Input value={sampleSize} onChange={event => setSampleSize(event.target.value)} placeholder='Sample size' maxW='160px' />
@@ -134,9 +134,9 @@ function SequencerPanel({ themeId }) {
           </HStack>
         </Box>
 
-        <Box borderWidth='1px' borderRadius='md' p={3}>
+        <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p={3}>
           <HStack justify='space-between' mb={2}>
-            <Text fontWeight='semibold'>Analysis Report</Text>
+            <Text fontWeight='semibold' fontSize='sm'>Analysis Report</Text>
             {report ? (
               <Badge colorPalette={report.rating === 'pass' ? 'green' : 'red'}>{report.rating}</Badge>
             ) : null}

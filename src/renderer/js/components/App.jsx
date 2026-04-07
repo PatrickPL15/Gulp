@@ -10,6 +10,7 @@ const {
   Input,
   Stack,
   Text,
+  Textarea,
   VStack
 } = require('@chakra-ui/react');
 const {
@@ -25,10 +26,14 @@ const {
   FiCode,
   FiMonitor,
   FiPackage,
-  FiSettings,
   FiChevronsLeft,
   FiChevronsRight,
-  FiChevronRight
+  FiChevronRight,
+  FiTerminal,
+  FiChevronDown,
+  FiChevronUp,
+  FiTrash2,
+  FiSettings,
 } = require('react-icons/fi');
 const DashboardShell = require('./sentinel/DashboardShell');
 const ProxyPanel = require('./sentinel/ProxyPanel');
@@ -42,7 +47,6 @@ const SequencerPanel = require('./sentinel/SequencerPanel');
 const DecoderPanel = require('./sentinel/DecoderPanel');
 const EmbeddedBrowserPanel = require('./sentinel/EmbeddedBrowserPanel');
 const ExtensionsPanel = require('./sentinel/ExtensionsPanel');
-const { getOverlayScrim } = require('./sentinel/theme-utils');
 const { modules, moduleDescriptions } = require('./app-constants');
 
 const panelStatusFields = {
@@ -150,218 +154,6 @@ const moduleIcons = {
   Extensions: FiPackage
 };
 
-const lightThemeOptions = [
-  {
-    id: 'light-paper',
-    label: 'Paper Grid',
-    colors: {
-      bgCanvas: '#f4f7fb',
-      bgPanel: '#ffffff',
-      bgSurface: '#edf2f8',
-      bgSubtle: '#e4ebf4',
-      bgElevated: '#e8eef6',
-      fgDefault: '#16212e',
-      fgMuted: '#33465c',
-      borderDefault: '#91a5bb',
-      borderSubtle: '#7f96ae'
-    },
-    text: {
-      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
-      fontWeight: 550,
-      letterSpacing: '0.01em'
-    }
-  },
-  {
-    id: 'light-ivory',
-    label: 'Ivory Ledger',
-    colors: {
-      bgCanvas: '#f8f5ee',
-      bgPanel: '#fffdf7',
-      bgSurface: '#f1ebdf',
-      bgSubtle: '#e8dfcf',
-      bgElevated: '#f4efe4',
-      fgDefault: '#211a12',
-      fgMuted: '#4a3d30',
-      borderDefault: '#b49d82',
-      borderSubtle: '#9f8568'
-    },
-    text: {
-      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
-      fontWeight: 560,
-      letterSpacing: '0.008em'
-    }
-  },
-  {
-    id: 'light-cloud',
-    label: 'Cloud Console',
-    colors: {
-      bgCanvas: '#f1f4f8',
-      bgPanel: '#fdfefe',
-      bgSurface: '#e8eef5',
-      bgSubtle: '#dce5f0',
-      bgElevated: '#e4ebf3',
-      fgDefault: '#11263b',
-      fgMuted: '#314d68',
-      borderDefault: '#89a6c5',
-      borderSubtle: '#7696b8'
-    },
-    text: {
-      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
-      fontWeight: 550,
-      letterSpacing: '0.012em'
-    }
-  },
-  {
-    id: 'light-terminal',
-    label: 'Terminal Daylight',
-    colors: {
-      bgCanvas: '#f6f8fa',
-      bgPanel: '#ffffff',
-      bgSurface: '#eef2f6',
-      bgSubtle: '#e3e9f0',
-      bgElevated: '#e8eef4',
-      fgDefault: '#0f202f',
-      fgMuted: '#30495f',
-      borderDefault: '#8fa5bd',
-      borderSubtle: '#7a92ac'
-    },
-    text: {
-      fontFamily: "'IBM Plex Mono', 'Consolas', 'Courier New', monospace",
-      fontWeight: 500,
-      letterSpacing: '0.004em'
-    }
-  },
-  {
-    id: 'light-lab',
-    label: 'Lab Neutral',
-    colors: {
-      bgCanvas: '#f3f3f3',
-      bgPanel: '#fcfcfc',
-      bgSurface: '#ebebeb',
-      bgSubtle: '#dfdfdf',
-      bgElevated: '#e6e6e6',
-      fgDefault: '#1a1d22',
-      fgMuted: '#3d4652',
-      borderDefault: '#98a5b4',
-      borderSubtle: '#8493a4'
-    },
-    text: {
-      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
-      fontWeight: 560,
-      letterSpacing: '0.01em'
-    }
-  }
-];
-
-const darkThemeOptions = [
-  {
-    id: 'dark-steel',
-    label: 'Steel Midnight',
-    colors: {
-      bgCanvas: '#0e141c',
-      bgPanel: '#111821',
-      bgSurface: '#1a2531',
-      bgSubtle: '#202d3a',
-      bgElevated: '#0b1118',
-      fgDefault: '#edf2f7',
-      fgMuted: '#d1dbe6',
-      borderDefault: '#3a4f63',
-      borderSubtle: '#4a627a'
-    },
-    text: {
-      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
-      fontWeight: 520,
-      letterSpacing: '0.008em'
-    }
-  },
-  {
-    id: 'dark-carbon',
-    label: 'Carbon Audit',
-    colors: {
-      bgCanvas: '#111114',
-      bgPanel: '#18191d',
-      bgSurface: '#1f2127',
-      bgSubtle: '#272b32',
-      bgElevated: '#141519',
-      fgDefault: '#f4f6fb',
-      fgMuted: '#d5dde8',
-      borderDefault: '#4a5567',
-      borderSubtle: '#5b687d'
-    },
-    text: {
-      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
-      fontWeight: 530,
-      letterSpacing: '0.01em'
-    }
-  },
-  {
-    id: 'dark-ink',
-    label: 'Ink Protocol',
-    colors: {
-      bgCanvas: '#0b1020',
-      bgPanel: '#121a2f',
-      bgSurface: '#1b2640',
-      bgSubtle: '#253353',
-      bgElevated: '#090e1a',
-      fgDefault: '#ebf1ff',
-      fgMuted: '#d0dcfa',
-      borderDefault: '#46608f',
-      borderSubtle: '#5774a6'
-    },
-    text: {
-      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
-      fontWeight: 520,
-      letterSpacing: '0.012em'
-    }
-  },
-  {
-    id: 'dark-graphite',
-    label: 'Graphite Ops',
-    colors: {
-      bgCanvas: '#13171f',
-      bgPanel: '#1a2029',
-      bgSurface: '#222b38',
-      bgSubtle: '#2b3644',
-      bgElevated: '#10141b',
-      fgDefault: '#f1f5fd',
-      fgMuted: '#d0dae8',
-      borderDefault: '#4a5f77',
-      borderSubtle: '#5a718c'
-    },
-    text: {
-      fontFamily: "'IBM Plex Mono', 'Consolas', 'Courier New', monospace",
-      fontWeight: 500,
-      letterSpacing: '0.005em'
-    }
-  },
-  {
-    id: 'dark-emerald',
-    label: 'Emerald Night',
-    colors: {
-      bgCanvas: '#0a1413',
-      bgPanel: '#12201d',
-      bgSurface: '#18302b',
-      bgSubtle: '#1d3c35',
-      bgElevated: '#09110f',
-      fgDefault: '#e9fff8',
-      fgMuted: '#c6efe3',
-      borderDefault: '#3f7a6b',
-      borderSubtle: '#4e8f7e'
-    },
-    text: {
-      fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
-      fontWeight: 530,
-      letterSpacing: '0.01em'
-    }
-  }
-];
-
-const allThemeOptions = [...lightThemeOptions, ...darkThemeOptions];
-const themeOptionsById = allThemeOptions.reduce((acc, option) => {
-  acc[option.id] = option;
-  return acc;
-}, {});
-
 function formatMemoryUsageMb() {
   if (typeof performance !== 'undefined' && performance.memory && performance.memory.usedJSHeapSize) {
     return `${Math.round(performance.memory.usedJSHeapSize / (1024 * 1024))} MB`;
@@ -372,48 +164,389 @@ function formatMemoryUsageMb() {
   return 'n/a';
 }
 
+// Mirrors the semantic token values from theme.js for use in inline-style contexts.
+const THEME_REGISTRY = {
+  'dark-steel': {
+    label: 'Dark Steel',
+    description: 'Deep blue-gray shell with crisp neutral contrast.',
+    group: 'dark',
+    mode: 'dark',
+    colors: {
+      fgDefault: '#f0f4f8',
+      fgMuted: '#cad7e2',
+      bgCanvas: '#0e141c',
+      bgPanel: '#111821',
+      bgSurface: '#1a2531',
+      bgSubtle: '#202d3a',
+      bgElevated: '#0b1118',
+      borderDefault: '#2a3948',
+      borderSubtle: '#34485b',
+    }
+  },
+  'dark-graphite': {
+    label: 'Dark Graphite',
+    description: 'Neutral graphite palette with restrained highlights.',
+    group: 'dark',
+    mode: 'dark',
+    colors: {
+      fgDefault: '#f5f7fa',
+      fgMuted: '#d3dae4',
+      bgCanvas: '#101215',
+      bgPanel: '#161a1f',
+      bgSurface: '#1d232b',
+      bgSubtle: '#252d36',
+      bgElevated: '#0d1014',
+      borderDefault: '#313b46',
+      borderSubtle: '#3e4a57',
+    }
+  },
+  'dark-ocean': {
+    label: 'Dark Ocean',
+    description: 'Cool navy surfaces tuned for long scanning sessions.',
+    group: 'dark',
+    mode: 'dark',
+    colors: {
+      fgDefault: '#eef6ff',
+      fgMuted: '#c7d9eb',
+      bgCanvas: '#09131d',
+      bgPanel: '#0f1c28',
+      bgSurface: '#162636',
+      bgSubtle: '#1d3146',
+      bgElevated: '#071019',
+      borderDefault: '#284259',
+      borderSubtle: '#35546f',
+    }
+  },
+  'dark-ember': {
+    label: 'Dark Ember',
+    description: 'Warm charcoal surfaces with amber-leaning accents.',
+    group: 'dark',
+    mode: 'dark',
+    colors: {
+      fgDefault: '#faf2e8',
+      fgMuted: '#dfcdb9',
+      bgCanvas: '#17110d',
+      bgPanel: '#211914',
+      bgSurface: '#2a211b',
+      bgSubtle: '#342820',
+      bgElevated: '#120d0a',
+      borderDefault: '#4a372d',
+      borderSubtle: '#5a4337',
+    }
+  },
+  'dark-circuit': {
+    label: 'Dark Circuit',
+    description: 'Black-green console styling for analysis-heavy workflows.',
+    group: 'dark',
+    mode: 'dark',
+    colors: {
+      fgDefault: '#edfdf5',
+      fgMuted: '#c6e7d7',
+      bgCanvas: '#0a120f',
+      bgPanel: '#101915',
+      bgSurface: '#15231d',
+      bgSubtle: '#1c2d26',
+      bgElevated: '#08100d',
+      borderDefault: '#284236',
+      borderSubtle: '#345547',
+    }
+  },
+  'light-paper': {
+    label: 'Light Paper',
+    description: 'Warm bright canvas with neutral panel contrast.',
+    group: 'light',
+    mode: 'light',
+    colors: {
+      fgDefault: '#18212b',
+      fgMuted: '#506171',
+      bgCanvas: '#f6f4ef',
+      bgPanel: '#ffffff',
+      bgSurface: '#f2ede4',
+      bgSubtle: '#e6e0d5',
+      bgElevated: '#ede7dc',
+      borderDefault: '#c6bcae',
+      borderSubtle: '#d7cfc3',
+    }
+  },
+  'light-stone': {
+    label: 'Light Stone',
+    description: 'Cool neutral theme with calm contrast and low glare.',
+    group: 'light',
+    mode: 'light',
+    colors: {
+      fgDefault: '#1d2731',
+      fgMuted: '#5a6977',
+      bgCanvas: '#edf1f4',
+      bgPanel: '#ffffff',
+      bgSurface: '#e4eaef',
+      bgSubtle: '#d7dfe6',
+      bgElevated: '#e8edf2',
+      borderDefault: '#b8c3ce',
+      borderSubtle: '#cad3dc',
+    }
+  },
+  'light-blueprint': {
+    label: 'Light Blueprint',
+    description: 'Pale blue engineering surfaces with strong ink text.',
+    group: 'light',
+    mode: 'light',
+    colors: {
+      fgDefault: '#142538',
+      fgMuted: '#4d657d',
+      bgCanvas: '#eef5fb',
+      bgPanel: '#ffffff',
+      bgSurface: '#dfeaf5',
+      bgSubtle: '#d0e0ee',
+      bgElevated: '#e7f0f8',
+      borderDefault: '#aec6da',
+      borderSubtle: '#c1d4e4',
+    }
+  },
+  'light-sage': {
+    label: 'Light Sage',
+    description: 'Soft green-gray workbench with readable status contrast.',
+    group: 'light',
+    mode: 'light',
+    colors: {
+      fgDefault: '#1b2922',
+      fgMuted: '#58695f',
+      bgCanvas: '#eef3ee',
+      bgPanel: '#ffffff',
+      bgSurface: '#e0e9e1',
+      bgSubtle: '#d0ddd1',
+      bgElevated: '#e6ede7',
+      borderDefault: '#b1c0b2',
+      borderSubtle: '#c4d0c4',
+    }
+  },
+  'light-signal': {
+    label: 'Light Signal',
+    description: 'Clean amber-tinted daylight theme for review work.',
+    group: 'light',
+    mode: 'light',
+    colors: {
+      fgDefault: '#2a2116',
+      fgMuted: '#6d5d46',
+      bgCanvas: '#fbf4e8',
+      bgPanel: '#fffdf8',
+      bgSurface: '#f3e6cf',
+      bgSubtle: '#ead9b9',
+      bgElevated: '#f7eddc',
+      borderDefault: '#d3bc92',
+      borderSubtle: '#e0cdac',
+    }
+  }
+};
+
+const FALLBACK_THEME = THEME_REGISTRY['dark-steel'];
+const THEME_GROUPS = [
+  { id: 'dark', label: 'Dark themes' },
+  { id: 'light', label: 'Light themes' }
+];
+
+function getInitialThemeId() {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const storedThemeId = window.localStorage.getItem('sentinel-theme-id');
+    if (storedThemeId && THEME_REGISTRY[storedThemeId]) {
+      return storedThemeId;
+    }
+  }
+
+  return 'dark-steel';
+}
+
+function applyThemeToDocument(themeId) {
+  if (typeof document === 'undefined' || !document.documentElement) {
+    return;
+  }
+
+  const theme = THEME_REGISTRY[themeId] || FALLBACK_THEME;
+  const root = document.documentElement;
+  const body = document.body;
+
+  root.setAttribute('data-theme', theme.mode);
+  root.setAttribute('data-sentinel-theme-id', themeId);
+  root.style.colorScheme = theme.mode;
+
+  Object.entries(theme.colors).forEach(([token, value]) => {
+    const cssName = token.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
+    root.style.setProperty(`--sentinel-${cssName}`, value);
+  });
+
+  if (body) {
+    body.style.backgroundColor = theme.colors.bgCanvas;
+    body.style.color = theme.colors.fgDefault;
+  }
+
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.setItem('sentinel-theme-id', themeId);
+  }
+}
+
+function renderConsoleExportLine(entry) {
+  const timestamp = Number(entry && entry.timestamp);
+  const level = String(entry && entry.level ? entry.level : 'info').toUpperCase();
+  const source = String(entry && entry.source ? entry.source : 'app');
+  const message = String(entry && entry.message ? entry.message : '');
+  const detail = entry && entry.detail !== undefined && entry.detail !== null ? ` | ${String(entry.detail)}` : '';
+  const renderedTimestamp = Number.isFinite(timestamp)
+    ? new Date(timestamp).toISOString()
+    : new Date().toISOString();
+
+  return `${renderedTimestamp} [${level}] [${source}] ${message}${detail}`;
+}
+
+function downloadConsoleLogs(entries) {
+  if (typeof document === 'undefined' || typeof window === 'undefined' || typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') {
+    return false;
+  }
+
+  const records = Array.isArray(entries) ? entries : [];
+  const content = `${records.map(renderConsoleExportLine).join('\n')}\n`;
+  const blob = new window.Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const stamp = new Date().toISOString().replace(/[.:]/g, '-');
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `sentinel-app-log-${stamp}.log`;
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+  return true;
+}
+
 function App() {
-  const [sidebarExpanded, setSidebarExpanded] = React.useState(true);
+  const [sidebarExpanded, setSidebarExpanded] = React.useState(false);
   const [openPanes, setOpenPanes] = React.useState(['Dashboard', 'Proxy']);
   const [activePane, setActivePane] = React.useState('Dashboard');
   const [proxyRunning, setProxyRunning] = React.useState(true);
   const [panelStatus, setPanelStatus] = React.useState(defaultPanelStatus);
   const [contextCollapsed, setContextCollapsed] = React.useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false);
-  const [settingsMenuOpen, setSettingsMenuOpen] = React.useState(false);
-  const [preferencesMenuOpen, setPreferencesMenuOpen] = React.useState(false);
   const [commandQuery, setCommandQuery] = React.useState('');
   const [memoryUsage, setMemoryUsage] = React.useState(formatMemoryUsageMb());
-  const [selectedThemeId, setSelectedThemeId] = React.useState('dark-steel');
+  const [selectedThemeId, setSelectedThemeId] = React.useState(getInitialThemeId);
+  const selectedTheme = THEME_REGISTRY[selectedThemeId] || FALLBACK_THEME;
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [consoleLogs, setConsoleLogs] = React.useState([]);
+  const [consoleOpen, setConsoleOpen] = React.useState(false);
+  const [consoleAutoScroll, setConsoleAutoScroll] = React.useState(true);
+  const [consoleFilter, setConsoleFilter] = React.useState('all'); // 'all' | 'info' | 'warn' | 'error'
+  const [unreadErrors, setUnreadErrors] = React.useState(0);
+  const [proxyHeadersText, setProxyHeadersText] = React.useState('');
+  const [proxyToolHeaderEnabled, setProxyToolHeaderEnabled] = React.useState(false);
+  const [proxyToolHeaderName, setProxyToolHeaderName] = React.useState('X-Sentinel-Tool');
+  const [proxyToolHeaderValue, setProxyToolHeaderValue] = React.useState('Gulp-Sentinel');
+  const [proxyStaticIpsText, setProxyStaticIpsText] = React.useState('');
+  const [proxySettingsLoading, setProxySettingsLoading] = React.useState(false);
+  const [proxySettingsSaving, setProxySettingsSaving] = React.useState(false);
+  const consoleEndRef = React.useRef(null);
   const contextToggleButtonRef = React.useRef(null);
   const contextRailContentRef = React.useRef(null);
   const quickActionButtonRefs = React.useRef([]);
-  const settingsMenuRef = React.useRef(null);
-  const settingsTriggerRef = React.useRef(null);
   const contextRailScrollTopRef = React.useRef(0);
   const lastQuickActionIndexRef = React.useRef(-1);
   const previousContextCollapsedRef = React.useRef(false);
 
   const versions = (window.electronInfo && window.electronInfo.versions) || {};
-  const selectedTheme = themeOptionsById[selectedThemeId] || darkThemeOptions[0];
 
-  React.useEffect(() => {
-    if (typeof document === 'undefined' || !document.documentElement) {
+  const MAX_CONSOLE_ENTRIES = 500;
+
+  const pushLog = React.useCallback((level, source, message, detail) => {
+    const entry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      level: String(level || 'info'),
+      source: String(source || 'app'),
+      message: String(message || ''),
+      detail: detail !== undefined && detail !== null ? String(detail) : undefined,
+      timestamp: Date.now(),
+    };
+    setConsoleLogs(prev => {
+      const next = [...prev, entry];
+      return next.length > MAX_CONSOLE_ENTRIES ? next.slice(next.length - MAX_CONSOLE_ENTRIES) : next;
+    });
+    if (level === 'error' || level === 'warn') {
+      setUnreadErrors(prev => prev + 1);
+    }
+  }, []);
+
+  const exportConsoleLogs = React.useCallback(async () => {
+    const api = typeof window !== 'undefined' && window.sentinel && window.sentinel.console;
+    if (!api || typeof api.export !== 'function') {
+      pushLog('error', 'renderer', 'Console export is unavailable in this build.');
       return;
     }
 
-    const rootStyle = document.documentElement.style;
-    rootStyle.setProperty('--sentinel-bg-canvas', selectedTheme.colors.bgCanvas);
-    rootStyle.setProperty('--sentinel-bg-panel', selectedTheme.colors.bgPanel);
-    rootStyle.setProperty('--sentinel-bg-surface', selectedTheme.colors.bgSurface);
-    rootStyle.setProperty('--sentinel-bg-subtle', selectedTheme.colors.bgSubtle);
-    rootStyle.setProperty('--sentinel-bg-elevated', selectedTheme.colors.bgElevated);
-    rootStyle.setProperty('--sentinel-fg-default', selectedTheme.colors.fgDefault);
-    rootStyle.setProperty('--sentinel-fg-muted', selectedTheme.colors.fgMuted);
-    rootStyle.setProperty('--sentinel-border-default', selectedTheme.colors.borderDefault);
-    rootStyle.setProperty('--sentinel-border-subtle', selectedTheme.colors.borderSubtle);
-    document.documentElement.setAttribute('data-sentinel-theme-id', selectedThemeId);
-  }, [selectedTheme, selectedThemeId]);
+    try {
+      const result = await api.export({ entries: consoleLogs });
+      if (result && result.ok && result.filePath) {
+        pushLog('info', 'app', 'Console log export completed.', result.filePath);
+        return;
+      }
+      if (!result || !result.canceled) {
+        pushLog('warn', 'app', 'Console log export did not complete.');
+      }
+    } catch (error) {
+      const message = error && error.message ? error.message : String(error);
+      if (message.includes("No handler registered for 'console:export'")) {
+        const downloaded = downloadConsoleLogs(consoleLogs);
+        if (downloaded) {
+          pushLog('warn', 'app', 'Console export handler unavailable. Downloaded log via renderer fallback.');
+          return;
+        }
+      }
+      pushLog('error', 'app', 'Console log export failed.', message);
+    }
+  }, [consoleLogs, pushLog]);
+
+  // Scroll to the bottom whenever new entries arrive while console is open.
+  React.useEffect(() => {
+    if (consoleOpen && consoleAutoScroll && consoleEndRef.current && typeof consoleEndRef.current.scrollIntoView === 'function') {
+      consoleEndRef.current.scrollIntoView({ block: 'end' });
+    }
+  }, [consoleLogs, consoleOpen, consoleAutoScroll]);
+
+  // Reset unread badge when drawer is opened.
+  React.useEffect(() => {
+    if (consoleOpen) {
+      setUnreadErrors(0);
+    }
+  }, [consoleOpen]);
+
+  // Subscribe to main-process console:log push events via preload.
+  React.useEffect(() => {
+    const api = typeof window !== 'undefined' && window.sentinel && window.sentinel.console;
+    if (!api || typeof api.onLog !== 'function') {
+      return undefined;
+    }
+    const unsub = api.onLog(payload => {
+      if (!payload) return;
+      pushLog(payload.level, payload.source, payload.message, payload.detail);
+    });
+    return () => { if (typeof unsub === 'function') unsub(); };
+  }, [pushLog]);
+
+  // Capture renderer-side unhandled errors and promise rejections.
+  React.useEffect(() => {
+    const handleError = (event) => {
+      const msg = event.message || (event.error && event.error.message) || 'Unknown error';
+      const detail = event.filename ? `${event.filename}:${event.lineno || 0}` : undefined;
+      pushLog('error', 'renderer', msg, detail);
+    };
+    const handleRejection = (event) => {
+      const reason = event.reason;
+      const msg = reason instanceof Error ? reason.message : String(reason || 'Unhandled rejection');
+      pushLog('error', 'renderer', msg);
+    };
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
+    };
+  }, [pushLog]);
 
   const addPane = React.useCallback((moduleName) => {
     setOpenPanes((prev) => {
@@ -439,6 +572,103 @@ function App() {
   }, [activePane]);
 
   React.useEffect(() => {
+    applyThemeToDocument(selectedThemeId);
+  }, [selectedThemeId]);
+
+  function parseHeadersText(text) {
+    const map = {};
+    for (const rawLine of String(text || '').split(/\r?\n/g)) {
+      const line = rawLine.trim();
+      if (!line) {
+        continue;
+      }
+      const separator = line.indexOf(':');
+      if (separator <= 0) {
+        continue;
+      }
+      const name = line.slice(0, separator).trim();
+      const value = line.slice(separator + 1).trim();
+      if (!name) {
+        continue;
+      }
+      map[name] = value;
+    }
+    return map;
+  }
+
+  function parseStaticIpsText(text) {
+    const out = [];
+    const seen = new Set();
+    for (const token of String(text || '').split(/\r?\n|,/g)) {
+      const ip = token.trim();
+      if (!ip || seen.has(ip)) {
+        continue;
+      }
+      seen.add(ip);
+      out.push(ip);
+    }
+    return out;
+  }
+
+  const loadProxyRuntimeSettings = React.useCallback(async () => {
+    const api = typeof window !== 'undefined' && window.sentinel && window.sentinel.proxy && window.sentinel.proxy.config;
+    if (!api || typeof api.get !== 'function') {
+      return;
+    }
+
+    setProxySettingsLoading(true);
+    try {
+      const config = await api.get();
+      const headersText = Object.entries(config && config.customHeaders ? config.customHeaders : {})
+        .map(([name, value]) => `${name}: ${value}`)
+        .join('\n');
+      setProxyHeadersText(headersText);
+      setProxyToolHeaderEnabled(Boolean(config && config.toolIdentifier && config.toolIdentifier.enabled));
+      setProxyToolHeaderName(String(config && config.toolIdentifier && config.toolIdentifier.headerName ? config.toolIdentifier.headerName : 'X-Sentinel-Tool'));
+      setProxyToolHeaderValue(String(config && config.toolIdentifier && config.toolIdentifier.value ? config.toolIdentifier.value : 'Gulp-Sentinel'));
+      setProxyStaticIpsText(Array.isArray(config && config.staticIpAddresses) ? config.staticIpAddresses.join('\n') : '');
+    } catch (error) {
+      pushLog('error', 'app', 'Failed to load proxy runtime settings.', error && error.message ? error.message : String(error));
+    } finally {
+      setProxySettingsLoading(false);
+    }
+  }, [pushLog]);
+
+  const saveProxyRuntimeSettings = React.useCallback(async () => {
+    const api = typeof window !== 'undefined' && window.sentinel && window.sentinel.proxy && window.sentinel.proxy.config;
+    if (!api || typeof api.set !== 'function') {
+      pushLog('error', 'app', 'Proxy runtime settings are unavailable in this build.');
+      return;
+    }
+
+    setProxySettingsSaving(true);
+    try {
+      const config = {
+        customHeaders: parseHeadersText(proxyHeadersText),
+        toolIdentifier: {
+          enabled: proxyToolHeaderEnabled,
+          headerName: proxyToolHeaderName,
+          value: proxyToolHeaderValue,
+        },
+        staticIpAddresses: parseStaticIpsText(proxyStaticIpsText),
+      };
+      await api.set({ config });
+      pushLog('info', 'app', 'Proxy runtime settings saved from Preferences.');
+    } catch (error) {
+      pushLog('error', 'app', 'Failed to save proxy runtime settings.', error && error.message ? error.message : String(error));
+    } finally {
+      setProxySettingsSaving(false);
+    }
+  }, [proxyHeadersText, proxyStaticIpsText, proxyToolHeaderEnabled, proxyToolHeaderName, proxyToolHeaderValue, pushLog]);
+
+  React.useEffect(() => {
+    if (!settingsOpen) {
+      return;
+    }
+    loadProxyRuntimeSettings();
+  }, [settingsOpen, loadProxyRuntimeSettings]);
+
+  React.useEffect(() => {
     const handleKeyDown = (event) => {
       if ((event.ctrlKey || event.metaKey) && String(event.key).toLowerCase() === 'k') {
         event.preventDefault();
@@ -446,6 +676,7 @@ function App() {
       }
       if (event.key === 'Escape') {
         setCommandPaletteOpen(false);
+        setSettingsOpen(false);
       }
     };
 
@@ -469,42 +700,6 @@ function App() {
       window.clearInterval(timer);
     };
   }, [addPane]);
-
-  React.useEffect(() => {
-    if (!settingsMenuOpen) {
-      setPreferencesMenuOpen(false);
-      return undefined;
-    }
-
-    const handlePointerDown = (event) => {
-      if (!settingsMenuRef.current) {
-        return;
-      }
-      if (settingsMenuRef.current.contains(event.target)) {
-        return;
-      }
-      if (settingsTriggerRef.current && settingsTriggerRef.current.contains(event.target)) {
-        return;
-      }
-      setSettingsMenuOpen(false);
-      setPreferencesMenuOpen(false);
-    };
-
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        setSettingsMenuOpen(false);
-        setPreferencesMenuOpen(false);
-      }
-    };
-
-    window.addEventListener('mousedown', handlePointerDown);
-    window.addEventListener('keydown', handleEscape);
-
-    return () => {
-      window.removeEventListener('mousedown', handlePointerDown);
-      window.removeEventListener('keydown', handleEscape);
-    };
-  }, [settingsMenuOpen]);
 
   const filteredCommands = modules.filter((moduleName) => {
     const query = String(commandQuery || '').trim().toLowerCase();
@@ -617,29 +812,21 @@ function App() {
   }, [contextCollapsed]);
 
   const ActivePanel = modulePanels[activePane] || DashboardShell;
+  const activeTheme = selectedTheme;
+  const shellCodeProps = {
+    bg: 'bg.subtle',
+    color: 'fg.default',
+    borderWidth: '1px',
+    borderColor: 'border.default',
+    borderRadius: 'sm',
+    px: '1.5',
+    py: '0.5',
+    fontSize: 'xs',
+    fontFamily: 'mono'
+  };
 
   return (
-    <Flex
-      h='100vh'
-      overflow='hidden'
-      bg='bg.canvas'
-      color='fg.default'
-      direction='row'
-      fontFamily={selectedTheme.text.fontFamily}
-      fontWeight={selectedTheme.text.fontWeight}
-      letterSpacing={selectedTheme.text.letterSpacing}
-      style={{
-        '--sentinel-bg-canvas': selectedTheme.colors.bgCanvas,
-        '--sentinel-bg-panel': selectedTheme.colors.bgPanel,
-        '--sentinel-bg-surface': selectedTheme.colors.bgSurface,
-        '--sentinel-bg-subtle': selectedTheme.colors.bgSubtle,
-        '--sentinel-bg-elevated': selectedTheme.colors.bgElevated,
-        '--sentinel-fg-default': selectedTheme.colors.fgDefault,
-        '--sentinel-fg-muted': selectedTheme.colors.fgMuted,
-        '--sentinel-border-default': selectedTheme.colors.borderDefault,
-        '--sentinel-border-subtle': selectedTheme.colors.borderSubtle
-      }}
-    >
+    <Flex h='100vh' overflow='hidden' bg='bg.canvas' color='fg.default' direction='row' fontFamily='body'>
 
       {/* Left Activity Bar */}
       <VStack
@@ -658,8 +845,6 @@ function App() {
         <Button
           size='sm'
           variant='ghost'
-          color='fg.default'
-          _hover={{ bg: 'bg.subtle', color: 'fg.default' }}
           mx={sidebarExpanded ? '2' : '0'}
           minW='0'
           h='40px'
@@ -681,12 +866,6 @@ function App() {
               <Button
                 size='sm'
                 variant={isActive ? 'solid' : 'ghost'}
-                color={isActive ? 'white' : 'fg.default'}
-                bg={isActive ? 'brand.600' : 'transparent'}
-                _hover={{
-                  bg: isActive ? 'brand.500' : 'bg.subtle',
-                  color: isActive ? 'white' : 'fg.default'
-                }}
                 w={sidebarExpanded ? '100%' : '44px'}
                 h='44px'
                 px={sidebarExpanded ? '3' : '0'}
@@ -724,175 +903,25 @@ function App() {
         <Box borderBottomWidth='1px' borderColor='border.default' bg='bg.elevated'>
           <Flex px='4' py='3' justify='space-between' align='center' gap='4'>
             <Box>
-              <Heading size='sm'>Sentinel Workspace</Heading>
-              <Text fontSize='sm' color='fg.default'>Workbench shell for concurrent security workflows.</Text>
+              <Heading size='sm' fontFamily='heading' letterSpacing='0.01em'>Sentinel Workspace</Heading>
+              <Text fontSize='sm' color='fg.muted' fontFamily='body'>Workbench shell for concurrent security workflows.</Text>
             </Box>
             <HStack gap='3' wrap='wrap' justify='flex-end'>
               <Badge colorPalette={proxyRunning ? 'green' : 'orange'}>
                 Proxy {proxyRunning ? 'running' : 'paused'}
               </Badge>
-              <Text fontSize='xs' color={selectedTheme.colors.fgDefault}>Theme <Code color={selectedTheme.colors.fgDefault} bg={selectedTheme.colors.bgSurface} borderWidth='1px' borderColor={selectedTheme.colors.borderDefault}>{selectedTheme.label}</Code></Text>
-              <Text fontSize='xs' color={selectedTheme.colors.fgDefault}>Project <Code color={selectedTheme.colors.fgDefault} bg={selectedTheme.colors.bgSurface} borderWidth='1px' borderColor={selectedTheme.colors.borderDefault}>sentinel-dev</Code></Text>
-              <Text fontSize='xs' color={selectedTheme.colors.fgDefault}>Electron <Code color={selectedTheme.colors.fgDefault} bg={selectedTheme.colors.bgSurface} borderWidth='1px' borderColor={selectedTheme.colors.borderDefault}>{versions.electron || 'unknown'}</Code></Text>
-              <Box position='relative'>
-                <Button
-                  ref={settingsTriggerRef}
-                  size='xs'
-                  variant='outline'
-                  color={selectedTheme.colors.fgDefault}
-                  bg={selectedTheme.colors.bgPanel}
-                  borderColor={selectedTheme.colors.borderDefault}
-                  _hover={{
-                    bg: selectedTheme.colors.bgSubtle,
-                    color: selectedTheme.colors.fgDefault,
-                    borderColor: selectedTheme.colors.borderSubtle
-                  }}
-                  onClick={() => setSettingsMenuOpen((prev) => !prev)}
-                  title='Open settings menu'
-                >
-                  <HStack gap='1'>
-                    <FiSettings size={14} />
-                    <Text fontSize='xs'>Settings</Text>
-                  </HStack>
-                </Button>
-                {settingsMenuOpen ? (
-                  <Box
-                    ref={settingsMenuRef}
-                    position='absolute'
-                    top='calc(100% + 8px)'
-                    right='0'
-                    minW='340px'
-                    borderWidth='1px'
-                    borderColor={selectedTheme.colors.borderDefault}
-                    borderRadius='sm'
-                    bg={selectedTheme.colors.bgPanel}
-                    boxShadow='0 18px 34px rgba(0, 0, 0, 0.35)'
-                    p='2'
-                    zIndex='1200'
-                  >
-                    <Button
-                      size='sm'
-                      variant='ghost'
-                      color={selectedTheme.colors.fgDefault}
-                      _hover={{ bg: selectedTheme.colors.bgSubtle, color: selectedTheme.colors.fgDefault }}
-                      justifyContent='space-between'
-                      w='100%'
-                      onClick={() => setPreferencesMenuOpen((prev) => !prev)}
-                    >
-                      <Text fontSize='sm'>Preferences</Text>
-                      <FiChevronRight size={14} />
-                    </Button>
-                    {preferencesMenuOpen ? (
-                      <Box mt='2' borderTopWidth='1px' borderColor={selectedTheme.colors.borderSubtle} pt='2'>
-                        <Text px='2' pb='2' fontSize='xs' color={selectedTheme.colors.fgDefault} textTransform='uppercase' letterSpacing='wider'>
-                          Theme Options
-                        </Text>
-                        <Stack gap='2'>
-                          <Box>
-                            <Text px='2' pb='1' fontSize='xs' color={selectedTheme.colors.fgDefault}>Dark Themes</Text>
-                            <Stack gap='1'>
-                              {darkThemeOptions.map((option) => (
-                                <Button
-                                  key={option.id}
-                                  size='sm'
-                                  variant={selectedThemeId === option.id ? 'solid' : 'ghost'}
-                                  color={selectedThemeId === option.id ? 'white' : 'fg.default'}
-                                  bg={selectedThemeId === option.id ? 'brand.600' : 'transparent'}
-                                  _hover={{
-                                    bg: selectedThemeId === option.id ? 'brand.500' : 'bg.subtle',
-                                    color: selectedThemeId === option.id ? 'white' : 'fg.default'
-                                  }}
-                                  justifyContent='space-between'
-                                  onClick={() => {
-                                    setSelectedThemeId(option.id);
-                                    setSettingsMenuOpen(false);
-                                    setPreferencesMenuOpen(false);
-                                  }}
-                                >
-                                  <Text fontSize='sm'>{option.label}</Text>
-                                  <Code
-                                    fontSize='xs'
-                                    color={selectedThemeId === option.id ? 'white' : selectedTheme.colors.fgDefault}
-                                    bg={selectedThemeId === option.id ? 'transparent' : selectedTheme.colors.bgSurface}
-                                    borderWidth='1px'
-                                    borderColor={selectedThemeId === option.id ? 'transparent' : selectedTheme.colors.borderDefault}
-                                  >
-                                    {option.id}
-                                  </Code>
-                                </Button>
-                              ))}
-                            </Stack>
-                          </Box>
-                          <Box>
-                            <Text px='2' pb='1' fontSize='xs' color={selectedTheme.colors.fgDefault}>Light Themes</Text>
-                            <Stack gap='1'>
-                              {lightThemeOptions.map((option) => (
-                                <Button
-                                  key={option.id}
-                                  size='sm'
-                                  variant={selectedThemeId === option.id ? 'solid' : 'ghost'}
-                                  color={selectedThemeId === option.id ? 'white' : 'fg.default'}
-                                  bg={selectedThemeId === option.id ? 'brand.600' : 'transparent'}
-                                  _hover={{
-                                    bg: selectedThemeId === option.id ? 'brand.500' : 'bg.subtle',
-                                    color: selectedThemeId === option.id ? 'white' : 'fg.default'
-                                  }}
-                                  justifyContent='space-between'
-                                  onClick={() => {
-                                    setSelectedThemeId(option.id);
-                                    setSettingsMenuOpen(false);
-                                    setPreferencesMenuOpen(false);
-                                  }}
-                                >
-                                  <Text fontSize='sm'>{option.label}</Text>
-                                  <Code
-                                    fontSize='xs'
-                                    color={selectedThemeId === option.id ? 'white' : selectedTheme.colors.fgDefault}
-                                    bg={selectedThemeId === option.id ? 'transparent' : selectedTheme.colors.bgSurface}
-                                    borderWidth='1px'
-                                    borderColor={selectedThemeId === option.id ? 'transparent' : selectedTheme.colors.borderDefault}
-                                  >
-                                    {option.id}
-                                  </Code>
-                                </Button>
-                              ))}
-                            </Stack>
-                          </Box>
-                        </Stack>
-                      </Box>
-                    ) : null}
-                  </Box>
-                ) : null}
-              </Box>
-              <Button
-                size='xs'
-                variant='outline'
-                color={selectedTheme.colors.fgDefault}
-                bg={selectedTheme.colors.bgPanel}
-                borderColor={selectedTheme.colors.borderDefault}
-                _hover={{
-                  bg: selectedTheme.colors.bgSubtle,
-                  color: selectedTheme.colors.fgDefault,
-                  borderColor: selectedTheme.colors.borderSubtle
-                }}
-                onClick={() => setProxyRunning((prev) => !prev)}
-              >
+              <Button size='xs' variant='outline' onClick={() => setSettingsOpen(true)}>
+                <HStack gap='1'>
+                  <FiSettings size={12} />
+                  <Text fontSize='xs'>Settings</Text>
+                </HStack>
+              </Button>
+              <Text fontSize='xs' color='fg.muted' fontFamily='body'>Project <Code {...shellCodeProps}>sentinel-dev</Code></Text>
+              <Text fontSize='xs' color='fg.muted' fontFamily='body'>Electron <Code {...shellCodeProps}>{versions.electron || 'unknown'}</Code></Text>
+              <Button size='xs' variant='outline' onClick={() => setProxyRunning((prev) => !prev)}>
                 {proxyRunning ? 'Pause' : 'Resume'}
               </Button>
-              <Button
-                size='xs'
-                variant='outline'
-                color={selectedTheme.colors.fgDefault}
-                bg={selectedTheme.colors.bgPanel}
-                borderColor={selectedTheme.colors.borderDefault}
-                _hover={{
-                  bg: selectedTheme.colors.bgSubtle,
-                  color: selectedTheme.colors.fgDefault,
-                  borderColor: selectedTheme.colors.borderSubtle
-                }}
-                onClick={() => setCommandPaletteOpen(true)}
-                title='Command palette'
-              >
+              <Button size='xs' variant='outline' onClick={() => setCommandPaletteOpen(true)} title='Command palette'>
                 Ctrl+K
               </Button>
             </HStack>
@@ -919,20 +948,7 @@ function App() {
                 </HStack>
               ))}
             </HStack>
-            <Button
-              ref={contextToggleButtonRef}
-              size='xs'
-              variant='outline'
-              color={selectedTheme.colors.fgDefault}
-              bg={selectedTheme.colors.bgPanel}
-              borderColor={selectedTheme.colors.borderDefault}
-              _hover={{
-                bg: selectedTheme.colors.bgSubtle,
-                color: selectedTheme.colors.fgDefault,
-                borderColor: selectedTheme.colors.borderSubtle
-              }}
-              onClick={() => setContextCollapsed((prev) => !prev)}
-            >
+            <Button ref={contextToggleButtonRef} size='xs' variant='outline' onClick={() => setContextCollapsed((prev) => !prev)}>
               {contextCollapsed ? 'Show Context' : 'Hide Context'}
             </Button>
           </Flex>
@@ -951,26 +967,22 @@ function App() {
               overflow='hidden'
               pointerEvents={contextCollapsed ? 'none' : 'auto'}
               aria-hidden={contextCollapsed}
+              bg='bg.elevated'
+              borderLeftWidth={contextCollapsed ? '0px' : '1px'}
+              borderColor='border.default'
             >
-              <VStack ref={contextRailContentRef} w='320px' minW='320px' align='stretch' gap='3' overflowY='auto' overflowX='hidden' pr='1'>
-                <Box p='4' borderWidth='1px' borderColor={selectedTheme.colors.borderSubtle} borderRadius='sm' bg={selectedTheme.colors.bgPanel}>
-                  <Text fontWeight='semibold' mb='2' color={selectedTheme.colors.fgDefault}>Active Context</Text>
-                  <Text fontSize='sm' mb='2' color={selectedTheme.colors.fgDefault}>
-                    Pane
-                    {' '}
-                    <Code color={selectedTheme.colors.fgDefault} bg={selectedTheme.colors.bgSurface} borderWidth='1px' borderColor={selectedTheme.colors.borderDefault}>{activePane}</Code>
-                  </Text>
+              <VStack ref={contextRailContentRef} w='320px' minW='320px' align='stretch' gap='3' overflowY='auto' overflowX='hidden' p='3'>
+                <Box p='4' borderWidth='1px' borderColor='border.default' borderRadius='sm' bg='bg.panel'>
+                  <Text fontWeight='semibold' mb='2' fontSize='sm' fontFamily='heading'>Active Context</Text>
+                  <Text fontSize='sm' mb='2' fontFamily='body'>Pane <Code {...shellCodeProps}>{activePane}</Code></Text>
                   {(panelStatusFields[activePane] || []).map((field) => (
-                    <Text key={field.key} fontSize='sm' fontFamily='mono' color={selectedTheme.colors.fgDefault}>
-                      {field.label}:{' '}
-                      <Code color={selectedTheme.colors.fgDefault} bg={selectedTheme.colors.bgSurface} borderWidth='1px' borderColor={selectedTheme.colors.borderDefault}>
-                        {String((panelStatus[activePane] || {})[field.key] ?? '\u2014')}
-                      </Code>
+                    <Text key={field.key} fontSize='sm' fontFamily='body' color='fg.muted'>
+                      {field.label}: <Code {...shellCodeProps}>{String((panelStatus[activePane] || {})[field.key] ?? '\u2014')}</Code>
                     </Text>
                   ))}
                 </Box>
-                <Box p='4' borderWidth='1px' borderColor={selectedTheme.colors.borderSubtle} borderRadius='sm' bg={selectedTheme.colors.bgPanel}>
-                  <Text fontWeight='semibold' mb='2' color={selectedTheme.colors.fgDefault}>Quick Actions</Text>
+                <Box p='4' borderWidth='1px' borderColor='border.default' borderRadius='sm' bg='bg.panel'>
+                  <Text fontWeight='semibold' mb='2' fontSize='sm' fontFamily='heading'>Quick Actions</Text>
                   <Stack gap='2'>
                     {contextQuickActions.map((action, index) => (
                       <Button
@@ -980,16 +992,7 @@ function App() {
                         }}
                         size='sm'
                         justifyContent='flex-start'
-                        variant='ghost'
-                        color={selectedTheme.colors.fgDefault}
-                        borderWidth='1px'
-                        borderColor={selectedTheme.colors.borderDefault}
-                        bg={selectedTheme.colors.bgSurface}
-                        _hover={{
-                          bg: selectedTheme.colors.bgSubtle,
-                          color: selectedTheme.colors.fgDefault,
-                          borderColor: selectedTheme.colors.borderSubtle
-                        }}
+                        variant='outline'
                         onClick={action.run}
                         onFocus={() => {
                           lastQuickActionIndexRef.current = index;
@@ -997,8 +1000,8 @@ function App() {
                         onKeyDown={(event) => handleQuickActionKeyDown(event, index)}
                       >
                         <Box textAlign='left'>
-                          <Text fontSize='sm' color={selectedTheme.colors.fgDefault}>{action.label}</Text>
-                          <Text fontSize='xs' color={selectedTheme.colors.fgMuted}>{action.description}</Text>
+                          <Text fontSize='sm' fontFamily='body'>{action.label}</Text>
+                          <Text fontSize='xs' color='fg.muted' fontFamily='body'>{action.description}</Text>
                         </Box>
                       </Button>
                     ))}
@@ -1008,23 +1011,332 @@ function App() {
             </Box>
           </Flex>
 
-          <Flex px='3' py='2' borderTopWidth='1px' borderColor='border.default' bg='bg.elevated' justify='space-between' align='center' fontSize='xs' fontFamily='mono'>
+          {/* Console Drawer */}
+          {(() => {
+            const levelColor = { info: selectedTheme.colors.fgDefault, warn: '#d97706', error: '#dc2626' };
+            const levelBg = { info: 'transparent', warn: 'rgba(217,119,6,0.08)', error: 'rgba(220,38,38,0.08)' };
+            const filteredLogs = consoleFilter === 'all' ? consoleLogs : consoleLogs.filter(e => e.level === consoleFilter);
+            return (
+              <Box
+                borderTopWidth='1px'
+                borderColor={selectedTheme.colors.borderDefault}
+                bg={selectedTheme.colors.bgElevated}
+                style={{ transition: 'height 0.2s ease' }}
+                h={consoleOpen ? '200px' : '0px'}
+                overflow='hidden'
+                display='flex'
+                flexDirection='column'
+              >
+                {consoleOpen ? (
+                  <Flex direction='column' h='100%'>
+                    <Flex
+                      px='3'
+                      py='1'
+                      borderBottomWidth='1px'
+                      borderColor={selectedTheme.colors.borderSubtle}
+                      align='center'
+                      gap='2'
+                      flex='0 0 auto'
+                      bg={selectedTheme.colors.bgPanel}
+                    >
+                      <HStack gap='1' flex='0 0 auto'>
+                        <Box w='6px' h='6px' borderRadius='full' bg='green.400' />
+                        <Text fontSize='xs' color={selectedTheme.colors.fgMuted}>Live Output</Text>
+                      </HStack>
+                      <HStack gap='1' flex='1'>
+                        {['all', 'info', 'warn', 'error'].map(lvl => (
+                          <Button
+                            key={lvl}
+                            size='xs'
+                            variant={consoleFilter === lvl ? 'solid' : 'ghost'}
+                            color={consoleFilter === lvl ? 'white' : selectedTheme.colors.fgMuted}
+                            bg={consoleFilter === lvl ? (lvl === 'error' ? '#991b1b' : lvl === 'warn' ? '#92400e' : 'brand.600') : 'transparent'}
+                            _hover={{ bg: selectedTheme.colors.bgSubtle }}
+                            onClick={() => setConsoleFilter(lvl)}
+                          >
+                            {lvl.charAt(0).toUpperCase() + lvl.slice(1)}
+                            {lvl !== 'all' ? (
+                              <Badge ml='1' colorPalette={lvl === 'error' ? 'red' : lvl === 'warn' ? 'orange' : 'blue'} size='xs'>
+                                {consoleLogs.filter(e => e.level === lvl).length}
+                              </Badge>
+                            ) : null}
+                          </Button>
+                        ))}
+                      </HStack>
+                      <Button
+                        size='xs'
+                        variant='ghost'
+                        color={consoleAutoScroll ? selectedTheme.colors.fgDefault : selectedTheme.colors.fgMuted}
+                        _hover={{ bg: selectedTheme.colors.bgSubtle }}
+                        onClick={() => setConsoleAutoScroll(prev => !prev)}
+                        title={consoleAutoScroll ? 'Pause auto-scroll' : 'Resume auto-scroll'}
+                        aria-label={consoleAutoScroll ? 'Pause auto-scroll' : 'Resume auto-scroll'}
+                      >
+                        {consoleAutoScroll ? 'Pause Auto-Scroll' : 'Resume Auto-Scroll'}
+                      </Button>
+                      <Button
+                        size='xs'
+                        variant='ghost'
+                        color={selectedTheme.colors.fgMuted}
+                        _hover={{ bg: selectedTheme.colors.bgSubtle }}
+                        onClick={exportConsoleLogs}
+                        title='Export console logs'
+                        aria-label='Export console logs'
+                      >
+                        Export Logs
+                      </Button>
+                      <Button
+                        size='xs'
+                        variant='ghost'
+                        color={selectedTheme.colors.fgMuted}
+                        _hover={{ bg: selectedTheme.colors.bgSubtle }}
+                        onClick={() => setConsoleLogs([])}
+                        title='Clear console'
+                        aria-label='Clear console'
+                      >
+                        <FiTrash2 size={12} />
+                      </Button>
+                    </Flex>
+                    <Box flex='1' overflowY='auto' overflowX='hidden' wordBreak='break-word' px='2' py='1' fontFamily="'IBM Plex Mono', monospace" fontSize='11px'>
+                      {filteredLogs.length === 0 ? (
+                        <Text color={selectedTheme.colors.fgMuted} fontSize='11px' py='2' px='1'>Waiting for app output stream...</Text>
+                      ) : filteredLogs.map(entry => (
+                        <Flex
+                          key={entry.id}
+                          gap='2'
+                          py='1px'
+                          px='1'
+                          borderRadius='sm'
+                          bg={levelBg[entry.level] || 'transparent'}
+                          align='baseline'
+                        >
+                          <Text
+                            flex='0 0 auto'
+                            color={selectedTheme.colors.fgMuted}
+                            fontSize='10px'
+                            style={{ userSelect: 'none' }}
+                          >
+                            {new Date(entry.timestamp).toLocaleTimeString()}
+                          </Text>
+                          <Text
+                            flex='0 0 auto'
+                            color={levelColor[entry.level] || selectedTheme.colors.fgMuted}
+                            fontWeight='600'
+                            fontSize='10px'
+                            minW='36px'
+                            style={{ userSelect: 'none' }}
+                          >
+                            {String(entry.level || 'info').toUpperCase()}
+                          </Text>
+                          <Text
+                            flex='0 0 auto'
+                            color={selectedTheme.colors.fgMuted}
+                            fontSize='10px'
+                            minW='60px'
+                            style={{ userSelect: 'none' }}
+                          >
+                            [{entry.source}]
+                          </Text>
+                          <Text color={levelColor[entry.level] || selectedTheme.colors.fgDefault} flex='1'>
+                            {entry.message}
+                            {entry.detail ? (
+                              <Text as='span' color={selectedTheme.colors.fgMuted}> — {entry.detail}</Text>
+                            ) : null}
+                          </Text>
+                        </Flex>
+                      ))}
+                      <Box ref={consoleEndRef} />
+                    </Box>
+                  </Flex>
+                ) : null}
+              </Box>
+            );
+          })()}
+
+          <Flex px='3' py='2' borderTopWidth='1px' borderColor='border.default' bg='bg.elevated' justify='space-between' align='center' fontSize='xs' fontFamily='body'>
             <HStack gap='3'>
-              <Text>Engine <Code>{proxyRunning ? 'running' : 'paused'}</Code></Text>
-              <Text>Tabs <Code>{openPanes.length}</Code></Text>
-              <Text>Scope <Code>in-scope-only</Code></Text>
+              <Text>Engine <Code {...shellCodeProps}>{proxyRunning ? 'running' : 'paused'}</Code></Text>
+              <Text>Tabs <Code {...shellCodeProps}>{openPanes.length}</Code></Text>
+              <Text>Scope <Code {...shellCodeProps}>in-scope-only</Code></Text>
             </HStack>
             <HStack gap='3'>
-              <Text>Memory <Code>{memoryUsage}</Code></Text>
-              <Text>Node <Code>{versions.node || 'unknown'}</Code></Text>
-              <Text>Electron <Code>{versions.electron || 'unknown'}</Code></Text>
+              <Button
+                size='xs'
+                variant='ghost'
+                color={selectedTheme.colors.fgMuted}
+                _hover={{ bg: selectedTheme.colors.bgSubtle }}
+                onClick={() => setConsoleOpen(prev => !prev)}
+                title={consoleOpen ? 'Hide console' : 'Show console'}
+              >
+                <HStack gap='1'>
+                  <FiTerminal size={12} />
+                  <Text fontSize='xs'>Console</Text>
+                  {unreadErrors > 0 && !consoleOpen ? (
+                    <Badge colorPalette='red' size='xs'>{unreadErrors}</Badge>
+                  ) : null}
+                  {consoleOpen ? <FiChevronDown size={12} /> : <FiChevronUp size={12} />}
+                </HStack>
+              </Button>
+              <Text>Memory <Code {...shellCodeProps}>{memoryUsage}</Code></Text>
+              <Text>Node <Code {...shellCodeProps}>{versions.node || 'unknown'}</Code></Text>
+              <Text>Electron <Code {...shellCodeProps}>{versions.electron || 'unknown'}</Code></Text>
             </HStack>
           </Flex>
         </Flex>
       </Flex>
 
+      {settingsOpen ? (
+        <Flex
+          position='fixed'
+          inset='0'
+          bg={activeTheme.mode === 'dark' ? 'rgba(5, 10, 16, 0.68)' : 'rgba(20, 28, 36, 0.20)'}
+          justify='flex-end'
+          zIndex='1050'
+          role='presentation'
+          onClick={() => setSettingsOpen(false)}
+        >
+          <Box
+            w='380px'
+            maxW='calc(100vw - 24px)'
+            h='100%'
+            bg='bg.panel'
+            borderLeftWidth='1px'
+            borderColor='border.default'
+            px='4'
+            py='4'
+            overflowY='auto'
+            onClick={(event) => event.stopPropagation()}
+            role='dialog'
+            aria-modal='true'
+            aria-label='Preferences'
+          >
+            <Flex justify='space-between' align='flex-start' mb='4' gap='3'>
+              <Box>
+                <Heading size='sm'>Preferences</Heading>
+                <Text fontSize='sm' color='fg.muted' mt='1'>
+                  Theme options apply across shell surfaces, panel controls, status messages, and overlays.
+                </Text>
+              </Box>
+              <Button size='xs' variant='ghost' onClick={() => setSettingsOpen(false)}>
+                Close
+              </Button>
+            </Flex>
+
+            <Box borderWidth='1px' borderColor='border.default' borderRadius='sm' bg='bg.surface' p='3'>
+              <Text fontWeight='semibold' fontSize='sm'>Theme Options</Text>
+              <Text fontSize='xs' color='fg.muted' mt='1'>
+                Active theme <Code>{activeTheme.label}</Code>
+              </Text>
+
+              <VStack align='stretch' gap='4' mt='4'>
+                {THEME_GROUPS.map((group) => (
+                  <Box key={group.id}>
+                    <Text fontSize='xs' color='fg.muted' textTransform='uppercase' letterSpacing='wider' mb='2'>
+                      {group.label}
+                    </Text>
+                    <VStack align='stretch' gap='2'>
+                      {Object.entries(THEME_REGISTRY)
+                        .filter(([, theme]) => theme.group === group.id)
+                        .map(([themeId, theme]) => (
+                          <Button
+                            key={themeId}
+                            variant={selectedThemeId === themeId ? 'solid' : 'outline'}
+                            justifyContent='space-between'
+                            h='auto'
+                            py='3'
+                            px='3'
+                            onClick={() => setSelectedThemeId(themeId)}
+                            aria-pressed={selectedThemeId === themeId}
+                          >
+                            <Box textAlign='left'>
+                              <Text fontSize='sm' fontWeight='semibold'>{theme.label}</Text>
+                              <Text fontSize='xs' color={selectedThemeId === themeId ? 'whiteAlpha.800' : 'fg.muted'}>
+                                {theme.description}
+                              </Text>
+                            </Box>
+                            <HStack gap='1' flexShrink='0'>
+                              <Box w='10px' h='10px' borderRadius='full' bg={theme.colors.bgCanvas} borderWidth='1px' borderColor={theme.colors.borderDefault} />
+                              <Box w='10px' h='10px' borderRadius='full' bg={theme.colors.bgSurface} borderWidth='1px' borderColor={theme.colors.borderDefault} />
+                              <Box w='10px' h='10px' borderRadius='full' bg={theme.colors.fgDefault} borderWidth='1px' borderColor={theme.colors.borderDefault} />
+                            </HStack>
+                          </Button>
+                        ))}
+                    </VStack>
+                  </Box>
+                ))}
+              </VStack>
+            </Box>
+
+            <Box borderWidth='1px' borderColor='border.default' borderRadius='sm' bg='bg.surface' p='3' mt='4'>
+              <Flex justify='space-between' align='center' mb='2' gap='2'>
+                <Text fontWeight='semibold' fontSize='sm'>Proxy Runtime Settings</Text>
+                <Button size='xs' variant='outline' onClick={saveProxyRuntimeSettings} loading={proxySettingsSaving} disabled={proxySettingsLoading}>
+                  Save
+                </Button>
+              </Flex>
+              <Text fontSize='xs' color='fg.muted' mb='2'>
+                Configure global headers, tool identifier header, and static source IP pool for outbound proxy traffic.
+              </Text>
+
+              <VStack align='stretch' gap='2'>
+                <Text fontSize='xs' color='fg.muted'>Custom headers (one per line: <Code>Header-Name: value</Code>)</Text>
+                <Textarea
+                  size='sm'
+                  minH='80px'
+                  value={proxyHeadersText}
+                  onChange={(event) => setProxyHeadersText(event.target.value)}
+                  placeholder={'X-Customer-ID: acme\nX-Environment: production'}
+                  fontFamily='mono'
+                  disabled={proxySettingsLoading || proxySettingsSaving}
+                />
+
+                <HStack align='center' gap='2' wrap='wrap'>
+                  <Button
+                    size='xs'
+                    variant={proxyToolHeaderEnabled ? 'solid' : 'outline'}
+                    onClick={() => setProxyToolHeaderEnabled(prev => !prev)}
+                    disabled={proxySettingsLoading || proxySettingsSaving}
+                  >
+                    {proxyToolHeaderEnabled ? 'Tool Header Enabled' : 'Tool Header Disabled'}
+                  </Button>
+                  <Input
+                    size='sm'
+                    value={proxyToolHeaderName}
+                    onChange={(event) => setProxyToolHeaderName(event.target.value)}
+                    placeholder='Header name'
+                    maxW='170px'
+                    fontFamily='mono'
+                    disabled={proxySettingsLoading || proxySettingsSaving}
+                  />
+                  <Input
+                    size='sm'
+                    value={proxyToolHeaderValue}
+                    onChange={(event) => setProxyToolHeaderValue(event.target.value)}
+                    placeholder='Header value'
+                    maxW='170px'
+                    fontFamily='mono'
+                    disabled={proxySettingsLoading || proxySettingsSaving}
+                  />
+                </HStack>
+
+                <Text fontSize='xs' color='fg.muted'>Static source IPs (one per line or comma-separated; rotated per request)</Text>
+                <Textarea
+                  size='sm'
+                  minH='64px'
+                  value={proxyStaticIpsText}
+                  onChange={(event) => setProxyStaticIpsText(event.target.value)}
+                  placeholder={'192.0.2.10\n192.0.2.11'}
+                  fontFamily='mono'
+                  disabled={proxySettingsLoading || proxySettingsSaving}
+                />
+              </VStack>
+            </Box>
+          </Box>
+        </Flex>
+      ) : null}
+
       {commandPaletteOpen ? (
-        <Flex position='fixed' inset='0' bg={getOverlayScrim(selectedThemeId)} align='flex-start' justify='center' pt='16' zIndex='1000' role='presentation'>
+        <Flex position='fixed' inset='0' bg={activeTheme.mode === 'dark' ? 'rgba(5, 10, 16, 0.65)' : 'rgba(20, 28, 36, 0.18)'} align='flex-start' justify='center' pt='16' zIndex='1000' role='presentation'>
           <Box
             w='560px'
             maxW='calc(100vw - 32px)'

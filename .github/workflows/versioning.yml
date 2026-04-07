@@ -9,13 +9,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  semver-and-metadata:
-    name: SemVer Check and Build Metadata
+  build-metadata:
+    name: Generate Build Metadata
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -25,9 +27,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Validate SemVer
-        run: npm run semver:check
 
       - name: Generate build metadata
         run: npm run build:metadata -- --out=artifacts/build-info.json

@@ -5,12 +5,12 @@ const {
   Code,
   Flex,
   Grid,
-  Heading,
   HStack,
   Input,
   Stack,
   Text,
   Textarea,
+  VStack,
 } = require('@chakra-ui/react');
 const { getStatusTextColor } = require('./theme-utils');
 
@@ -131,7 +131,8 @@ function ExtensionsPanel({ themeId }) {
   };
 
   return (
-    <Stack p='4' borderWidth='1px' borderRadius='md' gap='4'>
+    <Box p='4' h='100%' overflowY='auto' overflowX='hidden' wordBreak='break-word' borderWidth='1px' borderRadius='sm' borderColor='border.default'>
+      <VStack align='stretch' gap='4'>
       <Flex align='center' justify='space-between'>
         <Text fontWeight='medium' fontSize='sm'>Extensions</Text>
         <HStack gap='2'>
@@ -147,8 +148,8 @@ function ExtensionsPanel({ themeId }) {
         <Text fontSize='sm' color={getStatusTextColor('error', themeId)}>{errorText}</Text>
       ) : null}
 
-      <Box borderWidth='1px' borderRadius='md' p='3'>
-        <Heading size='sm' mb='3'>Install</Heading>
+      <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p='3'>
+        <Text fontWeight='semibold' fontSize='sm' mb='3'>Install</Text>
         <Grid templateColumns='1fr 1fr' gap='3'>
           <Box>
             <Text fontSize='xs' mb='1'>Mode</Text>
@@ -215,14 +216,14 @@ function ExtensionsPanel({ themeId }) {
         <Button mt='3' size='sm' colorPalette='blue' onClick={installExtension}>Install</Button>
       </Box>
 
-      <Box borderWidth='1px' borderRadius='md' p='3'>
-        <Heading size='sm' mb='2'>Installed Extensions</Heading>
+      <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p='3'>
+        <Text fontWeight='semibold' fontSize='sm' mb='2'>Installed Extensions</Text>
         {extensions.length === 0 ? (
           <Text fontSize='sm' color='fg.muted'>No extensions installed.</Text>
         ) : (
           <Stack gap='2'>
             {extensions.map((extension) => (
-              <Box key={extension.id} borderWidth='1px' borderRadius='md' p='2'>
+              <Box key={extension.id} borderWidth='1px' borderRadius='sm' borderColor='border.default' p='2'>
                 <Flex align='center' justify='space-between' gap='3'>
                   <Box>
                     <Text fontSize='sm' fontWeight='semibold'>{extension.name}</Text>
@@ -255,8 +256,8 @@ function ExtensionsPanel({ themeId }) {
         )}
       </Box>
 
-      <Box borderWidth='1px' borderRadius='md' p='3'>
-        <Heading size='sm' mb='2'>Audit Log</Heading>
+      <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p='3'>
+        <Text fontWeight='semibold' fontSize='sm' mb='2'>Audit Log</Text>
         {auditLog.length === 0 ? (
           <Text fontSize='sm' color='fg.muted'>No audit events recorded yet.</Text>
         ) : (
@@ -272,7 +273,8 @@ function ExtensionsPanel({ themeId }) {
           </Stack>
         )}
       </Box>
-    </Stack>
+      </VStack>
+    </Box>
   );
 }
 

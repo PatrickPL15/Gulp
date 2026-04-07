@@ -4,7 +4,10 @@ import http from 'node:http';
 const { createInterceptEngine } = require('../intercept-engine');
 const { createRulesEngine } = require('../rules-engine');
 const { createHistoryLog } = require('../history-log');
-const { createProtocolSupport } = require('../protocol-support');
+const {
+  createProtocolSupport,
+  setForwardRuntimeConfig,
+} = require('../protocol-support');
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -574,5 +577,93 @@ describe('SEN-14 proxy core', () => {
 
     expect(proxied.statusCode).toBe(200);
     expect(proxied.body).toBe('path:/double-check?x=1&once=1');
+  });
+
+  it('applies configured custom headers and tool identifier header to forwarded traffic', async () => {
+    let observedHeaders = {};
+    const upstreamServer = http.createServer((req, res) => {
+      observedHeaders = { ...req.headers };
+      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('ok');
+    });
+
+    await new Promise(resolve => upstreamServer.listen(0, '127.0.0.1', resolve));
+    const upstreamPort = upstreamServer.address().port;
+    cleanup.push(async () => {
+      await new Promise(resolve => upstreamServer.close(resolve));
+    });
+
+    setForwardRuntimeConfig({
+      customHeaders: {
+        'X-Test-Header': 'alpha',
+      },
+      toolIdentifier: {
+        enabled: true,
+        headerName: 'X-Tool-Id',
+        value: 'sentinel-suite',
+      },
+      staticIpAddresses: [],
+    });
+
+    try {
+      const protocolSupport = createProtocolSupport();
+      const response = await protocolSupport.forwardHttpRequest({
+        method: 'GET',
+        url: `http://127.0.0.1:${upstreamPort}/headers`,
+        host: '127.0.0.1',
+        headers: {
+          accept: 'text/plain',
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(observedHeaders['x-test-header']).toBe('alpha');
+      expect(observedHeaders['x-tool-id']).toBe('sentinel-suite');
+    } finally {
+      setForwardRuntimeConfig({});
+    }
+  });
+
+  it('passes selected static source IP as localAddress when forwarding', async () => {
+    const upstreamServer = http.createServer((req, res) => {
+      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('ok');
+    });
+
+    await new Promise(resolve => upstreamServer.listen(0, '127.0.0.1', resolve));
+    const upstreamPort = upstreamServer.address().port;
+    cleanup.push(async () => {
+      await new Promise(resolve => upstreamServer.close(resolve));
+    });
+
+    const originalRequest = http.request;
+    let capturedLocalAddress = '';
+    http.request = function wrappedRequest(options, callback) {
+      capturedLocalAddress = options && options.localAddress ? String(options.localAddress) : '';
+      return originalRequest.call(http, options, callback);
+    };
+
+    setForwardRuntimeConfig({
+      customHeaders: {},
+      toolIdentifier: {
+        enabled: false,
+      },
+      staticIpAddresses: ['127.0.0.1'],
+    });
+
+    try {
+      const protocolSupport = createProtocolSupport();
+      const response = await protocolSupport.forwardHttpRequest({
+        method: 'GET',
+        url: `http://127.0.0.1:${upstreamPort}/local-address`,
+        host: '127.0.0.1',
+        headers: {},
+      });
+      expect(response.statusCode).toBe(200);
+      expect(capturedLocalAddress).toBe('127.0.0.1');
+    } finally {
+      http.request = originalRequest;
+      setForwardRuntimeConfig({});
+    }
   });
 });

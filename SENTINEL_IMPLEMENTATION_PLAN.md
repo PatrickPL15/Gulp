@@ -3,7 +3,7 @@
 ## Objective
 Deliver the Sentinel Web Security Suite in milestone order with a stable, testable path from MVP proxy capabilities to advanced scanning and extensibility.
 
-## Status Snapshot (2026-04-02)
+## Status Snapshot (2026-04-06)
 - Milestone 1 is complete: project persistence and CA lifecycle are implemented and tested.
 - Milestone 2 is complete: intercepting proxy, rules engine, persistent history, and history-panel queue/search workflows are implemented.
 - Milestone 3 is complete: Repeater and Response Viewers (SEN-016) are fully implemented and tested.
@@ -18,11 +18,29 @@ Deliver the Sentinel Web Security Suite in milestone order with a stable, testab
   - Scope rules support host/domain/IP/CIDR include/exclude entries with persistence and reload.
   - Burp XML/JSON and HackerOne CSV imports are parsed, validated, and applied via IPC.
   - Site map tree generation marks in-scope/out-of-scope nodes; rules/intruder/scanner honor scope checks.
-- Remaining milestones (6+) focus on decoder/browser, advanced scanner/OOB/sequencer, and hardening.
+- Milestone 6 is complete: Decoder + Embedded Browser Workflow (SEN-019/SEN-020) is fully implemented and tested.
+  - Decoder service supports chained Base64/URL/HTML/Hex/GZIP transforms, reversible execution, and intermediate step reporting.
+  - Embedded browser is now Chromium-first: BrowserView host lifecycle in main process with per-session isolated partitions and explicit security defaults. Chromium traffic routed via `session.setProxy()` before `loadURL()`; `completeRuntimeNavigation`/`failRuntimeNavigation` complete session state from Chromium events. Preview-fetch HTTP code removed entirely.
+  - `EmbeddedBrowserPanel.jsx` replaced iframe preview with BrowserView host container; ResizeObserver bounds sync, push event subscriptions, full Back/Forward/Reload/Stop/Go/Close navigation controls.
+  - 302/302 unit tests pass across 25 files; 3/3 build smoke tests pass.
+- Milestone 7 is complete: Scanner + OOB + Sequencer (SEN-021/SEN-022/SEN-023) is implemented and tested.
+  - Scanner engine runs passive findings on history events and active SQLi/XSS/SSRF probes with scope filtering.
+  - OOB service generates unique callback payloads, records listener hits, and correlates callbacks to source metadata.
+  - Sequencer service captures replayed token samples, computes entropy/FIPS-style metrics, and exports CSV reports.
+- Milestone 8 is complete: Extension Host + Hardening (SEN-024/SEN-025/SEN-026) is implemented and tested.
+  - Extension host loads package/script extensions from a designated directory with explicit permission approval.
+  - Runtime execution is VM-isolated with timeout watchdog enforcement, event subscriptions, and unload cleanup.
+  - Main/preload security boundaries remain explicit (`contextIsolation`, `nodeIntegration: false`, `sandbox`) and contract-mapped IPC remains enforced.
+- Milestone 9 is complete: UI Workbench Modernization (SEN-043/SEN-044/SEN-045/SEN-046/SEN-047) is implemented and tested.
+  - App shell now runs as a fixed-viewport desktop workbench with activity rail, collapsible panes, tab strip, status bar, and command palette navigation.
+  - Proxy and history surfaces now use dense split-pane layouts with virtualization, buffered live updates, and Monaco-backed inspectors.
+  - Theme tokens now provide a dark-first workbench palette with semantic severity colors, stronger muted-text contrast, monospaced dense surfaces, subtle border tokens, and reduced radii.
+  - Activity rail supports collapsed icon-only and expanded icon+title modes, and the context rail is animated while preserving scroll/focus state with keyboard-navigable quick actions.
+- No remaining milestone gaps are tracked through M9.
 
 ## Assumptions
 - Existing Electron + Gulp + React + Chakra foundation remains in place.
-- Advanced feature stubs and TODO files remain under `src/main/proxy/` and `src/renderer/js/components/sentinel/` for milestones 6+.
+- Core Sentinel module set under `src/renderer/js/components/sentinel/` is implemented; future work is additive or maintenance-focused.
 - Estimates below are for one experienced full-stack engineer and represent implementation effort only (not external audits).
 
 ## Priority Order
@@ -240,6 +258,34 @@ Deliver the Sentinel Web Security Suite in milestone order with a stable, testab
 - Versioned project file schema with migration handling.
 - Import schema mapping for Burp project config and CSV-based scope definitions.
 
+## Versioning Governance (SemVer 2.0.0)
+
+This project follows [Semantic Versioning 2.0.0](https://semver.org). Version strings take the form `MAJOR.MINOR.PATCH[-pre-release][+build-metadata]`.
+
+### Increment rules
+- **MAJOR** — incompatible changes to the IPC contract, preload surface, or project-file schema that require coordinated updates to both main process and renderer.
+- **MINOR** — backwards-compatible new Sentinel modules, IPC channels, or preload additions. New milestone deliverables are MINOR increments.
+- **PATCH** — backwards-compatible bug fixes; no new channels, no interface changes.
+
+### Pre-release labels
+Milestone-gated feature sets that are not yet production-ready use a pre-release suffix appended with `-`:
+- `1.1.0-alpha` — early proof-of-concept, API unstable
+- `1.1.0-beta.1` — feature-complete, stabilization in progress
+- `1.1.0-rc.1` — release candidate, no planned interface changes
+
+Pre-release versions have lower precedence than the corresponding normal version (`1.1.0-rc.1 < 1.1.0`). Numeric identifiers must not have leading zeroes.
+
+### Build metadata
+`git.commitCount` in `src/contracts/build-info.json` serves as the monotonically increasing build iteration number for the branch. Build metadata is appended with `+` and is ignored in version comparisons. It is never written manually into `package.json`.
+
+### Enforcement tooling
+| Tool | Purpose |
+|---|---|
+| `npm run semver:check` | Validates `package.json` version and lockfile parity |
+| `npm run build:metadata` | Writes `src/contracts/build-info.json` with commit and CI context |
+| `.husky/pre-commit` | Blocks commits with invalid version strings |
+| `.github/workflows/versioning.yml` | CI gate on every push/PR; publishes `build-info` artifact |
+
 ## Effort Summary
 - Milestone 0: 1-2 days
 - Milestone 1: 3-5 days
@@ -250,14 +296,15 @@ Deliver the Sentinel Web Security Suite in milestone order with a stable, testab
 - Milestone 6: 4-6 days
 - Milestone 7: 10-14 days
 - Milestone 8: 6-9 days
+- Milestone 9: 4-6 days
 
-Approximate total: 45-67 engineering days.
+Approximate total: 49-73 engineering days.
 
 ## Suggested Next Implementation Slice
 Start with Milestone 0 + Milestone 1 together to establish contracts, persistence, and CA lifecycle first. This minimizes rework for all later modules and enables safe incremental shipping of MVP proxy features.
 
-## Workbench UI Directive Integration (2026-04-02)
-This section captures the approved renderer architecture direction for upcoming milestones.
+## Workbench UI Directive Integration (2026-04-03)
+This section captures the renderer architecture direction that has now been implemented for M9.
 
 ### Core Architectural Goals
 - Fixed viewport management: desktop workbench feel (no body scroll).
@@ -268,9 +315,9 @@ This section captures the approved renderer architecture direction for upcoming 
 ### Stage 1: Layout Engine (Workbench Shell)
 Goals:
 - Refactor shell to fixed viewport (`h="100vh"`, `overflow="hidden"`).
-- Add slim left activity bar (Proxy, Scanner, Repeater).
-- Add tabbed workspace (Chakra Tabs `variant="enclosed"`) for concurrent tasks.
-- Add collapsible sidebars to maximize log inspection area.
+- Add slim left activity bar for all modules with collapsed/expanded readability toggle.
+- Add tabbed workspace for concurrent tasks.
+- Add collapsible sidebars with animated transitions and state preservation (scroll/focus).
 - Add bottom status bar showing engine state, active scans/tasks, memory usage.
 
 ### Stage 2: High-Performance Proxy Logging

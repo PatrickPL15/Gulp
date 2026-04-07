@@ -1,0 +1,16 @@
+{
+  "appName": "gulp",
+  "version": "1.0.0",
+  "git": {
+    "commit": "55d0d9bee6461da254f68f596810ba815d4de828",
+    "shortCommit": "55d0d9be",
+    "branch": "Gulp-1.0",
+    "commitCount": "76"
+  },
+  "build": {
+    "timestampUtc": "2026-04-07T06:11:36.376Z",
+    "source": "local",
+    "runId": "local",
+    "runNumber": "local"
+  }
+}

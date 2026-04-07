@@ -84,14 +84,15 @@ class InterceptEngine extends EventEmitter {
     }).filter(Boolean);
   }
 
-  async captureRequest(request, forwarder) {
+  async captureRequest(request, forwarder, options = {}) {
     if (typeof forwarder !== 'function') {
       throw new Error('captureRequest requires a forwarder(request) function');
     }
 
     const queuedRequest = clone(request || {});
+    const bypassQueue = !!(options && options.bypassQueue);
 
-    if (!this.interceptEnabled && !this.globalPaused) {
+    if (bypassQueue || (!this.interceptEnabled && !this.globalPaused)) {
       const finalRequest = this.applyRules(queuedRequest);
       const response = await forwarder(finalRequest);
       this.emit('forwarded', { request: clone(finalRequest), response: clone(response) });

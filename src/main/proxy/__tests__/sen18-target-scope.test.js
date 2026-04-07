@@ -23,6 +23,72 @@ describe('SEN-018 target mapping and scope enforcement', () => {
     expect(mapper.isInScope({ url: 'https://out.example.net/' })).toBe(false);
   });
 
+  it('parses Burp JSON advanced-mode project file with regex host/port/file fields', () => {
+    const mapper = createTargetMapper();
+    const json = JSON.stringify({
+      target: {
+        scope: {
+          advanced_mode: true,
+          include: [
+            { enabled: true, file: '^/.*', host: '^hackerone\\.com$', port: '^443$', protocol: 'https' },
+            { enabled: true, file: '^/.*', host: '^.*\\.hackerone-ext-content\\.com$', port: '^443$', protocol: 'https' },
+          ],
+          exclude: [
+            { enabled: true, file: '^/.*', host: '^support\\.hackerone\\.com$', port: '^443$', protocol: 'https' },
+            { enabled: false, file: '^/.*', host: '^disabled\\.example\\.com$', port: '^443$', protocol: 'https' },
+          ],
+        },
+      },
+    });
+
+    const parsed = mapper.parseBurpImport(json);
+    // disabled entry must be dropped
+    expect(parsed.rules.length).toBe(3);
+    expect(parsed.warnings.some(w => w.includes('disabled'))).toBe(true);
+
+    const include1 = parsed.rules.find(r => r.host === 'hackerone.com');
+    expect(include1).toBeDefined();
+    expect(include1.kind).toBe('include');
+    expect(include1.port).toBe(443);
+    expect(include1.protocol).toBe('https');
+    expect(include1.path).toBe('/');
+
+    const include2 = parsed.rules.find(r => r.host === '*.hackerone-ext-content.com');
+    expect(include2).toBeDefined();
+    expect(include2.kind).toBe('include');
+
+    const exclude1 = parsed.rules.find(r => r.host === 'support.hackerone.com');
+    expect(exclude1).toBeDefined();
+    expect(exclude1.kind).toBe('exclude');
+    expect(exclude1.port).toBe(443);
+  });
+
+  it('parses Burp JSON advanced-mode scope and correctly enforces against live hosts', () => {
+    const mapper = createTargetMapper();
+    const json = JSON.stringify({
+      target: {
+        scope: {
+          advanced_mode: true,
+          include: [
+            { enabled: true, file: '^/.*', host: '^hackerone\\.com$', port: '^443$', protocol: 'https' },
+            { enabled: true, file: '^/.*', host: '^api\\.hackerone\\.com$', port: '^443$', protocol: 'https' },
+          ],
+          exclude: [
+            { enabled: true, file: '^/.*', host: '^support\\.hackerone\\.com$', port: '^443$', protocol: 'https' },
+          ],
+        },
+      },
+    });
+
+    const parsed = mapper.parseBurpImport(json);
+    mapper.setScopeRules(parsed.rules);
+
+    expect(mapper.isInScope({ url: 'https://hackerone.com/reports' })).toBe(true);
+    expect(mapper.isInScope({ url: 'https://api.hackerone.com/v1/me' })).toBe(true);
+    expect(mapper.isInScope({ url: 'https://support.hackerone.com/' })).toBe(false);
+    expect(mapper.isInScope({ url: 'https://unrelated.example.com/' })).toBe(false);
+  });
+
   it('parses Burp XML scope entries', () => {
     const mapper = createTargetMapper();
     const xml = [

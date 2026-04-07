@@ -277,7 +277,6 @@ function ProxyPanel({ themeId }) {
 				</HStack>
 			</Flex>
 			<VStack align='stretch' spacing={3} p='4' flex='1' overflow='hidden'>
-
 				<Text color='fg.muted' fontSize='sm'>
 					Intercept queue depth: <Code>{queue.length}</Code> · Inspector mode <Code>{inspectorTab.toUpperCase()}</Code>
 				</Text>

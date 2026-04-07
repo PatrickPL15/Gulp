@@ -108,7 +108,7 @@ function ScannerPanel({ themeId }) {
   }
 
   return (
-    <Box p='4' borderWidth='1px' borderRadius='md'>
+    <Box p='4' h='100%' overflowY='auto' overflowX='hidden' wordBreak='break-word' borderWidth='1px' borderRadius='sm' borderColor='border.default'>
       <VStack align='stretch' spacing={3}>
         <Flex justify='space-between' align='center' pb='3' borderBottomWidth='1px' borderColor='border.default'>
           <Text fontWeight='medium' fontSize='sm'>Scanner</Text>
@@ -118,8 +118,8 @@ function ScannerPanel({ themeId }) {
           </HStack>
         </Flex>
 
-        <Box borderWidth='1px' borderRadius='md' p={3}>
-          <Text fontWeight='semibold' mb={2}>Active Scan Inputs</Text>
+        <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p={3}>
+          <Text fontWeight='semibold' fontSize='sm' mb={2}>Active Scan Inputs</Text>
           <Text fontSize='sm' color='fg.muted' mb={1}>Targets (comma or newline separated)</Text>
           <Textarea rows={3} value={targetsText} onChange={event => setTargetsText(event.target.value)} />
           <HStack mt={2}>
@@ -141,15 +141,15 @@ function ScannerPanel({ themeId }) {
           </HStack>
         </Box>
 
-        <Box borderWidth='1px' borderRadius='md' p={3}>
+        <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p={3}>
           <HStack justify='space-between' mb={2}>
-            <Text fontWeight='semibold'>Findings</Text>
+            <Text fontWeight='semibold' fontSize='sm'>Findings</Text>
             <Code>{findings.length}</Code>
           </HStack>
           {findings.length === 0 ? (
             <Text fontSize='sm' color='fg.muted'>No findings loaded yet.</Text>
           ) : findings.map((finding, index) => (
-            <Box key={finding.id || `${finding.name}-${index}`} borderWidth='1px' borderRadius='md' p={2} mb={2}>
+            <Box key={finding.id || `${finding.name}-${index}`} borderWidth='1px' borderRadius='sm' borderColor='border.default' p={2} mb={2}>
               <HStack justify='space-between'>
                 <Text fontWeight='medium'>{finding.name || 'Finding'}</Text>
                 <Badge colorPalette={

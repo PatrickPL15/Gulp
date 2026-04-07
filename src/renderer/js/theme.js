@@ -47,21 +47,48 @@ const config = defineConfig({
         'bg.surface': { value: 'var(--sentinel-bg-surface, #1a2531)' },
         'bg.subtle': { value: 'var(--sentinel-bg-subtle, #202d3a)' },
         'bg.elevated': { value: 'var(--sentinel-bg-elevated, #0b1118)' },
-        'fg.default': { value: 'var(--sentinel-fg-default, #edf2f7)' },
-        'fg.muted': { value: 'var(--sentinel-fg-muted, #b4c2cf)' },
+        'fg.default': { value: 'var(--sentinel-fg-default, #f0f4f8)' },
+        'fg.muted': { value: 'var(--sentinel-fg-muted, #cad7e2)' },
         'border.default': { value: 'var(--sentinel-border-default, #2a3948)' },
         'border.subtle': { value: 'var(--sentinel-border-subtle, #34485b)' },
         'severity.critical': { value: '#e53e3e' },
         'severity.high': { value: '#ed8936' },
         'severity.medium': { value: '#ecc94b' },
         'severity.low': { value: '#63b3ed' },
-        'severity.info': { value: '#a0aec0' }
+        'severity.info': { value: '#b4c4d2' }
       }
     },
     recipes: {
       button: {
         base: {
-          borderRadius: 'sm'
+          borderRadius: 'sm',
+          fontWeight: '500'
+        },
+        variants: {
+          variant: {
+            solid: {
+              bg: 'brand.600',
+              color: 'white',
+              _hover: {
+                bg: 'brand.500'
+              }
+            },
+            outline: {
+              color: 'fg.default',
+              borderColor: 'border.default',
+              bg: 'transparent',
+              _hover: {
+                bg: 'bg.subtle'
+              }
+            },
+            ghost: {
+              color: 'fg.default',
+              bg: 'transparent',
+              _hover: {
+                bg: 'bg.subtle'
+              }
+            }
+          }
         }
       }
     }

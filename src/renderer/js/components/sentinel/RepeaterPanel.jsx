@@ -416,7 +416,7 @@ function RepeaterPanel({ themeId }) {
 	}
 
 	return (
-		<Box p={4} borderWidth='1px' borderRadius='md'>
+		<Box p={4} h='100%' overflowY='auto' overflowX='hidden' wordBreak='break-word' borderWidth='1px' borderRadius='md'>
 			<VStack align='stretch' spacing={3}>
 				<Flex justify='space-between' align='center' mb='3' pb='3' borderBottomWidth='1px' borderColor='border.default'>
 					<Text fontWeight='medium' fontSize='sm'>Repeater</Text>

@@ -247,6 +247,10 @@ describe('contracts/ipc-contract', () => {
     expect(pushNames).toContain('history:push');
     expect(pushNames).toContain('proxy:intercept:request');
     expect(pushNames).toContain('proxy:intercept:response');
+    expect(pushNames).toContain('browser:state');
+    expect(pushNames).toContain('browser:navigate:start');
+    expect(pushNames).toContain('browser:navigate:complete');
+    expect(pushNames).toContain('browser:navigate:error');
     expect(pushNames).toContain('intruder:progress');
     expect(pushNames).toContain('scanner:progress');
     expect(pushNames).toContain('oob:hit');
@@ -262,6 +266,14 @@ describe('contracts/ipc-contract', () => {
     expect(invokeNames).toContain('ca:get');
     expect(invokeNames).toContain('ca:export');
     expect(invokeNames).toContain('ca:rotate');
+    expect(invokeNames).toContain('browser:session:get');
+    expect(invokeNames).toContain('browser:session:close');
+    expect(invokeNames).toContain('browser:session:focus');
+    expect(invokeNames).toContain('browser:view:set-bounds');
+    expect(invokeNames).toContain('browser:back');
+    expect(invokeNames).toContain('browser:forward');
+    expect(invokeNames).toContain('browser:reload');
+    expect(invokeNames).toContain('browser:stop');
   });
 
   it('validates preload invoke channels against contract direction', () => {

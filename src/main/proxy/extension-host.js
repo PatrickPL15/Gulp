@@ -260,6 +260,21 @@ class ExtensionHost extends EventEmitter {
 	createRuntime(extensionMeta, approvedPermissions) {
 		const permissions = new Set(normalizePermissions(approvedPermissions));
 		const sandbox = {
+			// Shadow host-process globals so they are inaccessible by name inside the extension context.
+			// vm.createContext does not provide process isolation — see extension-host security notes.
+			process: undefined,
+			require: undefined,
+			global: undefined,
+			globalThis: undefined,
+			__dirname: undefined,
+			__filename: undefined,
+			Buffer: undefined,
+			setImmediate: undefined,
+			clearImmediate: undefined,
+			setInterval: undefined,
+			clearInterval: undefined,
+			setTimeout: undefined,
+			clearTimeout: undefined,
 			module: { exports: {} },
 			exports: {},
 			__handlers: {},
@@ -284,6 +299,18 @@ class ExtensionHost extends EventEmitter {
 				wasm: false,
 			},
 		});
+
+		// Run a safety preamble before any extension code. This freezes Object.prototype
+		// within the vm context (isolated from the host) to block prototype-chain escape:
+		// ({}).constructor.constructor('return process')() — codeGeneration.strings:false
+		// already blocks new Function(string), but freezing closes the Object.prototype
+		// route early and prevents dynamic property injection on built-in prototypes.
+		const safetyPreamble = new vm.Script(`(function() {
+			'use strict';
+			Object.freeze(Object.prototype);
+			Object.freeze(Function.prototype);
+		}());`, { filename: '<extension-safety-preamble>' });
+		safetyPreamble.runInContext(context, { timeout: this.executionTimeoutMs });
 		const subscriptions = new Map();
 		let handlerSeq = 0;
 

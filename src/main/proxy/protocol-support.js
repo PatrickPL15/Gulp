@@ -8,13 +8,107 @@ SEN-014 Protocol support
 
 const http = require('node:http');
 const https = require('node:https');
+const net = require('node:net');
+const tls = require('node:tls');
 const { URL } = require('node:url');
 const { randomUUID } = require('node:crypto');
 const interceptEngineModule = require('./intercept-engine');
 const historyLogModule = require('./history-log');
 const rulesEngineModule = require('./rules-engine');
+const caManager = require('../certs/ca-manager');
 
 const MAX_REQUEST_BYTES = 25 * 1024 * 1024; // 25 MB
+const DEFAULT_TOOL_IDENTIFIER_HEADER = 'X-Sentinel-Tool';
+const DEFAULT_TOOL_IDENTIFIER_VALUE = 'Gulp-Sentinel';
+
+let forwardRuntimeConfig = {
+	customHeaders: {},
+	toolIdentifier: {
+		enabled: false,
+		headerName: DEFAULT_TOOL_IDENTIFIER_HEADER,
+		value: DEFAULT_TOOL_IDENTIFIER_VALUE,
+	},
+	staticIpAddresses: [],
+};
+let staticIpCursor = 0;
+
+function normalizeHeaderName(name) {
+	const normalized = String(name || '').trim();
+	return normalized;
+}
+
+function normalizeStaticIpAddresses(items) {
+	if (!Array.isArray(items)) {
+		return [];
+	}
+
+	const out = [];
+	for (const item of items) {
+		const candidate = String(item || '').trim();
+		if (!candidate) {
+			continue;
+		}
+		if (net.isIP(candidate) === 0) {
+			continue;
+		}
+		if (!out.includes(candidate)) {
+			out.push(candidate);
+		}
+	}
+	return out;
+}
+
+function normalizeForwardRuntimeConfig(config = {}) {
+	const customHeaders = {};
+	const rawCustomHeaders = config && typeof config.customHeaders === 'object' && config.customHeaders
+		? config.customHeaders
+		: {};
+	for (const [name, value] of Object.entries(rawCustomHeaders)) {
+		const key = normalizeHeaderName(name);
+		if (!key) {
+			continue;
+		}
+		customHeaders[key] = String(value == null ? '' : value);
+	}
+
+	const rawTool = config && typeof config.toolIdentifier === 'object' && config.toolIdentifier
+		? config.toolIdentifier
+		: {};
+	const toolHeaderName = normalizeHeaderName(rawTool.headerName || DEFAULT_TOOL_IDENTIFIER_HEADER) || DEFAULT_TOOL_IDENTIFIER_HEADER;
+	const toolValue = String(rawTool.value == null ? DEFAULT_TOOL_IDENTIFIER_VALUE : rawTool.value);
+
+	return {
+		customHeaders,
+		toolIdentifier: {
+			enabled: Boolean(rawTool.enabled),
+			headerName: toolHeaderName,
+			value: toolValue,
+		},
+		staticIpAddresses: normalizeStaticIpAddresses(config.staticIpAddresses),
+	};
+}
+
+function selectStaticLocalAddress() {
+	const ips = forwardRuntimeConfig.staticIpAddresses;
+	if (!Array.isArray(ips) || ips.length === 0) {
+		return '';
+	}
+	const selected = ips[staticIpCursor % ips.length];
+	staticIpCursor = (staticIpCursor + 1) % ips.length;
+	return selected;
+}
+
+function setForwardRuntimeConfig(config = {}) {
+	forwardRuntimeConfig = normalizeForwardRuntimeConfig(config);
+	if (staticIpCursor >= forwardRuntimeConfig.staticIpAddresses.length) {
+		staticIpCursor = 0;
+	}
+	return getForwardRuntimeConfig();
+}
+
+function getForwardRuntimeConfig() {
+	return JSON.parse(JSON.stringify(forwardRuntimeConfig));
+}
 
 function normalizeHeaders(rawHeaders = {}) {
 	const normalized = {};
@@ -137,11 +231,20 @@ function resolveTargetUrl(request) {
 const FORWARD_TIMEOUT_MS = 30_000;
 const MAX_RESPONSE_BYTES = 25 * 1024 * 1024; // 25 MB
 
-async function forwardRequest(request) {
+async function forwardRequest(request, log) {
 	const requestStart = Date.now();
 	const targetUrl = resolveTargetUrl(request);
 	const client = targetUrl.protocol === 'https:' ? https : http;
 	const headers = normalizeHeaders(request.headers || {});
+	const runtimeConfig = getForwardRuntimeConfig();
+	if (typeof log === 'function') {
+		log('info', 'forward:start', {
+			requestId: request && request.id,
+			method: request && request.method,
+			url: targetUrl.toString(),
+			timeoutMs: FORWARD_TIMEOUT_MS,
+		});
+	}
 
 	delete headers['proxy-connection'];
 	headers.host = targetUrl.host;
@@ -157,6 +260,16 @@ async function forwardRequest(request) {
 	];
 	for (const name of hopByHopNames) {
 		delete headers[name];
+	}
+
+	for (const [name, value] of Object.entries(runtimeConfig.customHeaders || {})) {
+		headers[String(name).toLowerCase()] = String(value);
+	}
+
+	if (runtimeConfig.toolIdentifier && runtimeConfig.toolIdentifier.enabled) {
+		headers[String(runtimeConfig.toolIdentifier.headerName || DEFAULT_TOOL_IDENTIFIER_HEADER).toLowerCase()] = String(
+			runtimeConfig.toolIdentifier.value || DEFAULT_TOOL_IDENTIFIER_VALUE
+		);
 	}
 
 	let bodyBuffer = Buffer.alloc(0);
@@ -177,6 +290,7 @@ async function forwardRequest(request) {
 	}
 
 	return new Promise((resolve, reject) => {
+		const localAddress = selectStaticLocalAddress();
 		const upstreamReq = client.request({
 			protocol: targetUrl.protocol,
 			hostname: targetUrl.hostname,
@@ -185,7 +299,16 @@ async function forwardRequest(request) {
 			path: `${targetUrl.pathname}${targetUrl.search}`,
 			headers,
 			timeout: FORWARD_TIMEOUT_MS,
+			localAddress: localAddress || undefined,
 		}, upstreamRes => {
+			if (typeof log === 'function') {
+				log('info', 'forward:response', {
+					requestId: request && request.id,
+					statusCode: upstreamRes && upstreamRes.statusCode,
+					statusMessage: upstreamRes && upstreamRes.statusMessage,
+					contentType: upstreamRes && upstreamRes.headers ? upstreamRes.headers['content-type'] : '',
+				});
+			}
 			const ttfb = Date.now() - requestStart;
 			const chunks = [];
 			let accumulated = 0;
@@ -227,8 +350,23 @@ async function forwardRequest(request) {
 			});
 		});
 
-		upstreamReq.on('error', reject);
+		upstreamReq.on('error', (error) => {
+			if (typeof log === 'function') {
+				log('error', 'forward:error', {
+					requestId: request && request.id,
+					message: error && error.message ? error.message : String(error),
+				});
+			}
+			reject(error);
+		});
 		upstreamReq.on('timeout', () => {
+			if (typeof log === 'function') {
+				log('warn', 'forward:timeout', {
+					requestId: request && request.id,
+					timeoutMs: FORWARD_TIMEOUT_MS,
+					url: targetUrl.toString(),
+				});
+			}
 			upstreamReq.destroy(new Error(`Upstream request timed out after ${FORWARD_TIMEOUT_MS / 1000} seconds`));
 		});
 
@@ -245,8 +383,26 @@ class ProtocolSupport {
 		this.historyLog = options.historyLog || historyLogModule;
 		this.rulesEngine = options.rulesEngine || rulesEngineModule;
 		this.scopeEvaluator = typeof options.scopeEvaluator === 'function' ? options.scopeEvaluator : null;
+		this.logger = typeof options.logger === 'function' ? options.logger : null;
 		this.server = null;
 		this.port = 0;
+	}
+
+	setLogger(logger) {
+		this.logger = typeof logger === 'function' ? logger : null;
+		return { ok: true };
+	}
+
+	log(level, stage, detail) {
+		if (typeof this.logger !== 'function') {
+			return;
+		}
+
+		this.logger({
+			level: String(level || 'info'),
+			stage: String(stage || 'protocol'),
+			detail,
+		});
 	}
 
 	setScopeEvaluator(evaluator) {
@@ -256,11 +412,19 @@ class ProtocolSupport {
 
 	async start({ port = 8080 } = {}) {
 		if (this.server) {
+			this.log('info', 'proxy:start:already-running', { port: this.port });
 			return { port: this.port, status: 'running' };
 		}
 
+		this.log('info', 'proxy:start:requested', { port });
+
 		this.server = http.createServer((req, res) => {
 			this.handleHttpRequest(req, res).catch(async error => {
+				this.log('error', 'proxy:http:handler-error', {
+					method: req && req.method,
+					url: req && req.url,
+					error: error && error.message ? error.message : String(error),
+				});
 				const fallbackStatus = 502;
 				res.writeHead(fallbackStatus, { 'content-type': 'text/plain; charset=utf-8' });
 				res.end('Sentinel proxy upstream error');
@@ -306,6 +470,19 @@ class ProtocolSupport {
 			});
 		});
 
+		// Handle HTTPS CONNECT tunnels for MITM interception.
+		this.server.on('connect', (req, socket, head) => {
+			this.log('info', 'proxy:connect:received', {
+				url: req && req.url,
+				headBytes: head && head.length ? head.length : 0,
+			});
+			this.handleConnect(req, socket, head).catch(() => {
+				try { socket.destroy(); } catch {
+					// ignore cleanup failure
+				}
+			});
+		});
+
 		await new Promise((resolve, reject) => {
 			this.server.once('error', reject);
 			this.server.listen(port, '127.0.0.1', () => resolve());
@@ -313,11 +490,13 @@ class ProtocolSupport {
 
 		const address = this.server.address();
 		this.port = address && typeof address === 'object' ? address.port : port;
+		this.log('info', 'proxy:start:ready', { port: this.port });
 		return { port: this.port, status: 'running' };
 	}
 
 	async stop() {
 		if (!this.server) {
+			this.log('info', 'proxy:stop:already-stopped');
 			return { status: 'stopped' };
 		}
 
@@ -328,6 +507,8 @@ class ProtocolSupport {
 		await new Promise((resolve, reject) => {
 			server.close(error => (error ? reject(error) : resolve()));
 		});
+
+		this.log('info', 'proxy:stop:complete');
 
 		return { status: 'stopped' };
 	}
@@ -342,7 +523,83 @@ class ProtocolSupport {
 		};
 	}
 
-	async handleHttpRequest(req, res) {
+	async handleConnect(req, clientSocket, head) {
+		const url = req.url || '';
+		const colonIdx = url.lastIndexOf(':');
+		const targetHost = colonIdx >= 0 ? url.slice(0, colonIdx) : url;
+		const targetPort = colonIdx >= 0 ? Number(url.slice(colonIdx + 1)) : 443;
+
+		this.log('info', 'proxy:connect:target', {
+			targetHost,
+			targetPort,
+		});
+
+		if (!targetHost) {
+			this.log('warn', 'proxy:connect:missing-host');
+			clientSocket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
+			clientSocket.destroy();
+			return;
+		}
+
+		// Acknowledge the tunnel before the browser starts the TLS handshake.
+		clientSocket.write('HTTP/1.1 200 Connection Established\r\nProxy-agent: Sentinel\r\n\r\n');
+
+		// Push back any bytes the HTTP parser already consumed before handing us the socket.
+		if (head && head.length > 0) {
+			clientSocket.unshift(head);
+		}
+
+		// Obtain a per-host leaf cert signed by the Sentinel CA for MITM.
+		let leaf;
+		try {
+			leaf = caManager.getLeafCertificate(targetHost);
+		} catch {
+			this.log('error', 'proxy:connect:leaf-cert-failed', { targetHost });
+			clientSocket.destroy();
+			return;
+		}
+
+		// Wrap the raw socket in TLS, presenting the forged cert to the browser.
+		const tlsSocket = new tls.TLSSocket(clientSocket, {
+			isServer: true,
+			cert: leaf.certPem,
+			key: leaf.keyPem,
+		});
+
+		// Use a transient HTTP server to parse decrypted requests off the TLS socket.
+		const tmpServer = http.createServer();
+		tmpServer.on('request', (innerReq, innerRes) => {
+			this.log('info', 'proxy:connect:tunnel-request', {
+				method: innerReq && innerReq.method,
+				url: innerReq && innerReq.url,
+				targetHost,
+				targetPort,
+			});
+			this.handleHttpRequest(innerReq, innerRes, {
+				tls: true,
+				host: targetHost,
+				port: targetPort,
+			}).catch(() => {
+				if (!innerRes.headersSent) {
+					innerRes.writeHead(502, { 'content-type': 'text/plain; charset=utf-8' });
+					innerRes.end('Sentinel proxy upstream error');
+				}
+			});
+		});
+
+		// Feed the TLS socket as a connection into the transient HTTP server.
+		tmpServer.emit('connection', tlsSocket);
+
+		const cleanup = () => {
+			this.log('info', 'proxy:connect:cleanup', { targetHost, targetPort });
+			try { tlsSocket.destroy(); } catch { /* ignore */ }
+			tmpServer.close();
+		};
+		tlsSocket.once('close', cleanup);
+		tlsSocket.once('error', cleanup);
+	}
+
+	async handleHttpRequest(req, res, context = {}) {
 		const bodyBuffer = await readBody(req);
 		const timestamp = Date.now();
 		const connectionId = randomUUID();
@@ -353,38 +610,74 @@ class ProtocolSupport {
 			: null;
 		const rawBodyBase64 = bodyBuffer.length > 0 ? bodyBuffer.toString('base64') : null;
 
+		// When called from an HTTPS CONNECT tunnel, context carries host/port/tls.
+		const isTls = !!context.tls;
+		const contextHost = String(context.host || '');
+		const contextPort = Number(context.port || (isTls ? 443 : 80));
+		const protocol = isTls ? 'https:' : 'http:';
+
 		const target = /^https?:\/\//i.test(req.url || '') ? new URL(req.url) : null;
-		const parsedHost = parseHostAndPort(normalizedHeaders.host || '', 'http:');
+		const parsedHost = parseHostAndPort(normalizedHeaders.host || contextHost, protocol);
+		const resolvedHost = target ? target.hostname : (contextHost || parsedHost.host);
+		const resolvedPort = target
+			? Number(target.port || (target.protocol === 'https:' ? 443 : 80))
+			: (context.port !== undefined ? contextPort : parsedHost.port);
+		const resolvedPath = target ? `${target.pathname || '/'}${target.search || ''}` : (req.url || '/');
+		const resolvedUrl = target ? target.toString()
+			: `${protocol}//${resolvedHost}${resolvedPort !== (isTls ? 443 : 80) ? `:${resolvedPort}` : ''}${resolvedPath}`;
+
+		this.log('info', 'proxy:http:captured', {
+			method: (req.method || 'GET').toUpperCase(),
+			url: resolvedUrl,
+			tls: isTls,
+			host: resolvedHost,
+			port: resolvedPort,
+		});
+
 		const requestModel = {
 			id: randomUUID(),
 			connectionId,
 			timestamp,
 			method: (req.method || 'GET').toUpperCase(),
-			url: target ? target.toString() : (req.url || '/'),
-			host: target ? target.hostname : parsedHost.host,
-			port: target ? Number(target.port || (target.protocol === 'https:' ? 443 : 80)) : parsedHost.port,
-			path: target ? `${target.pathname || '/'}${target.search || ''}` : (req.url || '/'),
+			url: resolvedUrl,
+			host: resolvedHost,
+			port: resolvedPort,
+			path: resolvedPath,
 			queryString: target ? (target.search || '').replace(/^\?/, '') : '',
 			headers: normalizedHeaders,
 			body: bodyText,
 			rawBodyBase64,
 			protocol: 'HTTP/1.1',
-			tls: false,
+			tls: isTls,
 			tags: [],
 			comment: '',
 			inScope: this.scopeEvaluator ? this.scopeEvaluator({
-				protocol: target ? target.protocol.replace(':', '') : 'http',
-				host: target ? target.hostname : parsedHost.host,
-				port: target ? Number(target.port || (target.protocol === 'https:' ? 443 : 80)) : parsedHost.port,
-				path: target ? `${target.pathname || '/'}${target.search || ''}` : (req.url || '/'),
+				protocol: target ? target.protocol.replace(':', '') : (isTls ? 'https' : 'http'),
+				host: resolvedHost,
+				port: resolvedPort,
+				path: resolvedPath,
 			}) : false,
 		};
 
+		const embeddedBrowserHeader = String(normalizedHeaders['x-sentinel-embedded-browser'] || '').trim();
+		const bypassInterceptQueue = embeddedBrowserHeader === '1';
+		if (bypassInterceptQueue) {
+			this.log('info', 'proxy:http:bypass-intercept', {
+				requestId: requestModel.id,
+				url: requestModel.url,
+				reason: 'embedded-browser',
+			});
+		}
+
 		const result = await this.interceptEngine.captureRequest(requestModel, async forwardedRequest => {
 			return this.forwardHttpRequest(forwardedRequest);
-		});
+		}, { bypassQueue: bypassInterceptQueue });
 
 		if (result.action === 'dropped') {
+			this.log('warn', 'proxy:http:dropped', {
+				requestId: result && result.request ? result.request.id : '',
+				url: result && result.request ? result.request.url : resolvedUrl,
+			});
 			await this.historyLog.logTraffic({
 				kind: 'http',
 				request: result.request,
@@ -397,6 +690,13 @@ class ProtocolSupport {
 		}
 
 		const responseModel = result.response;
+		this.log('info', 'proxy:http:response', {
+			requestId: result && result.request ? result.request.id : '',
+			statusCode: responseModel && responseModel.statusCode,
+			statusMessage: responseModel && responseModel.statusMessage,
+			contentType: responseModel && responseModel.contentType,
+			bodyLength: responseModel && responseModel.bodyLength,
+		});
 
 		await this.historyLog.logTraffic({
 			kind: 'http',
@@ -412,7 +712,9 @@ class ProtocolSupport {
 	}
 
 	async forwardHttpRequest(request) {
-		return forwardRequest(request);
+		return forwardRequest(request, (level, stage, detail) => {
+			this.log(level, stage, detail);
+		});
 	}
 }
 
@@ -426,3 +728,5 @@ module.exports = defaultProtocolSupport;
 module.exports.ProtocolSupport = ProtocolSupport;
 module.exports.createProtocolSupport = createProtocolSupport;
 module.exports.forwardRequest = forwardRequest;
+module.exports.setForwardRuntimeConfig = setForwardRuntimeConfig;
+module.exports.getForwardRuntimeConfig = getForwardRuntimeConfig;

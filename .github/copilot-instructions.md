@@ -108,3 +108,15 @@
 - Avoid unbounded top-level `useState` arrays for proxy/scanner feeds.
 - Apply dark-first Chakra theming with semantic severity colors and reduced border radius.
 - Include command palette navigation (`Ctrl+K`) in UX polish scope.
+
+## Append-Only Directive Update (2026-04-02): Commenting Guidance
+- Add short, concise comments only when intent is not obvious from code.
+- Prefer explaining why a non-obvious choice exists, not restating what the code does.
+- Keep comments close to complex logic, edge cases, security boundaries, or protocol constraints.
+- Avoid noisy comments on trivial assignments, simple conditionals, or self-explanatory names.
+- Keep comment style consistent with existing file conventions and update comments when behavior changes.
+
+## Append-Only Directive Update (2026-04-03): IPC Channel Stability
+- Never remove or rename existing preload-exposed IPC channels without a coordinated update to both main and renderer.
+- Adding new IPC channels is a backwards-compatible change.
+- `git.commitCount` in `src/contracts/build-info.json` is the monotonically increasing build iteration number.

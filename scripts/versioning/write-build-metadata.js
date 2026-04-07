@@ -11,7 +11,11 @@ function runGit(command) {
 }
 
 function readJson(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (error) {
+    throw new Error(`build-metadata: failed to read ${filePath} — ${error.message}`);
+  }
 }
 
 function ensureDirectory(dirPath) {
@@ -30,11 +34,10 @@ const outPath = argOut
 const metadata = {
   appName: String(pkg.name || 'unknown'),
   version: String(pkg.version || '0.0.0'),
-  semverSpec: '2.0.0',
   git: {
     commit: runGit('git rev-parse HEAD'),
     shortCommit: runGit('git rev-parse --short HEAD'),
-    branch: runGit('git rev-parse --abbrev-ref HEAD'),
+    branch: process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || runGit('git rev-parse --abbrev-ref HEAD'),
     commitCount: runGit('git rev-list --count HEAD')
   },
   build: {

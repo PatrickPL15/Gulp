@@ -1,7 +1,10 @@
 # App Completion and Test Checklist
 
 ## Goal
-Use this checklist to finish implementation and validate the Electron + Gulp + React + Chakra UI app from source to runnable build.
+Use this checklist to maintain and validate the Electron + Gulp + React + Chakra UI app from source to runnable build.
+
+## Status Note
+Sentinel milestones M1-M9 are implemented. Sections that mention historical TODO items now serve as regression/reference checklists so future changes preserve existing behavior.
 
 ## 1) Prerequisites
 1. Install Node.js LTS (recommended: 20.x or newer).
@@ -21,7 +24,7 @@ Use this checklist to finish implementation and validate the Electron + Gulp + R
 2. Confirm scripts are present and usable:
    - `dev` -> `gulp watch`
    - `start` -> launches Electron
-3. Replace placeholder `test` script with real checks when tests are added.
+3. Keep test scripts healthy and runnable (`test`, `test:ui`, `test:coverage`, `test:build`).
 4. Keep runtime packages in `dependencies` and toolchain packages in `devDependencies`.
 
 ### gulpfile.js
@@ -181,7 +184,7 @@ Use this checklist to finish implementation and validate the Electron + Gulp + R
 3. Implement real-time project persistence with crash-safe writes.
 4. Implement a build artifact validation test layer in CI to verify `dist/main` and `dist/renderer` runtime integrity after `npx gulp build`.
 
-## 9) Sentinel File-Level TODO Map
+## 9) Sentinel File-Level Implementation Map (Historical TODOs Closed)
 
 ### Main Process and Services
 1. `src/main/index.js`: bootstrap module loading and lifecycle wiring for Sentinel services.
@@ -200,7 +203,40 @@ Use this checklist to finish implementation and validate the Electron + Gulp + R
 4. `src/renderer/js/components/sentinel/*.jsx`: add import UI flow (file picker, column mapping, dry-run preview, and conflict resolution) for Burp config and CSV scope import.
 5. `src/renderer/js/components/sentinel/*.jsx`: add automation script management UI (create/edit/test scripts, assign triggers, and view execution logs).
 
-## 10) Workbench UI Directive Checklist (2026-04-02)
+## 11) Versioning Checklist (SemVer 2.0.0)
+
+### Before changing version in package.json
+1. Identify the change category:
+   - Breaking IPC channel removed or renamed -> bump `MAJOR`
+   - New channel, module, or backwards-compatible feature -> bump `MINOR`
+   - Bug fix with no interface change -> bump `PATCH`
+2. Confirm the new version string is valid SemVer 2.0.0 (`npm run semver:check`).
+3. Update `package-lock.json` to match by running `npm install` after changing `package.json`.
+4. If releasing a pre-production milestone, append a pre-release label (e.g. `-rc.1`, `-beta.2`); numeric identifiers must not have leading zeroes.
+5. Do not embed build metadata (`+sha.xxxxx`) manually in `package.json`; metadata is generated automatically.
+
+### After changing version
+1. Run `npm run version:verify` to confirm SemVer compliance and regenerate `src/contracts/build-info.json`.
+2. Confirm `build-info.json` reflects the correct new version, branch, and commit SHA.
+3. Commit `package.json` and `package-lock.json` together.
+4. Ensure `build-info.json` is produced by `npm run version:verify` locally and as a CI artifact from `.github/workflows/versioning.yml`.
+5. Tag the commit with the version string if it is a release (e.g. `git tag 1.2.0`).
+
+### Increment decision guide
+| Scenario | Correct increment |
+|---|---|
+| Fix a bug in `history-log.js` pagination | `PATCH` |
+| Add a new Sentinel panel or IPC channel | `MINOR` |
+| Remove or rename an existing preload channel | `MAJOR` |
+| Security fix with no public interface change | `PATCH` |
+| New milestone feature set before public release | `MINOR` + `-rc.N` pre-release suffix |
+
+### Tooling reference
+- `npm run semver:check` — validate `package.json` version against strict SemVer 2.0.0 and lockfile parity
+- `npm run build:metadata` — generate `src/contracts/build-info.json` for local verification and CI artifact publication
+- `npm run version:verify` — run both checks in sequence
+- Hook: `.husky/pre-commit` runs both automatically on every commit
+- CI: `.github/workflows/versioning.yml` runs on push/PR and publishes `build-info` artifact
 
 ### Layout Engine (Stage 1)
 1. Shell root uses fixed viewport (`h="100vh"`) and no body scrolling (`overflow="hidden"`).

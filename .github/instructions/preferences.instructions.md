@@ -24,3 +24,4 @@ Repository-level coding and review preferences.
 - 2026-04-02: Prefer desktop-workbench renderer layouts (fixed viewport, collapsible panes, activity bar, tabbed workspace, status bar) over document-like scrolling pages.
 - 2026-04-02: Prefer virtualized dense data surfaces and buffered UI updates over large top-level arrays in React state.
 - 2026-04-02: Default visual direction is dark-first with explicit severity semantics and reduced corner radius.
+- 2026-04-02: Add short, purposeful comments only for non-obvious logic; prioritize why over what, and avoid comment noise on self-explanatory code.

@@ -62,11 +62,15 @@ function copyContracts() {
 }
 
 function generateBuildMetadata(done) {
-  execSync(
-    `node scripts/versioning/write-build-metadata.js --out=${paths.dist}/contracts/build-info.json`,
-    { stdio: 'inherit' }
-  );
-  done();
+  try {
+    execSync(
+      `node scripts/versioning/write-build-metadata.js --out=${paths.dist}/contracts/build-info.json`,
+      { stdio: 'inherit' }
+    );
+    done();
+  } catch (error) {
+    done(error);
+  }
 }
 
 function watchFiles() {

@@ -81,7 +81,7 @@ function DecoderPanel({ themeId }) {
   }
 
   return (
-    <Box p='4' borderWidth='1px' borderRadius='md'>
+    <Box p='4' h='100%' overflowY='auto' overflowX='hidden' wordBreak='break-word' borderWidth='1px' borderRadius='sm' borderColor='border.default'>
       <VStack align='stretch' spacing={3}>
         <Flex justify='space-between' align='center' pb='3' borderBottomWidth='1px' borderColor='border.default'>
           <Text fontWeight='medium' fontSize='sm'>Decoder</Text>
@@ -90,8 +90,8 @@ function DecoderPanel({ themeId }) {
           </HStack>
         </Flex>
 
-        <Box borderWidth='1px' borderRadius='md' p={3}>
-          <Text fontWeight='semibold' mb={2}>Input</Text>
+        <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p={3}>
+          <Text fontWeight='semibold' fontSize='sm' mb={2}>Input</Text>
           <Textarea
             rows={7}
             value={input}
@@ -100,9 +100,9 @@ function DecoderPanel({ themeId }) {
           />
         </Box>
 
-        <Box borderWidth='1px' borderRadius='md' p={3}>
+        <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p={3}>
           <HStack justify='space-between' mb={2}>
-            <Text fontWeight='semibold'>Operation Chain</Text>
+            <Text fontWeight='semibold' fontSize='sm'>Operation Chain</Text>
             <Code>{operations.length} steps</Code>
           </HStack>
 
@@ -138,17 +138,17 @@ function DecoderPanel({ themeId }) {
           </HStack>
         </Box>
 
-        <Box borderWidth='1px' borderRadius='md' p={3}>
-          <Text fontWeight='semibold' mb={2}>Output</Text>
+        <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p={3}>
+          <Text fontWeight='semibold' fontSize='sm' mb={2}>Output</Text>
           <Textarea rows={7} value={result} readOnly />
         </Box>
 
-        <Box borderWidth='1px' borderRadius='md' p={3}>
-          <Text fontWeight='semibold' mb={2}>Intermediate Steps</Text>
+        <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p={3}>
+          <Text fontWeight='semibold' fontSize='sm' mb={2}>Intermediate Steps</Text>
           {steps.length === 0 ? (
             <Text fontSize='sm' color='fg.muted'>Run a chain to see intermediate outputs.</Text>
           ) : steps.map((step, index) => (
-            <Box key={index} borderWidth='1px' borderRadius='md' p={2} mb={2}>
+            <Box key={index} borderWidth='1px' borderRadius='sm' borderColor='border.default' p={2} mb={2}>
               <Text fontSize='sm'><Code>{step.pass}.{index + 1}</Code> {step.operation}</Text>
               <Text fontSize='xs' color='fg.muted'>Input: <Code>{String(step.input || '').slice(0, 120)}</Code></Text>
               <Text fontSize='xs' color='fg.muted'>Output: <Code>{String(step.output || '').slice(0, 120)}</Code></Text>

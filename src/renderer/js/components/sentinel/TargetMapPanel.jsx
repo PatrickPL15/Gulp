@@ -43,6 +43,10 @@ function TargetMapPanel({ themeId }) {
   const [csvFormat, setCsvFormat] = React.useState('hackerone');
   const [statusText, setStatusText] = React.useState('');
   const [errorText, setErrorText] = React.useState('');
+  const [importBurpLoading, setImportBurpLoading] = React.useState(false);
+  const [importCsvLoading, setImportCsvLoading] = React.useState(false);
+  // { kind: 'success'|'error'|'cancelled', message: string, warnings: string[] }
+  const [importResult, setImportResult] = React.useState(null);
 
   const loadScope = React.useCallback(async () => {
     const sentinel = window.sentinel;
@@ -131,49 +135,65 @@ function TargetMapPanel({ themeId }) {
   }
 
   async function importBurp() {
-    setErrorText('');
-    setStatusText('');
+    setImportResult(null);
+    setImportBurpLoading(true);
     try {
       const sentinel = window.sentinel;
       if (!sentinel || !sentinel.scope) {
+        setImportResult({ kind: 'error', message: 'Scope API unavailable.', warnings: [] });
         return;
       }
       const result = await sentinel.scope.importBurp({});
       if (!result || result.ok === false) {
-        setStatusText('Burp import cancelled.');
+        setImportResult({ kind: 'cancelled', message: 'Burp import cancelled.', warnings: [] });
         return;
       }
       await loadScope();
       await loadSitemap();
-      setStatusText(`Imported ${result.imported || 0} Burp scope entries.`);
-    } catch {
-      setErrorText('Unable to import Burp scope file.');
+      setImportResult({
+        kind: 'success',
+        message: `Imported ${result.imported || 0} Burp scope ${result.imported === 1 ? 'entry' : 'entries'}.`,
+        warnings: Array.isArray(result.warnings) ? result.warnings : [],
+      });
+    } catch (error) {
+      const msg = error && error.message ? error.message : 'Unknown error';
+      setImportResult({ kind: 'error', message: `Burp import failed: ${msg}`, warnings: [] });
+    } finally {
+      setImportBurpLoading(false);
     }
   }
 
   async function importCsv() {
-    setErrorText('');
-    setStatusText('');
+    setImportResult(null);
+    setImportCsvLoading(true);
     try {
       const sentinel = window.sentinel;
       if (!sentinel || !sentinel.scope) {
+        setImportResult({ kind: 'error', message: 'Scope API unavailable.', warnings: [] });
         return;
       }
       const result = await sentinel.scope.importCsv({ format: csvFormat });
       if (!result || result.ok === false) {
-        setStatusText('CSV import cancelled.');
+        setImportResult({ kind: 'cancelled', message: 'CSV import cancelled.', warnings: [] });
         return;
       }
       await loadScope();
       await loadSitemap();
-      setStatusText(`Imported ${result.imported || 0} CSV scope entries.`);
-    } catch {
-      setErrorText('Unable to import CSV scope file.');
+      setImportResult({
+        kind: 'success',
+        message: `Imported ${result.imported || 0} ${csvFormat === 'hackerone' ? 'HackerOne' : 'CSV'} scope ${result.imported === 1 ? 'entry' : 'entries'}.`,
+        warnings: Array.isArray(result.warnings) ? result.warnings : [],
+      });
+    } catch (error) {
+      const msg = error && error.message ? error.message : 'Unknown error';
+      setImportResult({ kind: 'error', message: `CSV import failed: ${msg}`, warnings: [] });
+    } finally {
+      setImportCsvLoading(false);
     }
   }
 
   return (
-    <Box p='4' borderWidth='1px' borderRadius='md'>
+    <Box p='4' h='100%' overflowY='auto' overflowX='hidden' wordBreak='break-word' borderWidth='1px' borderRadius='sm' borderColor='border.default'>
       <VStack align='stretch' spacing={3}>
         <Flex justify='space-between' align='center' pb='3' borderBottomWidth='1px' borderColor='border.default'>
           <Text fontWeight='medium' fontSize='sm'>Target Map</Text>
@@ -182,8 +202,8 @@ function TargetMapPanel({ themeId }) {
           </HStack>
         </Flex>
 
-        <Box borderWidth='1px' borderRadius='md' p={3}>
-          <Text fontWeight='semibold' mb={2}>Add Scope Rule</Text>
+        <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p={3}>
+          <Text fontWeight='semibold' fontSize='sm' mb={2}>Add Scope Rule</Text>
           <VStack align='stretch' spacing={2}>
             <HStack>
               <Button
@@ -213,12 +233,20 @@ function TargetMapPanel({ themeId }) {
           </VStack>
         </Box>
 
-        <Box borderWidth='1px' borderRadius='md' p={3}>
-          <Text fontWeight='semibold' mb={2}>Import Scope Rules</Text>
+        <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p={3}>
+          <Text fontWeight='semibold' fontSize='sm' mb={2}>Import Scope Rules</Text>
           <VStack align='stretch' spacing={2}>
             <HStack>
               <Text fontSize='sm' color='fg.muted' flex='1'>Choose a Burp XML/JSON file in the system file picker.</Text>
-              <Button size='sm' variant='outline' onClick={importBurp}>Import Burp</Button>
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={importBurp}
+                loading={importBurpLoading}
+                disabled={importBurpLoading || importCsvLoading}
+              >
+                Import Burp
+              </Button>
             </HStack>
             <HStack>
               <Text fontSize='sm' color='fg.muted' flex='1'>Choose a CSV file in the system file picker.</Text>
@@ -226,6 +254,7 @@ function TargetMapPanel({ themeId }) {
                 size='sm'
                 variant={csvFormat === 'hackerone' ? 'solid' : 'outline'}
                 onClick={() => setCsvFormat('hackerone')}
+                disabled={importBurpLoading || importCsvLoading}
               >
                 HackerOne
               </Button>
@@ -233,23 +262,70 @@ function TargetMapPanel({ themeId }) {
                 size='sm'
                 variant={csvFormat === 'generic' ? 'solid' : 'outline'}
                 onClick={() => setCsvFormat('generic')}
+                disabled={importBurpLoading || importCsvLoading}
               >
                 Generic
               </Button>
-              <Button size='sm' variant='outline' onClick={importCsv}>Import CSV</Button>
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={importCsv}
+                loading={importCsvLoading}
+                disabled={importBurpLoading || importCsvLoading}
+              >
+                Import CSV
+              </Button>
             </HStack>
+            {importResult ? (
+              <Box
+                mt={1}
+                p={2}
+                borderRadius='sm'
+                borderWidth='1px'
+                borderColor={
+                  importResult.kind === 'success' ? 'green.500'
+                  : importResult.kind === 'error' ? 'red.500'
+                  : 'border.default'
+                }
+                bg={
+                  importResult.kind === 'success' ? 'rgba(34,197,94,0.08)'
+                  : importResult.kind === 'error' ? 'rgba(239,68,68,0.08)'
+                  : 'bg.subtle'
+                }
+              >
+                <Text
+                  fontSize='sm'
+                  color={
+                    importResult.kind === 'success' ? getStatusTextColor('success', themeId)
+                    : importResult.kind === 'error' ? getStatusTextColor('error', themeId)
+                    : 'fg.muted'
+                  }
+                >
+                  {importResult.message}
+                </Text>
+                {importResult.warnings && importResult.warnings.length > 0 ? (
+                  <VStack align='stretch' spacing={0} mt={1}>
+                    {importResult.warnings.map((warning, index) => (
+                      <Text key={index} fontSize='xs' color={getStatusTextColor('warn', themeId)}>
+                        ⚠ {warning}
+                      </Text>
+                    ))}
+                  </VStack>
+                ) : null}
+              </Box>
+            ) : null}
           </VStack>
         </Box>
 
-        <Box borderWidth='1px' borderRadius='md' p={3}>
+        <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p={3}>
           <HStack justify='space-between' mb={2}>
-            <Text fontWeight='semibold'>Scope Rules</Text>
+            <Text fontWeight='semibold' fontSize='sm'>Scope Rules</Text>
             <Code>{rules.length} rules</Code>
           </HStack>
           {rules.length === 0 ? (
             <Text fontSize='sm' color='fg.muted'>No scope rules configured.</Text>
           ) : rules.map(rule => (
-            <HStack key={rule.id} justify='space-between' borderWidth='1px' borderRadius='md' p={2} mb={2}>
+            <HStack key={rule.id} justify='space-between' borderWidth='1px' borderRadius='sm' borderColor='border.default' p={2} mb={2}>
               <HStack>
                 <Badge colorPalette={rule.kind === 'include' ? 'green' : 'red'}>{rule.kind}</Badge>
                 <Text fontSize='sm'>
@@ -262,9 +338,9 @@ function TargetMapPanel({ themeId }) {
           ))}
         </Box>
 
-        <Box borderWidth='1px' borderRadius='md' p={3}>
+        <Box borderWidth='1px' borderRadius='sm' borderColor='border.default' p={3}>
           <HStack justify='space-between' mb={2}>
-            <Text fontWeight='semibold'>Site Map</Text>
+            <Text fontWeight='semibold' fontSize='sm'>Site Map</Text>
             <Button size='xs' variant='outline' onClick={loadSitemap}>Refresh</Button>
           </HStack>
           {sitemapRows.length === 0 ? (
