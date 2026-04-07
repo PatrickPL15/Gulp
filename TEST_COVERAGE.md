@@ -10,21 +10,8 @@ This project enforces **80%+ code coverage** on implementation modules. Coverage
   - Complete Chakra UI theme configuration with explicit color tokens
   - Testable due to pure function/data structure nature
 
-### Excluded (Remaining TODO Modules)
-The following are intentionally excluded because they remain architectural placeholders:
-- `src/main/proxy/oob-service.js`
-- `src/main/proxy/sequencer-service.js`
-- `src/main/proxy/decoder-service.js`
-- `src/main/proxy/extension-host.js`
-- `src/main/proxy/embedded-browser-service.js`
-- `src/renderer/js/components/sentinel/ScannerPanel.jsx`
-- `src/renderer/js/components/sentinel/OobPanel.jsx`
-- `src/renderer/js/components/sentinel/SequencerPanel.jsx`
-- `src/renderer/js/components/sentinel/DecoderPanel.jsx`
-- `src/renderer/js/components/sentinel/ExtensionsPanel.jsx`
-- `src/renderer/js/components/sentinel/EmbeddedBrowserPanel.jsx`
-
-These will accumulate real logic during Sentinel implementation (Milestone 6+).
+### Excluded Modules
+No Sentinel module placeholders remain through M9. Extension host and script runtime behavior now have dedicated functional tests, and the workbench shell has renderer regression coverage.
 
 ### Partial Coverage (Integration-Heavy)
 - `src/main/preload.js`: 100% branch/function, 0% statements
@@ -33,9 +20,11 @@ These will accumulate real logic during Sentinel implementation (Milestone 6+).
   - *(Electron/React bootstrap code requires integration tests)*
 
 ## Test Metrics
-- **Test Files**: 19+ suites total (including SEN-018 target/scope coverage)
-- **Total Tests**: Expanded with SEN-018 backend coverage for scope evaluation, import parsing, sitemap generation, and automation scope checks
+- **Test Files**: 25 suites total (including SEN-018 through SEN-024 suites and renderer workbench regressions)
+- **Total Tests**: 302 passing in the latest full validation run (2026-04-06), plus post-build smoke validation (3/3) via `npm run test:build`
+- **Recent additions (SEN-020 Chromium-first refactor)**: 5 pure-unit tests for embedded browser service covering Chromium-first pending response shape, history state machine (back/forward/reload with completeRuntimeNavigation simulation), URL normalization, session state controls, and runtime state apply; 1 renderer integration test covering full browser session lifecycle (listSessions → focusSession → showView → setBounds → navigate → reload)
 - **Recent additions**: SEN-017 Intruder coverage (11 tests) covering real HTTP attacks, dictionary/brute-force/sequential payload generation, sniper/pitchfork/cluster-bomb profiles, progress events, anomaly detection, graceful stop, and panel interaction flows
+- **Recent additions**: M9 renderer coverage validating the fixed-viewport shell, dark-first theme tokens, context-rail quick-action behavior, and expandable/collapsible module activity rail assumptions
 - **Average (measured files)**: >80%
 
 ## Running Tests
@@ -48,8 +37,8 @@ npm run test:coverage   # Coverage report
 ```
 
 ## Future Coverage Targets
-1. Sentinel Milestone 6: Add deeper scanner and decoder module-level tests beyond M5 baseline scope enforcement
-2. Add full Electron integration coverage for live IPC event delivery from `src/main/index.js` into renderer panels.
+1. Add full Electron integration coverage for live IPC event delivery from `src/main/index.js` into renderer panels.
+2. Expand extension/runtime coverage from unit-level behavior to renderer-main integration event flow assertions.
 3. Post-MVP: Full feature parity → 90%+ target (with integration tests)
 
 ---

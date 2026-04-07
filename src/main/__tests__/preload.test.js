@@ -70,6 +70,7 @@ describe('Preload Bridge API Surface', () => {
     expect(Object.keys(sentinel).sort()).toEqual([
       'browser',
       'ca',
+      'console',
       'decoder',
       'extensions',
       'history',
@@ -259,12 +260,66 @@ describe('Preload Bridge - all invoke channels', () => {
     const { browser } = exposed.sentinel;
 
     browser.createSession({ name: 'Primary' });
+    browser.getSession({ sessionId: 'sess-1' });
+    browser.focusSession({ sessionId: 'sess-1' });
     browser.listSessions();
+    browser.showView({ sessionId: 'sess-1' });
+    browser.hideView({ sessionId: 'sess-1' });
+    browser.setBounds({ sessionId: 'sess-1', bounds: { x: 10, y: 20, width: 640, height: 480 } });
     browser.navigate({ sessionId: 'sess-1', url: 'https://example.com' });
+    browser.back({ sessionId: 'sess-1' });
+    browser.forward({ sessionId: 'sess-1' });
+    browser.reload({ sessionId: 'sess-1' });
+    browser.stop({ sessionId: 'sess-1' });
+    browser.closeSession({ sessionId: 'sess-1' });
 
     expect(ipcInvoke).toHaveBeenCalledWith('browser:session:create', { name: 'Primary' });
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:session:get', { sessionId: 'sess-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:session:focus', { sessionId: 'sess-1' });
     expect(ipcInvoke).toHaveBeenCalledWith('browser:sessions:list', {});
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:view:show', { sessionId: 'sess-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:view:hide', { sessionId: 'sess-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:view:set-bounds', { sessionId: 'sess-1', bounds: { x: 10, y: 20, width: 640, height: 480 } });
     expect(ipcInvoke).toHaveBeenCalledWith('browser:navigate', { sessionId: 'sess-1', url: 'https://example.com' });
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:back', { sessionId: 'sess-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:forward', { sessionId: 'sess-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:reload', { sessionId: 'sess-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:stop', { sessionId: 'sess-1' });
+    expect(ipcInvoke).toHaveBeenCalledWith('browser:session:close', { sessionId: 'sess-1' });
+  });
+
+  it('browser namespace push subscriptions unsubscribe cleanly', () => {
+    const { exposed, ipcOn, ipcRemoveListener } = executePreload();
+    const { browser } = exposed.sentinel;
+    const handler = vi.fn();
+
+    const unsubscribeState = browser.onState(handler);
+    const unsubscribeStart = browser.onNavigateStart(handler);
+    const unsubscribeComplete = browser.onNavigateComplete(handler);
+    const unsubscribeError = browser.onNavigateError(handler);
+    const unsubscribeTitle = browser.onTitleUpdated(handler);
+
+    expect(ipcOn).toHaveBeenCalledWith('browser:state', expect.any(Function));
+    expect(ipcOn).toHaveBeenCalledWith('browser:navigate:start', expect.any(Function));
+    expect(ipcOn).toHaveBeenCalledWith('browser:navigate:complete', expect.any(Function));
+    expect(ipcOn).toHaveBeenCalledWith('browser:navigate:error', expect.any(Function));
+    expect(ipcOn).toHaveBeenCalledWith('browser:title:updated', expect.any(Function));
+
+    const wrappedState = ipcOn.mock.calls.find(call => call[0] === 'browser:state')[1];
+    wrappedState({}, { reason: 'session:create' });
+    expect(handler).toHaveBeenCalledWith({ reason: 'session:create' });
+
+    unsubscribeState();
+    unsubscribeStart();
+    unsubscribeComplete();
+    unsubscribeError();
+    unsubscribeTitle();
+
+    expect(ipcRemoveListener).toHaveBeenCalledWith('browser:state', wrappedState);
+    expect(ipcRemoveListener).toHaveBeenCalledWith('browser:navigate:start', expect.any(Function));
+    expect(ipcRemoveListener).toHaveBeenCalledWith('browser:navigate:complete', expect.any(Function));
+    expect(ipcRemoveListener).toHaveBeenCalledWith('browser:navigate:error', expect.any(Function));
+    expect(ipcRemoveListener).toHaveBeenCalledWith('browser:title:updated', expect.any(Function));
   });
 
   it('oob namespace: all invoke methods use correct channels', () => {
