@@ -10,6 +10,7 @@ const {
   Text,
   VStack,
 } = require('@chakra-ui/react');
+const { getStatusTextColor } = require('./theme-utils');
 
 function flattenTree(nodes = [], depth = 0, rows = []) {
   for (const node of nodes) {
@@ -27,7 +28,7 @@ function flattenTree(nodes = [], depth = 0, rows = []) {
   return rows;
 }
 
-function TargetMapPanel() {
+function TargetMapPanel({ themeId }) {
   const [rules, setRules] = React.useState([]);
   const [sitemapRows, setSitemapRows] = React.useState([]);
   const [form, setForm] = React.useState({
@@ -278,8 +279,8 @@ function TargetMapPanel() {
           ))}
         </Box>
 
-        {statusText ? <Text color='green.300' fontSize='sm'>{statusText}</Text> : null}
-        {errorText ? <Text color='red.300' fontSize='sm'>{errorText}</Text> : null}
+        {statusText ? <Text color={getStatusTextColor('success', themeId)} fontSize='sm'>{statusText}</Text> : null}
+        {errorText ? <Text color={getStatusTextColor('error', themeId)} fontSize='sm'>{errorText}</Text> : null}
       </VStack>
     </Box>
   );

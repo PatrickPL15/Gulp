@@ -21,6 +21,7 @@ const {
 	Textarea,
 	VStack,
 } = require('@chakra-ui/react');
+const { getStatusTextColor } = require('./theme-utils');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -163,7 +164,9 @@ function ResponseViewer({ response }) {
 						sandbox=''
 						srcDoc={renderedHtml}
 						title='Rendered response'
-						style={{ width: '100%', height: '240px', border: '1px solid var(--chakra-colors-border, #e2e8f0)' }}
+						borderWidth='1px'
+						borderColor='border.default'
+						style={{ width: '100%', height: '240px' }}
 					/>
 				) : (
 					<Box
@@ -289,7 +292,7 @@ function CompareView({ sends }) {
 // Main panel
 // ---------------------------------------------------------------------------
 
-function RepeaterPanel() {
+function RepeaterPanel({ themeId }) {
 	// Sidebar
 	const [entries, setEntries] = React.useState([]);
 	const [selectedEntryId, setSelectedEntryId] = React.useState('');
@@ -502,7 +505,7 @@ function RepeaterPanel() {
 								fontSize='xs'
 							/>
 
-							{errorText && <Text color='red.300' fontSize='sm'>{errorText}</Text>}
+							{errorText && <Text color={getStatusTextColor('error', themeId)} fontSize='sm'>{errorText}</Text>}
 
 							{/* Response viewer — AC 3 */}
 							<ResponseViewer response={response} />

@@ -10,8 +10,9 @@ const {
   Text,
   VStack,
 } = require('@chakra-ui/react');
+const { getStatusTextColor } = require('./theme-utils');
 
-function SequencerPanel() {
+function SequencerPanel({ themeId }) {
   const sentinel = typeof window !== 'undefined' ? window.sentinel : null;
   const [requestId, setRequestId] = React.useState('');
   const [sampleSize, setSampleSize] = React.useState('20');
@@ -157,8 +158,8 @@ function SequencerPanel() {
           )}
         </Box>
 
-        <Text fontSize='sm' color='fg.muted'>{statusText}</Text>
-        {errorText ? <Text color='red.300' fontSize='sm'>{errorText}</Text> : null}
+        <Text fontSize='sm' color={getStatusTextColor('info', themeId)}>{statusText}</Text>
+        {errorText ? <Text color={getStatusTextColor('error', themeId)} fontSize='sm'>{errorText}</Text> : null}
       </VStack>
     </Box>
   );

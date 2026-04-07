@@ -2,12 +2,20 @@
 
 Desktop security-workbench foundation built with Electron (main process), React + Chakra UI (renderer), and Gulp (build/watch pipeline).
 
+## Documentation Index
+- Project overview and developer workflow: `README.md`
+- End-user operating guide: `END_USER_GUIDE.md`
+- Test/coverage policy and metrics: `TEST_COVERAGE.md`
+- Delivery checklist and regression workflow: `APP_COMPLETION_AND_TEST_CHECKLIST.md`
+- Implementation plan and milestone archive: `SENTINEL_IMPLEMENTATION_PLAN.md`
+
 ## Current Status
 - Electron + renderer scaffold is running from built output (`dist/main/index.js`).
 - Chakra UI integration is in place with theme config in `src/renderer/js/theme.js`.
 - Vitest test setup exists (`test`, `test:ui`, `test:coverage` scripts).
 - Sentinel M1-M9 capabilities are implemented: CA lifecycle, intercepting proxy, rules, persistent history, Repeater response viewers, Intruder payload attacks, target/scope management, scanner/OOB/sequencer workflows, decoder/embedded-browser workflows, extension automation, and the high-density workbench UI shell.
 - Workbench shell includes a two-state module sidebar (collapsed icon-only and expanded icon+title modes), animated context rail transitions, keyboard-accessible quick actions, and preserved context-rail scroll/focus behavior.
+- Workbench toolbar includes Settings -> Preferences -> Theme Options with 10 presets (5 dark + 5 light), and theme switching now applies consistently across shell, inspectors, overlays, and panel status messaging.
 - Latest milestone validation snapshot includes full UI/workbench regression coverage alongside proxy, persistence, scanner, and extension suites passing.
 - Sentinel roadmap and checklist are tracked in:
    - `APP_COMPLETION_AND_TEST_CHECKLIST.md`
@@ -122,6 +130,73 @@ npm run dev
 - `npm run test:build` -> Clean + build + run post-build `dist/` validation smoke tests
 - `npm run test:ui` -> Vitest UI
 - `npm run test:coverage` -> Coverage run
+- `npm run semver:check` -> Validate `package.json` version against strict SemVer 2.0.0 and lockfile parity
+- `npm run build:metadata` -> Generate `src/contracts/build-info.json` with version, git, and build context
+- `npm run version:verify` -> Run SemVer validation and metadata generation together
+
+## Versioning and Build Iteration Capture
+
+This project implements [SemVer.org](https://semver.org) Semantic Versioning 2.0.0 for all published version strings.
+
+### SemVer 2.0.0 Format
+
+```
+MAJOR.MINOR.PATCH[-pre-release][+build-metadata]
+```
+
+| Segment | When to increment |
+|---|---|
+| `MAJOR` | Incompatible API changes — breaking IPC contract changes that require coordinated updates to both main and renderer |
+| `MINOR` | Backwards-compatible new functionality — new Sentinel modules, new IPC channels, new preload surface additions |
+| `PATCH` | Backwards-compatible bug fixes — fixes that change no interface |
+
+**Pre-release identifiers** are appended with `-` and dot-separated alphanumeric labels (no leading zeroes in numeric parts). A pre-release version has lower precedence than the associated normal version:
+```
+1.0.0-alpha < 1.0.0-alpha.1 < 1.0.0-beta < 1.0.0-rc.1 < 1.0.0
+```
+
+**Build metadata** is appended with `+` and is automatically captured by `write-build-metadata.js`. Build metadata MUST be ignored when comparing version precedence:
+```
+1.0.0+sha.200164d3  (same precedence as 1.0.0)
+```
+
+**Version precedence** is evaluated left to right: MAJOR → MINOR → PATCH → pre-release fields (numeric fields compared numerically; alphanumeric fields compared ASCII-lexically; a larger set of pre-release fields has higher precedence than a smaller set).
+
+### Project-Specific Increment Rules
+
+| Change type | Example | Increment |
+|---|---|---|
+| New Sentinel module or panel | Add `SequencerPanel` | `MINOR` |
+| New IPC channel in preload surface | Add `sequencer:start` channel | `MINOR` |
+| Bug fix in existing service | Fix `history-log.js` pagination | `PATCH` |
+| Breaking IPC contract change | Remove or rename existing channel | `MAJOR` |
+| Security patch with no interface change | Fix input-sanitization gap | `PATCH` |
+| Pre-publish milestone feature set | M9 workbench release candidate | `-rc.1` suffix |
+
+**Version 0.y.z** (initial development): Major version zero is for unstable public API. Once `1.0.0` is published, the rules above apply strictly.
+
+### Enforcement
+
+- **Local (commit-time):** `.husky/pre-commit` runs `semver:check`, generates `build-info.json` with git context, and stages the metadata file. A non-compliant version string blocks the commit.
+- **CI:** `.github/workflows/versioning.yml` runs on every push and pull request. It re-validates the version, generates metadata with the CI run context, and publishes it as a downloadable workflow artifact named `build-info`.
+- **Lockfile parity:** `semver:check` also verifies that `package-lock.json` top-level version matches `package.json`. A mismatch blocks both local commits and CI runs.
+
+### Build Metadata Fields
+
+`src/contracts/build-info.json` is auto-generated and contains:
+
+| Field | Description |
+|---|---|
+| `version` | SemVer 2.0.0 string from `package.json` |
+| `semverSpec` | Always `"2.0.0"` |
+| `git.commit` | Full SHA of HEAD |
+| `git.shortCommit` | 8-character short SHA |
+| `git.branch` | Active branch name |
+| `git.commitCount` | Total commit count (monotonically increasing build iteration) |
+| `build.timestampUtc` | ISO 8601 UTC timestamp of the run |
+| `build.source` | `github-actions` in CI, `local` otherwise |
+| `build.runId` | `GITHUB_RUN_ID` in CI, `local` otherwise |
+| `build.runNumber` | `GITHUB_RUN_NUMBER` in CI, `local` otherwise |
 
 ## Testing Snapshot
 - Test framework is Vitest with jsdom and Testing Library.
@@ -146,11 +221,8 @@ M1 through M9 capabilities are complete and implemented in this branch, includin
 
 No planned milestone gaps remain through M9.
 
-## Planned Changes (Roadmap Highlights)
-- Milestone 0-1: contract baseline, persistence, CA lifecycle, service bootstrap.
-- Milestone 2-5: proxy core, repeater, intruder, target map/scope, import pipelines.
-- Milestone 6-8: decoder/browser workflows, scanner/OOB/sequencer, extension host.
-- Final hardening: preload IPC boundaries, performance, regression/security pass.
+## Roadmap Snapshot
+Milestones M0-M9 are implemented in this branch. Ongoing work is focused on maintenance, regression coverage expansion, and UX polishing rather than outstanding milestone delivery.
 
 See detailed sequencing and exit criteria in:
 - `SENTINEL_IMPLEMENTATION_PLAN.md`
@@ -193,6 +265,6 @@ The renderer now follows a fixed desktop-workbench architecture:
 3. Main workspace uses a concurrent tab strip for module workflows.
 4. Bottom status bar surfaces real-time engine status, active scans/tasks, and memory usage.
 5. Proxy/history tables target high-density rendering and virtualization (`@tanstack/react-table` + `@tanstack/react-virtual` or `react-window`).
-6. Request/response inspector roadmap includes Monaco-powered Raw view plus Headers/Raw/Preview tabs.
+6. Request/response inspectors use Monaco-powered Raw views plus Headers/Raw/Preview (and Hex where applicable) tabs.
 7. Renderer update cadence for high-frequency streams is buffered/throttled (100-200ms) to keep UI responsive.
 8. Theme direction is dark-first with severity semantics: critical `red.600`, high `orange.500`, medium `yellow.400`, low `blue.400`, info `gray.400`.
