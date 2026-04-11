@@ -23,6 +23,7 @@
   "devDependencies": {
     "@babel/preset-env": "^7.29.2",
     "@babel/preset-react": "^7.28.5",
+    "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@vitest/coverage-v8": "^4.1.2",
@@ -32,7 +33,6 @@
     "electron-builder": "^26.8.1",
     "esbuild": "^0.25.4",
     "gulp": "^5.0.1",
-    "gulp-clean": "^0.4.0",
     "gulp-esbuild": "^0.14.1",
     "gulp-sass": "^6.0.1",
     "identity-obj-proxy": "^3.0.0",

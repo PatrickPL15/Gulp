@@ -1,7 +1,7 @@
 const gulp = require('gulp');
 const sass = require('gulp-sass')(require('sass'));
 const esbuild = require('gulp-esbuild');
-const clean = require('gulp-clean');
+const fs = require('fs');
 const { execSync } = require('child_process');
 
 const paths = {
@@ -15,9 +15,8 @@ const paths = {
   dist: 'dist'
 };
 
-function cleanDist() {
-  return gulp.src(paths.dist, { read: false, allowEmpty: true })
-    .pipe(clean());
+async function cleanDist() {
+  await fs.promises.rm(paths.dist, { recursive: true, force: true });
 }
 
 function copyHtml() {
@@ -52,13 +51,21 @@ function bundleJs() {
 }
 
 function copyMain() {
-  return gulp.src(paths.main)
-    .pipe(gulp.dest(`${paths.dist}/main`));
+  return gulp.src([
+    paths.main,
+    '!src/main/**/__tests__/**',
+    '!src/main/**/*.test.*',
+    '!src/main/**/*.spec.*'
+  ]).pipe(gulp.dest(`${paths.dist}/main`));
 }
 
 function copyContracts() {
-  return gulp.src(paths.contracts)
-    .pipe(gulp.dest(`${paths.dist}/contracts`));
+  return gulp.src([
+    paths.contracts,
+    '!src/contracts/**/__tests__/**',
+    '!src/contracts/**/*.test.*',
+    '!src/contracts/**/*.spec.*'
+  ]).pipe(gulp.dest(`${paths.dist}/contracts`));
 }
 
 function generateBuildMetadata(done) {
